@@ -12,33 +12,29 @@ export const Route = createFileRoute("/api/chat")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const { messages } = (await request.json()) as { messages?: unknown };
+        const { messages } = (await request.json()) as {
+          messages?: unknown;
+        };
+
         if (!Array.isArray(messages)) {
           return new Response("Messages are required", { status: 400 });
         }
 
-        const key = process.env["LOVABLE_API_KEY"];
-        if (!key) return new Response("Missing LOVABLE_API_KEY", { status: 500 });
+        const key = process.env["OPENAI_API_KEY"];
 
-        const lovable = createOpenAI({
-          baseURL: "https://ai.gateway.lovable.dev/v1",
+        if (!key) {
+          console.error("Missing OPENAI_API_KEY environment variable");
+          return new Response("Missing OPENAI_API_KEY", { status: 500 });
+        }
+
+        const openai = createOpenAI({
           apiKey: key,
-          headers: { "Lovable-API-Key": key, "X-Lovable-AIG-SDK": "vercel-ai-sdk" },
         });
 
         const result = streamText({
-          model: lovable.responses("openai/gpt-6-astra"),
+          model: openai("gpt-6-astra"),
           system: SYSTEM_PROMPT,
           messages: await convertToModelMessages(messages as UIMessage[]),
-          providerOptions: {
-            openai: {
-              forceReasoning: true,
-              reasoningEffort: "low",
-              reasoningSummary: "auto",
-              store: false,
-              include: ["reasoning.encrypted_content"],
-            },
-          },
         });
 
         return result.toUIMessageStreamResponse({
