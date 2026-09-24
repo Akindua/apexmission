@@ -235,7 +235,7 @@ function ApexMission() {
               <Target className="size-4 text-foreground" />
             </div>
             <span className="font-display text-sm font-semibold tracking-[0.22em] text-muted-foreground uppercase">
-              Mission Control
+              ApexMission
             </span>
           </div>
           <span className="text-xs text-muted-foreground tabular-nums">
