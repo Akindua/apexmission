@@ -25,13 +25,13 @@ import {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Mission Control — Prioritize Goals, Take Daily Action" },
+      { title: "ApexMission — Prioritize Goals, Take Daily Action" },
       {
         name: "description",
         content:
           "A distraction-free dashboard to lock in your mission, prioritize tasks by impact, and complete one daily action step.",
       },
-      { property: "og:title", content: "Mission Control — Prioritize Goals, Take Daily Action" },
+      { property: "og:title", content: "ApexMission — Prioritize Goals, Take Daily Action" },
       {
         property: "og:description",
         content:
@@ -41,7 +41,7 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: MissionControl,
+  component: ApexMission,
 });
 
 const TIERS: Array<{
@@ -84,7 +84,7 @@ function nextId(): string {
   return `t-${Date.now()}-${idCounter}`;
 }
 
-function MissionControl() {
+function ApexMission() {
   const [state, setState] = useState<MissionState>(defaultState);
   const [hydrated, setHydrated] = useState(false);
   const [drafts, setDrafts] = useState<Record<ImpactTier, string>>({ high: "", medium: "", low: "" });
