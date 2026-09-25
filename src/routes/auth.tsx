@@ -10,15 +10,15 @@ export const Route = createFileRoute("/auth")({
   }),
   head: () => ({
     meta: [
-      { title: "Sign in — Mission Control" },
+      { title: "Sign in ApexMission" },
       {
         name: "description",
-        content: "Sign in to Mission Control to sync your mission, priorities and premium plan.",
+        content: "Sign in to ApexMission to sync your mission, priorities and premium plan.",
       },
-      { property: "og:title", content: "Sign in — Mission Control" },
+      { property: "og:title", content: "Sign in — ApexMission" },
       {
         property: "og:description",
-        content: "Sign in to Mission Control to sync your mission, priorities and premium plan.",
+        content: "Sign in to ApexMission to sync your mission, priorities and premium plan.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -79,7 +79,7 @@ function AuthPage() {
             <Target className="size-4 text-impact-high" />
           </div>
           <span className="text-[11px] font-semibold tracking-[0.28em] text-muted-foreground uppercase">
-            Mission Control
+            ApexMission
           </span>
         </div>
         <h1 className="mt-4 font-display text-2xl font-bold tracking-tight">

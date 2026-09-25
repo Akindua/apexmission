@@ -21,6 +21,7 @@ import {
   type Task,
 } from "@/lib/mission-store";
 
+import { Navigate } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -41,8 +42,12 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: ApexMission,
+  component: HomeRedirect,
 });
+
+function HomeRedirect() {
+  return <Navigate to="/loading" />;
+}
 
 const TIERS: Array<{
   key: ImpactTier;

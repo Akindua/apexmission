@@ -1,7 +1,11 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { useNavigate } from "@tanstack/react-router";
 
-export default function LoadingPage() {
+export const Route = createFileRoute("/loading")({
+  component: LoadingPage,
+});
+
+function LoadingPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -14,9 +18,7 @@ export default function LoadingPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-black">
-      /logo.png
-
-      <h1 className="mt-4 text-3xl text-white">
+      <h1 className="text-3xl text-white">
         ApexMission
       </h1>
 

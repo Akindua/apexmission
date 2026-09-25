@@ -11,7 +11,7 @@ import {
     return (
       <div className="min-h-screen flex items-center justify-center px-6">
       <div className="max-w-lg text-center">
-        /logo.png
+        /icon-192.png
 
         <h1 className="mt-4 text-4xl font-bold">
           Welcome to ApexMission
@@ -31,7 +31,7 @@ import {
   
           <Link
             to="/auth"
-            className="block w-full rounded-lg border p-3"
+            className="block w-full rounded-lg bg-white p-3 text-black font-semibold"
           >
             Sign In
           </Link>
