@@ -6,18 +6,23 @@ export default function LoadingPage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-        navigate({ to: "/welcome" });
+      navigate({ to: "/welcome" });
     }, 2500);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [navigate]);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-black">
-       <img src="/logo.png" className="w-24white text-3xl mt-4">ApexMission</h1>
-       <p className="text-gray-400 mt-2">
-           Your mission. One priority. Every day.
-       </p>
-     </div>
-    );
+      /logo.png
+
+      <h1 className="mt-4 text-3xl text-white">
+        ApexMission
+      </h1>
+
+      <p className="mt-2 text-gray-400">
+        Your mission. One priority. Every day.
+      </p>
+    </div>
+  );
 }
