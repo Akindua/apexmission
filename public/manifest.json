@@ -1,6 +1,11 @@
 {
+  "name": "ApexMission",
   "short_name": "ApexMission",
-  "name": "ApexMission: Stop Planning. Force Execution.",
+  "description": "ApexMission: Stop Planning. Force Execution.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0D0D11",
+  "theme_color": "#0D0D11",
   "icons": [
     {
       "src": "icon-192.png",
@@ -13,9 +18,4 @@
       "sizes": "512x512"
     }
   ],
-  "start_url": ".",
-  "background_color": "#0D0D11",
-  "theme_color": "#0D0D11",
-  "display": "standalone",
-  "orientation": "portrait"
 }
