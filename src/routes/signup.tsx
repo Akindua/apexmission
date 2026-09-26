@@ -16,11 +16,15 @@ function SignupPage() {
     const { error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth`,
+      },
     });
 
-    if (!error) {
-      navigate({ to: "/verify-email" });
-    }
+    if (!error) throw error;
+    
+    navigate({ to: "/verify-email" });
+    return;
   };
 
 return (
