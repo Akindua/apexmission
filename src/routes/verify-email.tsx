@@ -16,12 +16,8 @@ function VerifyEmailPage() {
 
     const { email } = Route.useSearch();
 
-    navigate({
-        to: "/verify-email",
-        search: {
-            email,
-        },
-    });
+    window.location.href =
+        `/verify-email?email=${encodeURIComponent(email)}`;
 
     async function handleResend() {
         if (!email) return;
