@@ -5,31 +5,34 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { confirmCheckout, getBilling, type BillingInfo } from "@/lib/billing.functions";
 
-export const Route = createFileRoute("/dashboard")({
+export const Route = createFileRoute("/billing")({
   ssr: false,
   validateSearch: (search: Record<string, unknown>) => ({
-    session_id: typeof search["session_id"] === "string" ? search["session_id"] : undefined,
+    session_id: 
+      typeof search["session_id"] === "string" 
+        ? search["session_id"] 
+        : undefined,
   }),
   head: () => ({
     meta: [
-      { title: "Your plan — Mission Control" },
+      { title: "Your plan — ApexMission" },
       {
         name: "description",
-        content: "Confirm your Mission Control purchase and review your current plan and renewal date.",
+        content: "Confirm your ApexMission purchase and review your current plan and renewal date.",
       },
-      { property: "og:title", content: "Your plan — Mission Control" },
+      { property: "og:title", content: "Your plan — ApexMission" },
       {
         property: "og:description",
-        content: "Confirm your Mission Control purchase and review your current plan and renewal date.",
+        content: "Confirm your ApexMission purchase and review your current plan and renewal date.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: DashboardPage,
+  component: BillingPage,
 });
 
-function DashboardPage() {
+function BillingPage() {
   const { session_id } = Route.useSearch();
   const confirm = useServerFn(confirmCheckout);
   const read = useServerFn(getBilling);
@@ -92,7 +95,7 @@ function DashboardPage() {
         )}
 
         <div className="mt-6 flex gap-3 text-sm">
-          <Link to="/" className="text-foreground underline-offset-4 hover:underline">
+          <Link to="/app" className="text-foreground underline-offset-4 hover:underline">
             Go to dashboard
           </Link>
           <Link to="/pricing" className="text-muted-foreground underline-offset-4 hover:underline">
