@@ -19,7 +19,7 @@ function SignupPage() {
     });
 
     if (!error) {
-      navigate({ to: "/plans" });
+      navigate({ to: "/verify-email" });
     }
   };
 

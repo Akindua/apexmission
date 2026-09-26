@@ -249,7 +249,12 @@ function ApexMission() {
 
               <ul className="flex flex-1 flex-col gap-1.5">
                 {state.tasks[tier.key].map((task) => (
-                  <TaskRow key={task.id} task={task} onToggle={() => toggleTask(tier.key, task.id)} onRemove={() => removeTask(tier.key, task.id)} />
+                  <TaskRow 
+                    key={task.id} 
+                    task={task} 
+                    onToggle={() => toggleTask(tier.key, task.id)} 
+                    onRemove={() => removeTask(tier.key, task.id)} 
+                  />
                 ))}
                 {state.tasks[tier.key].length === 0 && (
                   <li className="px-1 py-2 text-xs text-muted-foreground/60">Nothing here yet.</li>
@@ -363,6 +368,38 @@ function ApexMission() {
   );
 }
 
+function TaskRow({
+    task,
+    onToggle,
+    onRemove,
+}: {
+  task: Task
+  onToggle: () => void
+  onRemove: () => void
+}) {
+  return (
+    <li className="group flex items-center gap-2.5 rounded-lg px-1.5 py-1.5 transition-colors hover:bg-secondary/60">
+        <button
+            type="button"
+            onClick={onToggle}
+        >
+            ✓
+        </button>
+    
+        <span className="flex-1">
+            {task.text}
+        </span>
+    
+        <button
+            type="button"
+            onClick={onRemove}
+        >
+            ×
+        </button>
+    </li>
+  );
+}
+
 const TIERS: Array<{
     key: ImpactTier;
     label: string;
@@ -396,6 +433,15 @@ const TIERS: Array<{
       placeholder: "Add a low impact task…",
     },
 ];
+function formatCountdown(ms: number): string {
+    const totalSec = Math.max(0, Math.floor(ms / 1000));
+    
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
 
   let idCounter = 0;
   function nextId(): string {
