@@ -1,4 +1,32 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { Check, Flame, Lock, Plus, Sparkles, Target, TimerReset, X } from "lucide-react";
+import { PaywallModal } from "@/components/PaywallModal";
+import { MissionCoach } from "@/components/MissionCoach";
+import { useSubscriptionTier } from "@/hooks/useSubscriptionTier";
+import { supabase } from "@/integrations/supabase/client";
+import { startCheckout, type PlanId } from "@/lib/billing.functions";
+import {
+  aiBreakdown,
+  completeDailyToday,
+  defaultState,
+  FREE_TASK_LIMIT,
+  loadState,
+  msUntilReset,
+  saveState,
+  todayKey,
+  type ImpactTier,
+  type MissionState,
+  type Task,
+} from "@/lib/mission-store";
+
+import { Navigate } from "@tanstack/react-router";
+
+export const Route = createFileRoute("/app")({
+    component: ApexMission,
+});
+
 function ApexMission() {
   const [state, setState] = useState<MissionState>(defaultState);
   const [hydrated, setHydrated] = useState(false);
@@ -337,6 +365,42 @@ function ApexMission() {
   );
 }
 
-export const Route = createFileRoute("/app")({
-    component: ApexMission,
-});
+const TIERS: Array<{
+    key: ImpactTier;
+    label: string;
+    accentClass: string;
+    borderClass: string;
+    textClass: string;
+    placeholder: string;
+  }> = [
+    {
+      key: "high",
+      label: "High Impact",
+      accentClass: "bg-impact-high",
+      borderClass: "hover:border-impact-high/40 focus-within:border-impact-high/50",
+      textClass: "text-impact-high",
+      placeholder: "Add a high impact task…",
+    },
+    {
+      key: "medium",
+      label: "Medium Impact",
+      accentClass: "bg-impact-medium",
+      borderClass: "hover:border-impact-medium/40 focus-within:border-impact-medium/50",
+      textClass: "text-impact-medium",
+      placeholder: "Add a medium impact task…",
+    },
+    {
+      key: "low",
+      label: "Low Impact",
+      accentClass: "bg-impact-low",
+      borderClass: "hover:border-impact-low/40 focus-within:border-impact-low/50",
+      textClass: "text-impact-low",
+      placeholder: "Add a low impact task…",
+    },
+];
+
+  let idCounter = 0;
+  function nextId(): string {
+    idCounter += 1;
+    return `t-${Date.now()}-${idCounter}`;
+}

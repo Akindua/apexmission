@@ -8,13 +8,13 @@ import { startCheckout, type PlanId } from "@/lib/billing.functions";
 export const Route = createFileRoute("/pricing")({
   head: () => ({
     meta: [
-      { title: "Pricing — Mission Control Premium" },
+      { title: "Pricing — ApexMission Premium" },
       {
         name: "description",
         content:
-          "Choose a Mission Control plan: monthly, annual or lifetime access to unlimited priorities, AI Mission Breakdown and streak insights.",
+          "Choose a ApexMission plan: monthly, annual or lifetime access to unlimited priorities, AI Mission Breakdown and streak insights.",
       },
-      { property: "og:title", content: "Pricing — Mission Control Premium" },
+      { property: "og:title", content: "Pricing — ApexMission Premium" },
       {
         property: "og:description",
         content:
@@ -106,7 +106,7 @@ function PricingPage() {
             <Crown className="size-4 text-impact-medium" />
           </div>
           <span className="text-[11px] font-semibold tracking-[0.28em] text-muted-foreground uppercase">
-            Mission Control Premium
+            ApexMission Premium
           </span>
         </div>
         <h1 className="mt-4 font-display text-3xl font-bold tracking-tight sm:text-4xl">
@@ -173,7 +173,7 @@ function PricingPage() {
         </div>
 
         <div className="mt-8 text-sm">
-          <Link to="/" className="text-muted-foreground underline-offset-4 hover:underline">
+          <Link to="/app" className="text-muted-foreground underline-offset-4 hover:underline">
             Back to dashboard
           </Link>
         </div>
