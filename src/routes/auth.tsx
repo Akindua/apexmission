@@ -6,7 +6,15 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/auth")({
   ssr: false,
   validateSearch: (search: Record<string, unknown>) => ({
-    next: typeof search["next"] === "string" ? search["next"] : undefined,
+    next: 
+      typeof search["next"] === "string" 
+      ? search["next"] 
+      : undefined,
+
+    mode:
+      search["next"] === "signup"
+      ? "signup"
+      : "signin",
   }),
   head: () => ({
     meta: [
@@ -28,9 +36,11 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
-  const { next } = Route.useSearch();
+  const { next, mode: initialMode } = Route.useSearch();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<"signin" | "signup">(
+    initiaMode
+  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);

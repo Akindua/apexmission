@@ -27,14 +27,16 @@ import {
         <div className="mt-8 space-y-3">
           <Link
             to="/auth"
-            className=" text-black font-semibold block w-full rounded-lg bg-white p-3 "
+            search={{ mode: "signup" }}
+            className="block w-full rounded-lg bg-white p-3 text-black font-semibold"
           >
             Get Started
           </Link>
   
           <Link
             to="/auth"
-            className=" text-black font-semibold block w-full rounded-lg bg-white p-3 "
+            search={{ mode: "signin" }}
+            className="block w-full rounded-lg border p-3"
           >
             Sign In
           </Link>
