@@ -11,8 +11,11 @@ import {
     return (
       <div className="min-h-screen flex items-center justify-center px-6">
       <div className="max-w-lg text-center">
-        /icon-192.png
-
+        <img
+          src="/icon-192.png"
+          alt="ApexMission Logo"
+          class
+        />
         <h1 className="mt-4 text-4xl font-bold">
           Welcome to ApexMission
         </h1>

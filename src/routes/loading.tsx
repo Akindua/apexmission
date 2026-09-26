@@ -18,6 +18,11 @@ function LoadingPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-black">
+      <img
+        src="/icon-192.png"
+        alt="ApexMission Logo"
+        className="mb-4 h-24 w-24"
+      />
       <h1 className="text-3xl text-white">
         ApexMission
       </h1>
