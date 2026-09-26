@@ -14,7 +14,7 @@ function PlansPage() {
     </h1>
 
     <button
-      onClick={() => navigate({ to: "/dashboard" })}
+      onClick={() => navigate({ to: "/app" })}
       className="rounded-lg bg-blue-600 px-4 py-2 text-white"
     >
       Start Free
