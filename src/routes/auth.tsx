@@ -8,13 +8,13 @@ export const Route = createFileRoute("/auth")({
   validateSearch: (search: Record<string, unknown>) => ({
     next: 
       typeof search["next"] === "string" 
-      ? search["next"] 
-      : undefined,
+        ? search["next"] 
+        : undefined,
 
     mode:
-      search["next"] === "signup"
-      ? "signup"
-      : "signin",
+      search["mode"] === "signup"
+        ? "signup"
+        : "signin",
   }),
   head: () => ({
     meta: [
@@ -38,9 +38,9 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const { next, mode: initialMode } = Route.useSearch();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup">(
-    initiaMode
-  );
+  const [mode, setMode] = useState<
+    "signin" | "signup" 
+  >(initialMode ?? "signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
