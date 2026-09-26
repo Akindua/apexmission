@@ -16,6 +16,7 @@ import { Route as LoadingRouteImport } from './routes/loading'
 import { Route as PlansRouteImport } from './routes/plans'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe/webhook'
@@ -55,6 +56,11 @@ const SignupRoute = SignupRouteImport.update({
   path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VerifyEmailRoute = VerifyEmailRouteImport.update({
+  id: '/verify-email',
+  path: '/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WelcomeRoute = WelcomeRouteImport.update({
   id: '/welcome',
   path: '/welcome',
@@ -79,6 +85,7 @@ export interface FileRoutesByFullPath {
   '/plans': typeof PlansRoute
   '/pricing': typeof PricingRoute
   '/signup': typeof SignupRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/welcome': typeof WelcomeRoute
   '/api/chat': typeof ApiChatRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
@@ -91,6 +98,7 @@ export interface FileRoutesByTo {
   '/plans': typeof PlansRoute
   '/pricing': typeof PricingRoute
   '/signup': typeof SignupRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/welcome': typeof WelcomeRoute
   '/api/chat': typeof ApiChatRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
@@ -104,6 +112,7 @@ export interface FileRoutesById {
   '/plans': typeof PlansRoute
   '/pricing': typeof PricingRoute
   '/signup': typeof SignupRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/welcome': typeof WelcomeRoute
   '/api/chat': typeof ApiChatRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
@@ -118,6 +127,7 @@ export interface FileRouteTypes {
     | '/plans'
     | '/pricing'
     | '/signup'
+    | '/verify-email'
     | '/welcome'
     | '/api/chat'
     | '/api/public/stripe/webhook'
@@ -130,6 +140,7 @@ export interface FileRouteTypes {
     | '/plans'
     | '/pricing'
     | '/signup'
+    | '/verify-email'
     | '/welcome'
     | '/api/chat'
     | '/api/public/stripe/webhook'
@@ -142,6 +153,7 @@ export interface FileRouteTypes {
     | '/plans'
     | '/pricing'
     | '/signup'
+    | '/verify-email'
     | '/welcome'
     | '/api/chat'
     | '/api/public/stripe/webhook'
@@ -155,6 +167,7 @@ export interface RootRouteChildren {
   PlansRoute: typeof PlansRoute
   PricingRoute: typeof PricingRoute
   SignupRoute: typeof SignupRoute
+  VerifyEmailRoute: typeof VerifyEmailRoute
   WelcomeRoute: typeof WelcomeRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
@@ -211,6 +224,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/verify-email': {
+      id: '/verify-email'
+      path: '/verify-email'
+      fullPath: '/verify-email'
+      preLoaderRoute: typeof VerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/welcome': {
       id: '/welcome'
       path: '/welcome'
@@ -243,6 +263,7 @@ const rootRouteChildren: RootRouteChildren = {
   PlansRoute: PlansRoute,
   PricingRoute: PricingRoute,
   SignupRoute: SignupRoute,
+  VerifyEmailRoute: VerifyEmailRoute,
   WelcomeRoute: WelcomeRoute,
   ApiChatRoute: ApiChatRoute,
   ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
