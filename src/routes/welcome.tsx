@@ -14,7 +14,7 @@ import {
         <img
           src="/icon-192.png"
           alt="ApexMission Logo"
-          class
+          className="mx-auto mb-6 -32 h-32 objection-contain"
         />
         <h1 className="mt-4 text-4xl font-bold">
           Welcome to ApexMission
@@ -27,14 +27,14 @@ import {
         <div className="mt-8 space-y-3">
           <Link
             to="/auth"
-            className="block w-full rounded-lg bg-primary p-3"
+            className=" text-black font-semibold block w-full rounded-lg bg-white p-3 "
           >
             Get Started
           </Link>
   
           <Link
             to="/auth"
-            className="block w-full rounded-lg bg-white p-3 text-black font-semibold"
+            className=" text-black font-semibold block w-full rounded-lg bg-white p-3 "
           >
             Sign In
           </Link>

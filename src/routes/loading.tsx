@@ -21,7 +21,7 @@ function LoadingPage() {
       <img
         src="/icon-192.png"
         alt="ApexMission Logo"
-        className="mb-4 h-24 w-24"
+        className="mx-auto mb-6 w-32 w-32 objection-contain"
       />
       <h1 className="text-3xl text-white">
         ApexMission
