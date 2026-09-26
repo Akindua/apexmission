@@ -46,7 +46,7 @@ export const Route = createFileRoute("/")({
 });
 
 function HomeRedirect() {
-  return <Navigate to="/loading" />;
+  return <Navigate to="/welcome" />;
 }
 
 const TIERS: Array<{

@@ -15,10 +15,10 @@ function VerifyEmailPage() {
                 <p className="mt-4 text-muted-foreground">
                     ✅ Almost there...
 
-                    Open your inbox and click the verification
+                    Open your inbox.
 
                     We've sent you a verification email. Click the link to activate your ApexMission account.
-                    Once verified you'll be able to select your plan and start your first mission.
+                    Once verified you'll be able to select your plan and start your first mission!
                 </p>
             </div>
         </div>
