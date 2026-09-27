@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
- 
+
 export const Route = createFileRoute("/verify-email")({
     validateSearch: (search) => ({
         email:
@@ -16,15 +16,12 @@ function VerifyEmailPage() {
 
     const { email } = Route.useSearch();
 
-    window.location.href =
-        `/verify-email?email=${encodeURIComponent(email)}`;
-
     async function handleResend() {
         if (!email) return;
         
         await supabase.auth.resend({
-        type: "signup",
-        email,
+            type: "signup",
+            email,
         });
     }
 
@@ -36,9 +33,15 @@ function VerifyEmailPage() {
                 </h1>
 
                 <p className="text-muted-foreground mb-6">
-                    We sent a verification link to your email address.
+                    We sent a verification link to:
+                    <br />
+                    <strong>{email}</strong>
+                </p>
+
+                <p className="text-muted-foreground mb-6">
                     Open the email and click the link to activate your ApexMission account.
                 </p>
+                
 
                 <div className="space-y-3 text-sm text-muted-foreground mb-8">
                     <p>✓ Check your Inbox</p>
@@ -59,18 +62,11 @@ function VerifyEmailPage() {
                 >
                     Resend verification email
                 </button>
-
+                
                 <button
                     onClick={() => navigate({ to: "/auth" })}
                     className="mt-3 w-full rounded-lg border px-4 py-3"
                 >
-                <p className="text-muted-foreground mb-6">
-                    We sent a verification link to:
-
-                    <br />
-
-                    <strong>{email}</strong>
-                </p>
                     Back to Sign In
                 </button>
             </div>
