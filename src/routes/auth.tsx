@@ -46,7 +46,10 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const destination = next && next.startsWith("/") ? next : "/";
+  const destination = 
+    next && next.startsWith("/") 
+      ? next 
+      : "/app";
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -72,7 +75,12 @@ function AuthPage() {
       if (data.session) {
         navigate({ to: destination });
       } else {
-        setError("Check your inbox to confirm your email, then sign in.");
+          navigate({
+            to: "/verify-email",
+            search: {
+            email,
+            },
+          });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
