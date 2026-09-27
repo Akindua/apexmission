@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/verify-email")({
@@ -13,16 +14,29 @@ export const Route = createFileRoute("/verify-email")({
 
 function VerifyEmailPage() {
     const navigate = useNavigate();
-
+    
     const { email } = Route.useSearch();
-
+    
+    const [message, setMessage] = useState("");
+    
+    const [messageType, setMessageType] =
+        useState<"success" | "error" | null>(null);
+    
     async function handleResend() {
         if (!email) return;
-        
-        await supabase.auth.resend({
-            type: "signup",
-            email,
-        });
+    
+        try {
+            await supabase.auth.resend({
+                type: "signup",
+                email,
+            });
+    
+            setMessage("Verification email sent!");
+            setMessageType("success");
+        } catch {
+            setMessage("Could not resend email.");
+            setMessageType("error");
+        }
     }
 
     return (
@@ -41,7 +55,6 @@ function VerifyEmailPage() {
                 <p className="text-muted-foreground mb-6">
                     Open the email and click the link to activate your ApexMission account.
                 </p>
-                
 
                 <div className="space-y-3 text-sm text-muted-foreground mb-8">
                     <p>✓ Check your Inbox</p>
@@ -62,6 +75,18 @@ function VerifyEmailPage() {
                 >
                     Resend verification email
                 </button>
+
+                {message && (
+                    <p
+                        className={`mt-3 text-sm ${
+                        messageType === "success"
+                            ? "text-green-500"
+                            : "text-red-500"
+                        }`}
+                    >
+                        {message}
+                    </p>
+                )}
                 
                 <button
                     onClick={() => navigate({ to: "/auth" })}
