@@ -50,6 +50,29 @@ export function MissionCoach({
   const [initial, setInitial] = useState<UIMessage[] | null>(null);
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
+  const [uploadedText, setUploadedText] =
+    useState("");
+  
+  async function handleFileUpload(
+    event: React.ChangeEvent<HTMLInputElement>
+  ) {
+    if (!event.target.files) return;
+      
+    const selected =
+      Array.from(event.target.files);
+       
+    setFiles(selected);
+       
+    const contents =
+      await Promise.all(
+        selected.map(extractText)
+      );
+      
+    setUploadedText(
+      contents.join("\n\n")
+    );
+  }
 
   // Restore this browser's conversation after hydration.
   useEffect(() => {
@@ -71,6 +94,8 @@ export function MissionCoach({
       textareaRef={textareaRef}
       premium={premium}
       onLockedHistory={onLockedHistory}
+      files={files}
+      handleFileUpload={handleFileUpload}
     />
   );
 }
@@ -107,6 +132,10 @@ function CoachPanel({
   textareaRef,
   premium,
   onLockedHistory,
+  files: File[];
+  handleFileUpload: (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => void;
 }: {
   open: boolean;
   setOpen: (v: boolean) => void;
@@ -245,6 +274,36 @@ function CoachPanel({
         </Conversation>
 
         <div className="border-t border-border p-4">
+        <div className="mb-3">
+        <input
+          type="file"
+          multiple
+          accept=".pdf,.doc,.docx,.txt,image/*"
+          onChange={handleFileUpload}
+          className="hidden"
+          id="coach-upload"
+        />
+           
+        <label
+          htmlFor="coach-upload"
+          className="cursor-pointer rounded-lg border px-3 py-2 text-sm"
+        >
+          Upload Files
+        </label>
+           
+        {files.length > 0 && (
+          <div className="mt-2 space-y-1">
+            {files.map((file) => (
+              <div
+                key={file.name}
+                className="rounded border p-2 text-xs"
+              >
+                📎 {file.name}
+              </div>
+            ))}
+          </div>
+        )}
+        </div>
           <PromptInput
             onSubmit={(_message, event) => {
               event.preventDefault();
