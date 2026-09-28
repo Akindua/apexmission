@@ -2,6 +2,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { Lock, MessageCircle, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { extractText } from "@/lib/document-parser";
 import {
   Conversation,
   ConversationContent,
@@ -132,10 +133,8 @@ function CoachPanel({
   textareaRef,
   premium,
   onLockedHistory,
-  files: File[];
-  handleFileUpload: (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => void;
+  files,
+  handleFileUpload,
 }: {
   open: boolean;
   setOpen: (v: boolean) => void;
@@ -144,7 +143,13 @@ function CoachPanel({
   setInput: (v: string) => void;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   premium: boolean;
-  onLockedHistory?: (() => void) | undefined;
+  onLockedHistory?: () => void;
+  
+  files: File[];
+  
+  handleFileUpload: (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => void;
 }) {
   const transport = useMemo(() => new DefaultChatTransport({ api: "/api/chat" }), []);
   const [error, setError] = useState<string | null>(null);
