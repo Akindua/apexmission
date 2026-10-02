@@ -1,8 +1,9 @@
 import { useChat } from "@ai-sdk/react";
+import { extractText } from "@/lib/document-parser";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { Lock, MessageCircle, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { extractText } from "@/lib/document-parser";
+
 import {
   Conversation,
   ConversationContent,
@@ -54,24 +55,69 @@ export function MissionCoach({
   const [files, setFiles] = useState<File[]>([]);
   const [uploadedText, setUploadedText] =
     useState("");
-  
-  async function handleFileUpload(
-    event: React.ChangeEvent<HTMLInputElement>
-  ) {
-    if (!event.target.files) return;
+    useEffect(() => {
+      console.log("Uploaded Text:");
+      console.log(uploadedText);
+      }, [uploadedText]);
+
+    async function handleFileUpload(
+      event: React.ChangeEvent<HTMLInputElement>
+      ) {
+        alert("UPLOAD WORKS");
+        
+        const file = event.target.files?.[0];
+        
+        if (!file) return;
+        
+        const text = await file.text();
+
+        const contents = await Promise.all(
+          file.map(extractText)
+        );
+        
+        alert(contents);
+        
+        setUploadedText(contents);
+      }
+        
+    const selected = Array.from(event.target.files);
       
-    const selected =
-      Array.from(event.target.files);
-       
+    console.log("SELECTED:", selected);
+    
     setFiles(selected);
-       
-    const contents =
-      await Promise.all(
-        selected.map(extractText)
+    
+    console.log("CONTENTS:", contents);
+    
+    const combined = contents.join("\n\n");
+    
+    console.log("COMBINED:", combined);
+    
+    setUploadedText(combined);
+
+    if (initial === null) {
+      return (
+        <CoachLauncher 
+          open={open} 
+          onToggle={() => setOpen(true)}
+        />
       );
-      
-    setUploadedText(
-      contents.join("\n\n")
+    };
+    
+    return (
+      <CoachPanel
+        key="coach"
+        open={open}
+        setOpen={setOpen}
+        initialMessages={initial}
+        input={input}
+        setInput={setInput}
+        textareaRef={textareaRef}
+        premium={premium}
+        onLockedHistory={onLockedHistory}
+        files={files}
+        handleFileUpload={handleFileUpload}
+        uploadedText={uploadedText}
+      />
     );
   }
 
@@ -81,25 +127,12 @@ export function MissionCoach({
   }, []);
 
   if (initial === null) {
-    return <CoachLauncher open={false} onToggle={() => setOpen(true)} hidden={!open} />;
+    <CoachLauncher 
+      open={false} 
+      onToggle={() => setOpen(true)}
+      hidden={!open}
+    />;
   }
-
-  return (
-    <CoachPanel
-      key="coach"
-      open={open}
-      setOpen={setOpen}
-      initialMessages={initial}
-      input={input}
-      setInput={setInput}
-      textareaRef={textareaRef}
-      premium={premium}
-      onLockedHistory={onLockedHistory}
-      files={files}
-      handleFileUpload={handleFileUpload}
-    />
-  );
-}
 
 function CoachLauncher({
   onToggle,
@@ -135,7 +168,9 @@ function CoachPanel({
   onLockedHistory,
   files,
   handleFileUpload,
+  uploadedText,
 }: {
+  uploadedText: string;
   open: boolean;
   setOpen: (v: boolean) => void;
   initialMessages: UIMessage[];
@@ -178,9 +213,20 @@ function CoachPanel({
   function send(text: string) {
     const trimmed = text.trim();
     if (!trimmed || busy) return;
+    
+    console.log("DOCUMENT:");
+    console.log(uploadedText);
+    
     setError(null);
     setInput("");
-    void sendMessage({ text: trimmed });
+    
+    void sendMessage({
+      text: `${trimmed}
+      
+    DOCUMENT CONTENT:
+      
+    ${uploadedText}`,
+    });
   }
 
   return (

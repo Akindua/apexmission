@@ -12,9 +12,15 @@ export const Route = createFileRoute("/api/chat")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const { messages } = (await request.json()) as {
+        const {
+          messages,
+          uploadedText,
+        } = (await request.json()) as {
           messages?: unknown;
+          uploadedText?: string;
         };
+          
+        console.log("SERVER uploadedText:", uploadedText);
 
         if (!Array.isArray(messages)) {
           return new Response("Messages are required", { status: 400 });
@@ -31,10 +37,20 @@ export const Route = createFileRoute("/api/chat")({
           apiKey: key,
         });
 
+        const enhancedPrompt = `
+        ${SYSTEM_PROMPT}
+
+        UPLOADED DOCUMENT CONTENT:
+ 
+        ${uploadedText ?? "None"}
+        `;
+
         const result = streamText({
           model: openai("gpt-6-astra"),
-          system: SYSTEM_PROMPT,
-          messages: await convertToModelMessages(messages as UIMessage[]),
+          system: enhancedPrompt,
+          messages: await convertToModelMessages(
+          messages as UIMessage[],
+          ),
         });
 
         return result.toUIMessageStreamResponse({
