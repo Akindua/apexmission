@@ -60,39 +60,32 @@ export function MissionCoach({
       console.log(uploadedText);
       }, [uploadedText]);
 
-    async function handleFileUpload(
-      event: React.ChangeEvent<HTMLInputElement>
-      ) {
-        alert("UPLOAD WORKS");
-        
-        const file = event.target.files?.[0];
-        
-        if (!file) return;
-        
-        const text = await file.text();
+      useEffect(() => {
+        setInitial(loadMessages());
+      }, []);
 
-        const contents = await Promise.all(
-          file.map(extractText)
+      async function handleFileUpload(
+        event: React.ChangeEvent<HTMLInputElement>
+      ) {
+        const selected = Array.from(
+        event.target.files ?? []
         );
         
-        alert(contents);
+        if (selected.length === 0) return;
         
-        setUploadedText(contents);
+        setFiles(selected);
+        
+        const contents = await Promise.all(
+          selected.map(extractText)
+        );
+        
+        const combined =
+          contents.join("\n\n");
+        
+        console.log("COMBINED:", combined);
+        
+        setUploadedText(combined);
       }
-        
-    const selected = Array.from(event.target.files);
-      
-    console.log("SELECTED:", selected);
-    
-    setFiles(selected);
-    
-    console.log("CONTENTS:", contents);
-    
-    const combined = contents.join("\n\n");
-    
-    console.log("COMBINED:", combined);
-    
-    setUploadedText(combined);
 
     if (initial === null) {
       return (
@@ -120,19 +113,7 @@ export function MissionCoach({
       />
     );
   }
-
-  // Restore this browser's conversation after hydration.
-  useEffect(() => {
-    setInitial(loadMessages());
-  }, []);
-
-  if (initial === null) {
-    <CoachLauncher 
-      open={false} 
-      onToggle={() => setOpen(true)}
-      hidden={!open}
-    />;
-  }
+  
 
 function CoachLauncher({
   onToggle,
