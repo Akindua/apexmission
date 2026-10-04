@@ -64,6 +64,7 @@ export function defaultState(): MissionState {
 export function loadState(): MissionState {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
+    console.log("LOADED RAW:", raw);
     if (!raw) return defaultState();
     const parsed = JSON.parse(raw) as MissionState;
     const state: MissionState = { ...defaultState(), ...parsed, tasks: { ...defaultState().tasks, ...parsed.tasks } };
@@ -89,7 +90,10 @@ export function loadState(): MissionState {
 
 export function saveState(state: MissionState): void {
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(state)
+    );
   } catch {
     // storage unavailable — non-fatal
   }

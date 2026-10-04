@@ -47,10 +47,11 @@ export function useSubscriptionTier(): SubscriptionState {
     setLoading(true);
 
     const read = async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("subscription_tier")
-        .eq("id", userId)
+      const { data: session } = await supabase.auth.getSession();
+
+      const { data, error } = await supabase
+        .from("Profiles")
+        .select("*")
         .maybeSingle();
       if (!active) return;
       setTier(((data?.subscription_tier as SubscriptionTier) ?? "free") satisfies SubscriptionTier);

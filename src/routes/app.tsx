@@ -26,19 +26,25 @@ export const Route = createFileRoute("/app")({
 });
 
 function ApexMission() {
-  const [state, setState] = useState<MissionState>(defaultState);
+  const [state, setState] = useState<MissionState>(() => defaultState());
   const [hydrated, setHydrated] = useState(false);
   const [drafts, setDrafts] = useState<Record<ImpactTier, string>>({ high: "", medium: "", low: "" });
   const [dailyDraft, setDailyDraft] = useState("");
   const [justCompleted, setJustCompleted] = useState(false);
   const [resetMs, setResetMs] = useState<number | null>(null);
   const [paywall, setPaywall] = useState<string | null>(null);
-  const loaded = useRef(false);
-
 
   const navigate = useNavigate();
   const checkout = useServerFn(startCheckout);
-  const { premium, tier } = useSubscriptionTier();
+
+  const BETA_MODE = true;
+
+  const {
+    premium: subscriptionPremium,
+    tier,
+  } = useSubscriptionTier();
+
+  const premium = BETA_MODE || subscriptionPremium;
 
   // Live countdown to the next daily reset (local midnight). Initialized in an
   // effect so SSR and first client render match (no hydration mismatch).
@@ -51,16 +57,19 @@ function ApexMission() {
   // Load persisted state after hydration (avoids SSR mismatch)
   useEffect(() => {
     const s = loadState();
+ 
     setState(s);
     setDailyDraft(s.daily.text);
-    loaded.current = true;
+
     setHydrated(true);
   }, []);
 
   // Persist on change
-  useEffect(() => {
-    if (loaded.current) saveState(state);
-  }, [state]);
+   useEffect(() => {
+    if (!hydrated) return;
+    
+    saveState(state);
+  }, [state, hydrated]);
 
   const { total, done } = useMemo(() => {
     let total = 0;
@@ -196,7 +205,12 @@ function ApexMission() {
           <input
             id="mission"
             value={state.mission}
-            onChange={(e) => setState((s) => ({ ...s, mission: e.target.value }))}
+            onChange={(e) => {
+              setState((s) => ({ 
+                ...s, 
+                mission: e.target.value 
+              }));
+            }}
             placeholder="Lock in your overarching vision…"
             className="mt-3 w-full bg-transparent font-display text-2xl font-bold tracking-tight text-foreground outline-none placeholder:text-muted-foreground/40 sm:text-4xl"
           />
