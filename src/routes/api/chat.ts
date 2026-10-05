@@ -45,6 +45,29 @@ export const Route = createFileRoute("/api/chat")({
         ${uploadedText ?? "None"}
         `;
 
+        const ip =
+          request.headers.get("x-forwarded-for") ??
+          "unknown";
+ 
+        const usageStore =
+          (globalThis as any).aiUsage ?? {};
+ 
+        const count = Number(
+          usageStore[ip] ?? 0
+        );
+
+        if (count >= 20) {
+          return new Response(
+            "Beta AI limit reached.",
+            { status: 429 }
+          );
+        }
+
+        (globalThis as any).aiUsage =
+          usageStore;
+
+        usageStore[ip] = count + 1;
+
         const result = streamText({
           model: openai("gpt-6-astra"),
           system: enhancedPrompt,
