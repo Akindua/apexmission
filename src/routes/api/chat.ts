@@ -8,6 +8,18 @@ Style: concise and practical. Lead with the answer or the next concrete step. Us
 When someone is stuck, break the problem into the smallest possible first action they could do in the next 10 minutes.
 Teach subjects properly when asked — explain clearly with a worked example, then check understanding with one question.`;
 
+const MISSION_PLANNER_PROMPT = `
+You are ApexMission AI Planner.
+
+Given a mission, generate:
+HIGH IMPACT TASKS
+MEDIUM IMPACT TASKS
+LOW IMPACT TASKS
+TODAY'S ONE ACTION
+
+Respond as JSON.
+`;
+
 export const Route = createFileRoute("/api/chat")({
   server: {
     handlers: {
