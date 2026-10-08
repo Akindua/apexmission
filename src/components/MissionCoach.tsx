@@ -64,6 +64,27 @@ export function MissionCoach({
         setInitial(loadMessages());
       }, []);
 
+      async function generateActionPlan() {
+        const response = await fetch(
+          "/api/mission-plan",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              document: uploadedText,
+            }),
+          }
+        );
+        
+        const plan = await response.json();
+        
+        console.log("PLAN:", plan);
+        
+        setDailyDraft(plan.dailyAction);
+      }
+
       async function handleFileUpload(
         event: React.ChangeEvent<HTMLInputElement>
       ) {
@@ -110,6 +131,7 @@ export function MissionCoach({
         files={files}
         handleFileUpload={handleFileUpload}
         uploadedText={uploadedText}
+        generateActionPlan={generateActionPlan}
       />
     );
   }
@@ -150,6 +172,7 @@ function CoachPanel({
   files,
   handleFileUpload,
   uploadedText,
+  generateActionPlan,
 }: {
   uploadedText: string;
   open: boolean;
@@ -166,6 +189,7 @@ function CoachPanel({
   handleFileUpload: (
     event: React.ChangeEvent<HTMLInputElement>
   ) => void;
+  generateActionPlan: () => Promise<void>;
 }) {
   const transport = useMemo(() => new DefaultChatTransport({ api: "/api/chat" }), []);
   const [error, setError] = useState<string | null>(null);
@@ -334,6 +358,14 @@ function CoachPanel({
               </div>
             ))}
           </div>
+        )}
+        {uploadedText && (
+          <button
+            onClick={generateActionPlan}
+            className="mt-3 rounded-lg border px-3 py-2 text-sm"
+          >
+            Generate Action Plan
+          </button>
         )}
         </div>
           <PromptInput

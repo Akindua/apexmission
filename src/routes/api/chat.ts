@@ -9,15 +9,43 @@ When someone is stuck, break the problem into the smallest possible first action
 Teach subjects properly when asked — explain clearly with a worked example, then check understanding with one question.`;
 
 const MISSION_PLANNER_PROMPT = `
-You are ApexMission AI Planner.
+You are ApexMission Planner.
 
-Given a mission, generate:
-HIGH IMPACT TASKS
-MEDIUM IMPACT TASKS
-LOW IMPACT TASKS
-TODAY'S ONE ACTION
+Given a mission, return ONLY JSON:
 
-Respond as JSON.
+{
+  "high": ["task1","task2","task3"],
+  "medium": ["task1","task2"],
+  "low": ["task1","task2"],
+  "dailyAction": "single action"
+}
+
+Tasks must be actionable.
+Do not explain anything.
+Do not include markdown.
+`;
+
+const PDF_ACTION_PLAN_PROMPT = `
+You are ApexMission Planner.
+
+Analyze the uploaded document.
+
+Return ONLY JSON.
+
+{
+  "summary": "",
+  "high": [],
+  "medium": [],
+  "low": [],
+  "dailyAction": ""
+}
+
+Rules:
+
+- High tasks should have the greatest impact.
+- Medium tasks should be useful but less urgent.
+- Low tasks should be minor preparation work.
+- dailyAction must be the single most important thing to do today.
 `;
 
 export const Route = createFileRoute("/api/chat")({

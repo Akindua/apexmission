@@ -20,6 +20,9 @@ import {
   type MissionState,
   type Task,
 } from "@/lib/mission-store";
+import type {
+  MissionPlan,
+  } from "@/lib/mission-planner";
 
 export const Route = createFileRoute("/app")({
     component: ApexMission,
@@ -101,19 +104,51 @@ function ApexMission() {
     setDrafts((d) => ({ ...d, [tier]: "" }));
   }
 
-  function runAiBreakdown() {
+  async function generateActionPlan() {
     if (!premium) {
       setPaywall("AI Mission Breakdown is a premium feature. Upgrade to turn any mission into concrete priorities instantly.");
       return;
     }
-    const generated = aiBreakdown(state.mission);
+    const plan =
+      await generateMissionPlan(
+        state.mission
+      );
+
     setState((s) => ({
       ...s,
+
+      mission:
+        s.mission ||
+        plan.summary,
+
       tasks: {
-        ...s.tasks,
-        high: [...s.tasks.high, ...generated.map((text) => ({ id: nextId(), text, done: false }))],
+        high: plan.high.map((text) => ({
+          id: nextId(),
+          text,
+          done: false,
+        })),
+
+        medium: plan.medium.map((text) => ({
+          id: nextId(),
+          text,
+          done: false,
+        })),
+
+        low: plan.low.map((text) => ({
+          id: nextId(),
+          text,
+          done: false,
+        })),
+      },
+
+      daily: {
+        text: plan.dailyAction,
+        done: false,
+        date: todayKey(),
       },
     }));
+
+    setDailyDraft(plan.dailyAction);
   }
 
   async function handleUpgrade(planId: string) {
@@ -226,7 +261,7 @@ function ApexMission() {
             </span>
             <button
               type="button"
-              onClick={runAiBreakdown}
+              onClick={generateActionPlan}
               className={`group flex h-9 items-center gap-2 rounded-lg border border-input px-3.5 text-xs font-semibold tracking-wide transition-all duration-200 hover:border-impact-medium/60 hover:bg-secondary active:scale-[0.98] ${
                 premium ? "" : "text-muted-foreground"
               }`}

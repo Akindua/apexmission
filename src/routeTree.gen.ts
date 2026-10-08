@@ -20,6 +20,7 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as ApiMissionPlanRouteImport } from './routes/api/mission-plan'
 import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe/webhook'
 
 const IndexRoute = IndexRouteImport.update({
@@ -77,6 +78,11 @@ const ApiChatRoute = ApiChatRouteImport.update({
   path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMissionPlanRoute = ApiMissionPlanRouteImport.update({
+  id: '/api/mission-plan',
+  path: '/api/mission-plan',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
   id: '/api/public/stripe/webhook',
   path: '/api/public/stripe/webhook',
@@ -95,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/verify-email': typeof VerifyEmailRoute
   '/welcome': typeof WelcomeRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/mission-plan': typeof ApiMissionPlanRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
 }
 export interface FileRoutesByTo {
@@ -109,6 +116,7 @@ export interface FileRoutesByTo {
   '/verify-email': typeof VerifyEmailRoute
   '/welcome': typeof WelcomeRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/mission-plan': typeof ApiMissionPlanRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
 }
 export interface FileRoutesById {
@@ -124,6 +132,7 @@ export interface FileRoutesById {
   '/verify-email': typeof VerifyEmailRoute
   '/welcome': typeof WelcomeRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/mission-plan': typeof ApiMissionPlanRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
 }
 export interface FileRouteTypes {
@@ -140,6 +149,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/welcome'
     | '/api/chat'
+    | '/api/mission-plan'
     | '/api/public/stripe/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -154,6 +164,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/welcome'
     | '/api/chat'
+    | '/api/mission-plan'
     | '/api/public/stripe/webhook'
   id:
     | '__root__'
@@ -168,6 +179,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/welcome'
     | '/api/chat'
+    | '/api/mission-plan'
     | '/api/public/stripe/webhook'
   fileRoutesById: FileRoutesById
 }
@@ -183,6 +195,7 @@ export interface RootRouteChildren {
   VerifyEmailRoute: typeof VerifyEmailRoute
   WelcomeRoute: typeof WelcomeRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiMissionPlanRoute: typeof ApiMissionPlanRoute
   ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
 }
 
@@ -265,6 +278,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/mission-plan': {
+      id: '/api/mission-plan'
+      path: '/api/mission-plan'
+      fullPath: '/api/mission-plan'
+      preLoaderRoute: typeof ApiMissionPlanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/stripe/webhook': {
       id: '/api/public/stripe/webhook'
       path: '/api/public/stripe/webhook'
@@ -287,6 +307,7 @@ const rootRouteChildren: RootRouteChildren = {
   VerifyEmailRoute: VerifyEmailRoute,
   WelcomeRoute: WelcomeRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiMissionPlanRoute: ApiMissionPlanRoute,
   ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
 }
 export const routeTree = rootRouteImport
