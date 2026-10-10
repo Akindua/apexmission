@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, Flame, Lock, Plus, Sparkles, Target, TimerReset, X } from "lucide-react";
+import { Check, Flame, Lock, Plus, Sparkles, Loader2, Target, TimerReset, X } from "lucide-react";
 import { PaywallModal } from "@/components/PaywallModal";
 import { MissionCoach } from "@/components/MissionCoach";
 import { useSubscriptionTier } from "@/hooks/useSubscriptionTier";
@@ -23,6 +23,9 @@ import {
 import type {
   MissionPlan,
   } from "@/lib/mission-planner";
+  import {
+    generateMissionPlan,
+  } from "@/lib/mission-planner";
 
 export const Route = createFileRoute("/app")({
     component: ApexMission,
@@ -40,6 +43,21 @@ function ApexMission() {
   const navigate = useNavigate();
   const checkout = useServerFn(startCheckout);
 
+  const [isGeneratingMissionPlan, setIsGeneratingMissionPlan] =
+    useState(false);
+
+  const [hasGeneratedMissionPlan, setHasGeneratedMissionPlan] =
+    useState(false);
+
+  const [missionPlanError, setMissionPlanError] =
+    useState<string | null>(null);
+
+  function handleGoToNightReflection() {
+    navigate({
+      to: "/night-reflection",
+    });
+  }
+
   const BETA_MODE = true;
 
   const {
@@ -48,6 +66,27 @@ function ApexMission() {
   } = useSubscriptionTier();
 
   const premium = BETA_MODE || subscriptionPremium;
+
+  useEffect(() => {
+    if (!hydrated) return;
+
+    const today = todayKey();
+      
+    const lastSeen =
+      localStorage.getItem(
+        "apexmission-morning-checkin"
+      );
+        
+        if (
+          lastSeen !== today &&
+          state.daily.text.trim().length > 0
+        ) {
+          navigate({
+            to: "/daily-briefing",
+          });
+      } 
+  }, [hydrated, navigate, state.daily.text, state.mission]);
+
 
   // Live countdown to the next daily reset (local midnight). Initialized in an
   // effect so SSR and first client render match (no hydration mismatch).
@@ -63,6 +102,10 @@ function ApexMission() {
  
     setState(s);
     setDailyDraft(s.daily.text);
+
+    setHasGeneratedMissionPlan(
+      localStorage.getItem("apexmission-mission-plan-generated") === "true"
+    );
 
     setHydrated(true);
   }, []);
@@ -105,42 +148,42 @@ function ApexMission() {
   }
 
   async function generateActionPlan() {
-    if (!premium) {
-      setPaywall("AI Mission Breakdown is a premium feature. Upgrade to turn any mission into concrete priorities instantly.");
-      return;
-    }
-    const plan =
-      await generateMissionPlan(
-        state.mission
-      );
+  if (!premium) {
+    setPaywall(
+      "AI Mission Breakdown is a premium feature. Upgrade to turn any mission into concrete priorities instantly."
+    );
+    return;
+  }
 
+  // Prevent duplicate requests while generation is running.
+  if (isGeneratingMissionPlan) return;
+
+  setIsGeneratingMissionPlan(true);
+
+  try {
+    const plan = await generateMissionPlan(state.mission);
+
+    // Save the generated plan using the existing dashboard structure.
     setState((s) => ({
       ...s,
-
-      mission:
-        s.mission ||
-        plan.summary,
-
+      mission: plan.mission || s.mission,
       tasks: {
         high: plan.high.map((text) => ({
           id: nextId(),
           text,
           done: false,
         })),
-
         medium: plan.medium.map((text) => ({
           id: nextId(),
           text,
           done: false,
         })),
-
         low: plan.low.map((text) => ({
           id: nextId(),
           text,
           done: false,
         })),
       },
-
       daily: {
         text: plan.dailyAction,
         done: false,
@@ -149,7 +192,26 @@ function ApexMission() {
     }));
 
     setDailyDraft(plan.dailyAction);
+
+    // Remember that a plan has been generated.
+    localStorage.setItem(
+      "apexmission-mission-plan-generated",
+      "true"
+    );
+    localStorage.setItem("apexmission-mission-plan-generated", "true");
+    setHasGeneratedMissionPlan(true);
+  } catch (error) {
+    console.error("Mission plan generation failed:", error);
+
+    setMissionPlanError(
+      error instanceof Error
+        ? error.message
+        : "Couldn't generate your mission plan. Please try again."
+    );
+  } finally {
+    setIsGeneratingMissionPlan(false);
   }
+}
 
   async function handleUpgrade(planId: string) {
     const { data } = await supabase.auth.getSession();
@@ -262,17 +324,34 @@ function ApexMission() {
             <button
               type="button"
               onClick={generateActionPlan}
-              className={`group flex h-9 items-center gap-2 rounded-lg border border-input px-3.5 text-xs font-semibold tracking-wide transition-all duration-200 hover:border-impact-medium/60 hover:bg-secondary active:scale-[0.98] ${
+              disabled={isGeneratingMissionPlan || !hydrated}
+              aria-live="polite"
+              className={`group flex h-9 items-center gap-2 rounded-lg border border-input px-3.5 text-xs font-semibold tracking-wide transition-all duration-200 hover:border-impact-medium/60 hover:bg-secondary active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 ${
                 premium ? "" : "text-muted-foreground"
               }`}
             >
-              {premium ? (
-                <Sparkles className="size-3.5 text-impact-medium transition-transform duration-300 group-hover:rotate-12" />
-              ) : (
+              {isGeneratingMissionPlan ? (
+                <>
+                  <Loader2 className="size-3.5 animate-spin text-impact-medium" />
+                    Generating...
+                  </>
+                  ) : hasGeneratedMissionPlan ? (
+                    <>
+                  <Sparkles className="size-3.5 text-impact-medium" />
+                    Regenerate Mission Plan
+                  </>
+                  ) : premium ? (
+                  <>
+                    <Sparkles className="size-3.5 text-impact-medium transition-transform duration-300 group-hover:rotate-12" />
+                      Generate Mission Plan
+                  </>
+                ) : (
+                <>
                 <Lock className="size-3.5 text-muted-foreground" />
-              )}
-              AI Mission Breakdown
-            </button>
+                  Generate Mission Plan
+                </>
+                    )}
+              </button>
             {premium && (
               <span className="rounded-full border border-success/40 px-2.5 py-1 text-[10px] font-semibold tracking-wider text-success uppercase">
                 {tier === "lifetime" ? "Lifetime" : "Premium"}
@@ -371,6 +450,33 @@ function ApexMission() {
             />
           </div>
 
+          <div className="w-full max-w-md mx-auto p-4 mt-8">
+            <button
+              onClick={handleGoToNightReflection}
+              className="group relative flex w-full items-center justify-between overflow-hidden rounded-xl border border-zinc-800 bg-[#111115] p-4 transition-all duration-300 hover:border-emerald-500/40 hover:shadow-[0_0_20px_rgba(16,185,129,0.1)]"
+            >
+              <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-emerald-500/5 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
+
+              <div className="flex items-center gap-3 relative z-10">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-400 group-hover:border-emerald-500/20 group-hover:bg-emerald-950/30 group-hover:text-emerald-400 transition-colors duration-300">
+                  <span className="text-xl">🌙</span>
+                </div>
+            
+                <div className="text-left">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Day Closeout</p>
+                  <h4 className="text-sm font-bold text-zinc-200 group-hover:text-white">
+                    Win Your Night
+                  </h4>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 text-xs font-medium text-zinc-500 transition-colors group-hover:text-emerald-400 relative z-10">
+                <span>Lock in Progress</span>
+                <span className="transform transition-transform duration-300 group-hover:translate-x-1">→</span>
+              </div>
+            </button>
+          </div>
+
           {/* Streak counter + reset timer */}
           <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-border pt-5">
             <div className={`flex size-9 items-center justify-center rounded-lg bg-secondary ${state.streak.count > 0 ? "animate-streak" : ""}`}>
@@ -411,6 +517,45 @@ function ApexMission() {
             "Your full coach history is a premium feature. Upgrade to keep every conversation with your Mission Coach.",
           )
         }
+        onActionPlanGenerated={(plan) => {
+          console.log("PLAN MISSION:", plan.mission);
+          console.log(plan)
+      
+          setState((s) => ({
+            ...s,
+
+            mission:
+              plan.mission || s.mission,
+
+            tasks: {
+              high: plan.high.map((text: string) => ({
+                id: nextId(),
+                text,
+                done: false,
+              })),
+          
+              medium: plan.medium.map((text: string) => ({
+                id: nextId(),
+                text,
+                done: false,
+              })),
+           
+              low: plan.low.map((text: string) => ({
+                id: nextId(),
+                text,
+                done: false,
+              })),
+            },
+           
+            daily: {
+              text: plan.dailyAction,
+              done: false,
+              date: todayKey(),
+            },
+          }));
+          
+          setDailyDraft(plan.dailyAction);
+        }}
       />
     </div>
 

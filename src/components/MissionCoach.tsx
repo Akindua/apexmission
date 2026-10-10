@@ -44,9 +44,11 @@ function loadMessages(): UIMessage[] {
 export function MissionCoach({
   premium = false,
   onLockedHistory,
+  onActionPlanGenerated,
 }: {
   premium?: boolean;
   onLockedHistory?: () => void;
+  onActionPlanGenerated?: (plan: any) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [initial, setInitial] = useState<UIMessage[] | null>(null);
@@ -55,9 +57,14 @@ export function MissionCoach({
   const [files, setFiles] = useState<File[]>([]);
   const [uploadedText, setUploadedText] =
     useState("");
+  const [generatingPlan, setGeneratingPlan] =
+    useState(false);
+  const [planGenerated, setPlanGenerated] =
+    useState(false);
     useEffect(() => {
       console.log("Uploaded Text:");
       console.log(uploadedText);
+      setPlanGenerated(false);
       }, [uploadedText]);
 
       useEffect(() => {
@@ -65,25 +72,44 @@ export function MissionCoach({
       }, []);
 
       async function generateActionPlan() {
-        const response = await fetch(
-          "/api/mission-plan",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              document: uploadedText,
-            }),
+        if (!uploadedText) return;
+        
+        setGeneratingPlan(true);
+        
+        try {
+          const response = await fetch(
+            "/api/mission-plan",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                document: uploadedText,
+              }),
+            }
+          );
+        
+          if (!response.ok) {
+            throw new Error(
+              `Mission Planner failed: ${response.status}`
+            );
           }
-        );
         
-        const plan = await response.json();
-        
-        console.log("PLAN:", plan);
-        
-        setDailyDraft(plan.dailyAction);
-      }
+          const plan = await response.json();
+          
+          console.log("PLAN:", plan);
+          
+          onActionPlanGenerated?.(plan);
+          
+          setPlanGenerated(true);
+          
+          } catch (error) {
+            console.error(error);
+          } finally {
+            setGeneratingPlan(false);
+          }
+        }
 
       async function handleFileUpload(
         event: React.ChangeEvent<HTMLInputElement>
@@ -95,6 +121,8 @@ export function MissionCoach({
         if (selected.length === 0) return;
         
         setFiles(selected);
+
+        setPlanGenerated(false);
         
         const contents = await Promise.all(
           selected.map(extractText)
@@ -105,6 +133,9 @@ export function MissionCoach({
         
         console.log("COMBINED:", combined);
         
+        // #region agent log
+        fetch('http://127.0.0.1:7678/ingest/579042e6-c02b-4f8a-9ee7-63d6d222301a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6a0f5c'},body:JSON.stringify({sessionId:'6a0f5c',runId:'pre-fix',hypothesisId:'E',location:'MissionCoach.tsx:handleFileUpload',message:'file text extracted',data:{fileCount:selected.length,combinedLen:combined.length},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
         setUploadedText(combined);
       }
 
@@ -132,6 +163,9 @@ export function MissionCoach({
         handleFileUpload={handleFileUpload}
         uploadedText={uploadedText}
         generateActionPlan={generateActionPlan}
+        generatingPlan={generatingPlan}
+        setGeneratingPlan={setGeneratingPlan}
+        planGenerated={planGenerated}
       />
     );
   }
@@ -173,6 +207,9 @@ function CoachPanel({
   handleFileUpload,
   uploadedText,
   generateActionPlan,
+  generatingPlan,
+  setGeneratingPlan,
+  planGenerated,
 }: {
   uploadedText: string;
   open: boolean;
@@ -190,6 +227,8 @@ function CoachPanel({
     event: React.ChangeEvent<HTMLInputElement>
   ) => void;
   generateActionPlan: () => Promise<void>;
+  generatingPlan: boolean;
+  planGenerated: boolean;
 }) {
   const transport = useMemo(() => new DefaultChatTransport({ api: "/api/chat" }), []);
   const [error, setError] = useState<string | null>(null);
@@ -360,13 +399,20 @@ function CoachPanel({
           </div>
         )}
         {uploadedText && (
+          <>
           <button
             onClick={generateActionPlan}
-            className="mt-3 rounded-lg border px-3 py-2 text-sm"
+            disabled={generatingPlan}
+            className="mt-3 rounded-lg border px-3 py-2 text-smdisabled:opacity-50"
           >
-            Generate Action Plan
+            {generatingPlan
+              ? "Generating..."
+              : planGenerated
+                ? "🔄 Regenerate Action Plan"
+                : "⚡ Generate Action Plan"}
           </button>
-        )}
+          </>
+          )}
         </div>
           <PromptInput
             onSubmit={(_message, event) => {

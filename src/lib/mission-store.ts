@@ -11,6 +11,12 @@ export interface MissionState {
   tasks: Record<ImpactTier, Task[]>;
   daily: { text: string; done: boolean; date: string };
   streak: { count: number; lastCompletedDate: string | null };
+  reflection: {
+    wins: string;
+    blockers: string;
+    tomorrowAction: string;
+    };
+  lastMorningBriefingDate: string | null;
   premium: boolean;
 }
 
@@ -55,6 +61,12 @@ export function defaultState(): MissionState {
     tasks: { high: [], medium: [], low: [] },
     daily: { text: "", done: false, date: todayKey() },
     streak: { count: 0, lastCompletedDate: null },
+    reflection: {
+      wins: "",
+      blockers: "",
+      tomorrowAction: "",
+    },
+    lastMorningBriefingDate: null,
     premium: false,
 
   };

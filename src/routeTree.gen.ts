@@ -13,7 +13,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BillingRouteImport } from './routes/billing'
-import { Route as LoadingRouteImport } from './routes/loading'
+import { Route as DailyBriefingRouteImport } from './routes/daily-briefing'
+import { Route as NightReflectionRouteImport } from './routes/night-reflection'
 import { Route as PlansRouteImport } from './routes/plans'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as SignupRouteImport } from './routes/signup'
@@ -21,6 +22,7 @@ import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiMissionPlanRouteImport } from './routes/api/mission-plan'
+import { Route as ApiPdfPlanRouteImport } from './routes/api/pdf-plan'
 import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe/webhook'
 
 const IndexRoute = IndexRouteImport.update({
@@ -43,9 +45,14 @@ const BillingRoute = BillingRouteImport.update({
   path: '/billing',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LoadingRoute = LoadingRouteImport.update({
-  id: '/loading',
-  path: '/loading',
+const DailyBriefingRoute = DailyBriefingRouteImport.update({
+  id: '/daily-briefing',
+  path: '/daily-briefing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NightReflectionRoute = NightReflectionRouteImport.update({
+  id: '/night-reflection',
+  path: '/night-reflection',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PlansRoute = PlansRouteImport.update({
@@ -83,6 +90,11 @@ const ApiMissionPlanRoute = ApiMissionPlanRouteImport.update({
   path: '/api/mission-plan',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPdfPlanRoute = ApiPdfPlanRouteImport.update({
+  id: '/api/pdf-plan',
+  path: '/api/pdf-plan',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
   id: '/api/public/stripe/webhook',
   path: '/api/public/stripe/webhook',
@@ -94,7 +106,8 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRoute
   '/auth': typeof AuthRoute
   '/billing': typeof BillingRoute
-  '/loading': typeof LoadingRoute
+  '/daily-briefing': typeof DailyBriefingRoute
+  '/night-reflection': typeof NightReflectionRoute
   '/plans': typeof PlansRoute
   '/pricing': typeof PricingRoute
   '/signup': typeof SignupRoute
@@ -102,6 +115,7 @@ export interface FileRoutesByFullPath {
   '/welcome': typeof WelcomeRoute
   '/api/chat': typeof ApiChatRoute
   '/api/mission-plan': typeof ApiMissionPlanRoute
+  '/api/pdf-plan': typeof ApiPdfPlanRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
 }
 export interface FileRoutesByTo {
@@ -109,7 +123,8 @@ export interface FileRoutesByTo {
   '/app': typeof AppRoute
   '/auth': typeof AuthRoute
   '/billing': typeof BillingRoute
-  '/loading': typeof LoadingRoute
+  '/daily-briefing': typeof DailyBriefingRoute
+  '/night-reflection': typeof NightReflectionRoute
   '/plans': typeof PlansRoute
   '/pricing': typeof PricingRoute
   '/signup': typeof SignupRoute
@@ -117,6 +132,7 @@ export interface FileRoutesByTo {
   '/welcome': typeof WelcomeRoute
   '/api/chat': typeof ApiChatRoute
   '/api/mission-plan': typeof ApiMissionPlanRoute
+  '/api/pdf-plan': typeof ApiPdfPlanRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
 }
 export interface FileRoutesById {
@@ -125,7 +141,8 @@ export interface FileRoutesById {
   '/app': typeof AppRoute
   '/auth': typeof AuthRoute
   '/billing': typeof BillingRoute
-  '/loading': typeof LoadingRoute
+  '/daily-briefing': typeof DailyBriefingRoute
+  '/night-reflection': typeof NightReflectionRoute
   '/plans': typeof PlansRoute
   '/pricing': typeof PricingRoute
   '/signup': typeof SignupRoute
@@ -133,6 +150,7 @@ export interface FileRoutesById {
   '/welcome': typeof WelcomeRoute
   '/api/chat': typeof ApiChatRoute
   '/api/mission-plan': typeof ApiMissionPlanRoute
+  '/api/pdf-plan': typeof ApiPdfPlanRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
 }
 export interface FileRouteTypes {
@@ -142,7 +160,8 @@ export interface FileRouteTypes {
     | '/app'
     | '/auth'
     | '/billing'
-    | '/loading'
+    | '/daily-briefing'
+    | '/night-reflection'
     | '/plans'
     | '/pricing'
     | '/signup'
@@ -150,6 +169,7 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/api/chat'
     | '/api/mission-plan'
+    | '/api/pdf-plan'
     | '/api/public/stripe/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -157,7 +177,8 @@ export interface FileRouteTypes {
     | '/app'
     | '/auth'
     | '/billing'
-    | '/loading'
+    | '/daily-briefing'
+    | '/night-reflection'
     | '/plans'
     | '/pricing'
     | '/signup'
@@ -165,6 +186,7 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/api/chat'
     | '/api/mission-plan'
+    | '/api/pdf-plan'
     | '/api/public/stripe/webhook'
   id:
     | '__root__'
@@ -172,7 +194,8 @@ export interface FileRouteTypes {
     | '/app'
     | '/auth'
     | '/billing'
-    | '/loading'
+    | '/daily-briefing'
+    | '/night-reflection'
     | '/plans'
     | '/pricing'
     | '/signup'
@@ -180,6 +203,7 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/api/chat'
     | '/api/mission-plan'
+    | '/api/pdf-plan'
     | '/api/public/stripe/webhook'
   fileRoutesById: FileRoutesById
 }
@@ -188,7 +212,8 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRoute
   AuthRoute: typeof AuthRoute
   BillingRoute: typeof BillingRoute
-  LoadingRoute: typeof LoadingRoute
+  DailyBriefingRoute: typeof DailyBriefingRoute
+  NightReflectionRoute: typeof NightReflectionRoute
   PlansRoute: typeof PlansRoute
   PricingRoute: typeof PricingRoute
   SignupRoute: typeof SignupRoute
@@ -196,6 +221,7 @@ export interface RootRouteChildren {
   WelcomeRoute: typeof WelcomeRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiMissionPlanRoute: typeof ApiMissionPlanRoute
+  ApiPdfPlanRoute: typeof ApiPdfPlanRoute
   ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
 }
 
@@ -229,11 +255,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BillingRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/loading': {
-      id: '/loading'
-      path: '/loading'
-      fullPath: '/loading'
-      preLoaderRoute: typeof LoadingRouteImport
+    '/daily-briefing': {
+      id: '/daily-briefing'
+      path: '/daily-briefing'
+      fullPath: '/daily-briefing'
+      preLoaderRoute: typeof DailyBriefingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/night-reflection': {
+      id: '/night-reflection'
+      path: '/night-reflection'
+      fullPath: '/night-reflection'
+      preLoaderRoute: typeof NightReflectionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/plans': {
@@ -285,6 +318,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMissionPlanRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/pdf-plan': {
+      id: '/api/pdf-plan'
+      path: '/api/pdf-plan'
+      fullPath: '/api/pdf-plan'
+      preLoaderRoute: typeof ApiPdfPlanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/stripe/webhook': {
       id: '/api/public/stripe/webhook'
       path: '/api/public/stripe/webhook'
@@ -300,7 +340,8 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRoute,
   AuthRoute: AuthRoute,
   BillingRoute: BillingRoute,
-  LoadingRoute: LoadingRoute,
+  DailyBriefingRoute: DailyBriefingRoute,
+  NightReflectionRoute: NightReflectionRoute,
   PlansRoute: PlansRoute,
   PricingRoute: PricingRoute,
   SignupRoute: SignupRoute,
@@ -308,6 +349,7 @@ const rootRouteChildren: RootRouteChildren = {
   WelcomeRoute: WelcomeRoute,
   ApiChatRoute: ApiChatRoute,
   ApiMissionPlanRoute: ApiMissionPlanRoute,
+  ApiPdfPlanRoute: ApiPdfPlanRoute,
   ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
 }
 export const routeTree = rootRouteImport

@@ -1,5 +1,6 @@
 
 export interface MissionPlan {
+        mission: string;
         high: string[];
         medium: string[];
         low: string[];
