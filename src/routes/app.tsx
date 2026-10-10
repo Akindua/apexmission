@@ -54,7 +54,7 @@ function ApexMission() {
 
   const [isEvening, setIsEvening] = useState(() => {
     const currentHour = new Date().getHours();
-    return currentHour >= 19 && currentHour < 24; // Returns true if it is 7:00 PM (19:00) or later
+    return currentHour >= 18 && currentHour < 1; // Returns true if it is 7:00 PM (19:00) or later
   });
 
   const BETA_MODE = true;
@@ -65,6 +65,16 @@ function ApexMission() {
   } = useSubscriptionTier();
 
   const premium = BETA_MODE || subscriptionPremium;
+
+  const getOrdinalSuffix = (day: number) => {
+    if (day > 3 && day < 21) return 'th';
+    switch (day % 10) {
+      case 1:  return "st";
+      case 2:  return "nd";
+      case 3:  return "rd";
+      default: return "th";
+    }
+  };
 
   useEffect(() => {
     if (!hydrated) return;
@@ -90,7 +100,7 @@ function ApexMission() {
     // Check the system time every 60 seconds to toggle the button automatically
     const timer = setInterval(() => {
       const currentHour = new Date().getHours();
-      setIsEvening(currentHour >= 19 && currentHour < 24);
+      setIsEvening(currentHour >= 18 && currentHour < 1);
     }, 60000);
 
     return () => clearInterval(timer);
@@ -102,6 +112,38 @@ function ApexMission() {
     });
   }
 
+  const [greetingText, setGreetingText] = useState(() => {
+    const now = new Date();
+    
+    // 1. Format the month abbreviate string (e.g., "Oct.")
+    const month = now.toLocaleDateString('en-US', { month: 'short' });
+    
+    // 2. Calculate the calendar day value and append its suffix
+    const dayNum = now.getDate();
+    const suffix = getOrdinalSuffix(dayNum);
+    
+    // 3. Extract the calendar year string
+    const year = now.getFullYear();
+    
+    // 4. Assemble the master date layout baseline template
+    return `${month}. ${dayNum}${suffix} ${year}`;
+  });
+
+  // Extract the user's first name out of your active Supabase profile email data stream
+  const [userName, setUserName] = useState("User");
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Fallback to extraction from metadata name, or slice their profile handle email prefix
+        const displayName = user.user_metadata?.full_name || user.email?.split('@')[0] || "User";
+        // Capitalize the first letter for a clean premium UI appearance
+        setUserName(displayName.charAt(0).toUpperCase() + displayName.slice(1));
+      }
+    };
+    fetchUserProfile();
+  }, []);
 
   // Live countdown to the next daily reset (local midnight). Initialized in an
   // effect so SSR and first client render match (no hydration mismatch).
