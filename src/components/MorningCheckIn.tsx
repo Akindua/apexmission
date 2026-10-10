@@ -34,7 +34,17 @@ function DailyBriefingPage() {
 
   const [userName, setUserName] = useState("User");
 
+  // --- STRICT MORNING WINDOW RE-ROUTE GUARDRAIL ---
   useEffect(() => {
+    const currentHour = new Date().getHours();
+    // If the local system clock is outside of 5:00 AM to 11:59 AM, auto-forward to the main workspace workspace
+    const isMorningWindow = currentHour >= 5 && currentHour < 12;
+    
+    if (!isMorningWindow) {
+      navigate({ to: "/app" });
+      return;
+    }
+
     const fetchUserProfile = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -43,7 +53,7 @@ function DailyBriefingPage() {
       }
     };
     fetchUserProfile();
-  }, []);
+  }, [navigate]);
 
   function handleBeginMission() {
     setIsFadingOut(true);
@@ -133,7 +143,7 @@ function DailyBriefingPage() {
           
           <button
             onClick={handleBeginMission}
-            className="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-400 group-hover:border-emerald-500/20 group-hover:bg-emerald-950/30 group-hover:text-emerald-400 transition-colors duration-300"
+            className="transform w-full max-w-xs rounded-xl bg-white py-4 font-bold text-black transition-all duration-300 ease-out hover:scale-105 hover:bg-emerald-400 hover:text-black hover:shadow-[0_0_30px_rgba(52,211,153,0.5)] active:scale-95 shadow-xl shadow-white/5"
           >
             Begin Today's Mission →
           </button>
