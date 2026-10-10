@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { loadState, todayKey } from "@/lib/mission-store";
-import { Clock, CheckSquare, Square, Flame, Target } from "lucide-react";
+import { Clock, CheckSquare, Square, Target } from "lucide-react";
 
 export const Route = createFileRoute("/daily-briefing")({
   component: DailyBriefingPage,
@@ -100,9 +100,7 @@ function DailyBriefingPage() {
     setIsFadingOut(true);
     localStorage.setItem("apexmission-morning-checkin", todayKey());
     setTimeout(() => {
-      navigate({
-        to: "/app",
-      });
+      navigate({ to: "/app" });
     }, 500);
   }
 
@@ -113,45 +111,41 @@ function DailyBriefingPage() {
       }`}
     >
       <div className="w-full max-w-2xl">
-        {/* Clean, Non-Transparent Header Container */}
         <div className="mb-6 flex flex-col items-center justify-center text-center">
           <img
             src="/icon-192.png"
             alt="ApexMission"
-            className="h-24 w-24 object-contain mb-4"
+            className="h-20 w-20 object-contain mb-4"
           />
           
-          {/* Solid Neon Emerald Date Tag */}
           <p className="text-xs font-black uppercase tracking-widest text-emerald-400 mb-2">
             {greetingText}
           </p>
           
-          {/* Solid White Greeting Typography Header */}
           <h1 className="text-4xl font-black tracking-tight text-white md:text-5xl">
-            ☀️ Good Morning {userName}!
+            ☀️ Good Morning, {userName}.
           </h1>
-          <p className="mt-2 text-sm text-zinc-500 font-medium">
+          <p className="mt-2 text-xs text-zinc-500 font-medium uppercase tracking-wider">
             Win your morning. Win your day. Win your night.
           </p>
         </div>
 
-        {/* ⏱️ AUTOMATIC LIVE TIMER COUNTDOWN TICKER BANNER */}
-        <div className="mb-6 rounded-xl border border-amber-500/20 bg-amber-950/10 p-3.5 flex items-center justify-between text-left">
+        {/* ⏱️ UPDATED EMERALD NEON TIMER BANNER */}
+        <div className="mb-6 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3.5 flex items-center justify-between text-left">
           <div className="flex items-center gap-2.5">
-            <Clock className="h-4 w-4 text-amber-500 animate-pulse" />
+            <Clock className="h-4 w-4 text-emerald-400 animate-pulse" />
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-amber-500">Lock-in Window Closing</p>
-              <p className="text-xs text-zinc-400 mt-0.5">Complete your morning briefing routine before noon cutoff.</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Lock-in Window Closing</p>
+              <p className="text-xs text-zinc-500 mt-0.5">Complete your morning briefing routine before noon cutoff.</p>
             </div>
           </div>
           <div className="text-right">
-            <span className="font-mono text-sm font-black text-amber-400 tabular-nums bg-black px-3 py-1 rounded-md border border-amber-500/10">
+            <span className="font-mono text-sm font-black text-emerald-400 tabular-nums bg-black px-3 py-1 rounded-md border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
               {countdownStr || "00h 00m 00s"}
             </span>
           </div>
         </div>
 
-        {/* Core Dashboard Content Panel Container */}
         <div className="rounded-2xl border border-zinc-800 bg-[#0D0D11] p-8 shadow-2xl space-y-8">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-500 flex items-center gap-1.5">
@@ -164,18 +158,17 @@ function DailyBriefingPage() {
 
           <div className="border-t border-zinc-900 pt-6">
             <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
-              Mission
+              Your Ultimate Mission
             </p>
             <p className="mt-2 text-base text-zinc-300 font-medium leading-relaxed">
               {state.mission}
             </p>
           </div>
 
-          {/* 🧘 MORNING ROUTINE CHECKLIST TRACKER BLOCK */}
           <div className="border-t border-zinc-900 pt-6">
             <div className="flex items-center justify-between mb-4">
               <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Morning Routine Checklist</p>
-              <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-950/20 px-2 py-0.5 rounded border border-emerald-500/10">
+              <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-950/20 px-2 py-0.5 rounded border border-emerald-500/20">
                 {completedCount} / 3 Sealed
               </span>
             </div>
@@ -187,7 +180,7 @@ function DailyBriefingPage() {
                 onClick={() => toggleCheck("hydration")}
                 className={`flex items-center gap-3 rounded-xl border p-3.5 text-left transition-all duration-300 ${
                   checklist.hydration 
-                    ? "border-emerald-500/30 bg-emerald-950/10 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.02)]" 
+                    ? "border-emerald-500/40 bg-emerald-950/20 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.05)]" 
                     : "border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-700"
                 }`}
               >
@@ -204,7 +197,7 @@ function DailyBriefingPage() {
                 onClick={() => toggleCheck("meditation")}
                 className={`flex items-center gap-3 rounded-xl border p-3.5 text-left transition-all duration-300 ${
                   checklist.meditation 
-                    ? "border-emerald-500/30 bg-emerald-950/10 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.02)]" 
+                    ? "border-emerald-500/40 bg-emerald-950/20 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.05)]" 
                     : "border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-700"
                 }`}
               >
@@ -221,7 +214,7 @@ function DailyBriefingPage() {
                 onClick={() => toggleCheck("workout")}
                 className={`flex items-center gap-3 rounded-xl border p-3.5 text-left transition-all duration-300 ${
                   checklist.workout 
-                    ? "border-emerald-500/30 bg-emerald-950/10 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.02)]" 
+                    ? "border-emerald-500/40 bg-emerald-950/20 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.05)]" 
                     : "border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-700"
                 }`}
               >
@@ -234,14 +227,14 @@ function DailyBriefingPage() {
             </div>
           </div>
 
-          {/* Metric Scopes Footer Area */}
           <div className="mt-6 flex items-center justify-between border-t border-zinc-900 pt-6">
             <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Progress Scope</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Progress Scope</p>
               <p className="text-sm font-semibold text-zinc-300 mt-1">4 High Impact Tasks</p>
             </div>
             <div className="text-right">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Streak Status</p>
+
+            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Streak Status</p>
               <p className="text-sm font-semibold text-zinc-300 mt-1">🔥 0 Day Streak</p>
             </div>
           </div>
@@ -256,16 +249,16 @@ function DailyBriefingPage() {
           )}
         </div>
 
-        {/* Enhanced Glowing Call To Action Launch Trigger Row */}
+        {/* Enhanced Call To Action Launch Trigger Row */}
         <div className="mt-8 flex flex-col items-center justify-center text-center gap-4">
           <p className="text-xs text-zinc-500 italic max-w-sm">
-            Lock in your morning checklist routines, lock down your targets, and force absolute daily execution.
+            Lock down your targets, seal your routines, and force absolute execution.
           </p>
           
           <button
             type="button"
             onClick={handleBeginMission}
-            className="transform w-full max-w-xs rounded-xl bg-white py-4 font-bold text-black transition-all duration-300 ease-out hover:scale-105 hover:bg-emerald-400 hover:text-black hover:shadow-[0_0_30px_rgba(52,211,153,0.5)] active:scale-95 shadow-xl shadow-white/5"
+            className="transform w-full max-w-xs rounded-xl bg-white py-4 text-sm font-bold text-black transition-all duration-300 ease-out hover:scale-105 hover:bg-emerald-400 hover:text-black hover:shadow-[0_0_30px_rgba(52,211,153,0.5)] active:scale-95 shadow-xl shadow-white/5"
           >
             Begin Today's Mission →
           </button>
