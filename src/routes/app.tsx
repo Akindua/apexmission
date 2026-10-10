@@ -52,11 +52,10 @@ function ApexMission() {
   const [missionPlanError, setMissionPlanError] =
     useState<string | null>(null);
 
-  function handleGoToNightReflection() {
-    navigate({
-      to: "/night-reflection",
-    });
-  }
+  const [isEvening, setIsEvening] = useState(() => {
+    const currentHour = new Date().getHours();
+    return currentHour >= 19 && currentHour < 24; // Returns true if it is 7:00 PM (19:00) or later
+  });
 
   const BETA_MODE = true;
 
@@ -86,6 +85,22 @@ function ApexMission() {
           });
       } 
   }, [hydrated, navigate, state.daily.text, state.mission]);
+
+  useEffect(() => {
+    // Check the system time every 60 seconds to toggle the button automatically
+    const timer = setInterval(() => {
+      const currentHour = new Date().getHours();
+      setIsEvening(currentHour >= 19 && currentHour < 24);
+    }, 60000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  function handleGoToNightReflection() {
+    navigate({
+      to: "/night-reflection",
+    });
+  }
 
 
   // Live countdown to the next daily reset (local midnight). Initialized in an
@@ -449,33 +464,34 @@ function ApexMission() {
               }`}
             />
           </div>
+          {isEvening && (
+            <div className="w-full max-w-md mx-auto p-4 mt-8">
+              <button
+                onClick={handleGoToNightReflection}
+                className="group relative flex w-full items-center justify-between overflow-hidden rounded-xl border border-zinc-800 bg-[#111115] p-4 transition-all duration-300 hover:border-emerald-500/40 hover:shadow-[0_0_20px_rgba(16,185,129,0.1)]"
+              >
+                <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-emerald-500/5 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
 
-          <div className="w-full max-w-md mx-auto p-4 mt-8">
-            <button
-              onClick={handleGoToNightReflection}
-              className="group relative flex w-full items-center justify-between overflow-hidden rounded-xl border border-zinc-800 bg-[#111115] p-4 transition-all duration-300 hover:border-emerald-500/40 hover:shadow-[0_0_20px_rgba(16,185,129,0.1)]"
-            >
-              <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-emerald-500/5 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
-
-              <div className="flex items-center gap-3 relative z-10">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-400 group-hover:border-emerald-500/20 group-hover:bg-emerald-950/30 group-hover:text-emerald-400 transition-colors duration-300">
-                  <span className="text-xl">🌙</span>
-                </div>
+                <div className="flex items-center gap-3 relative z-10">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-400 group-hover:border-emerald-500/20 group-hover:bg-emerald-950/30 group-hover:text-emerald-400 transition-colors duration-300">
+                    <span className="text-xl">🌙</span>
+                  </div>
             
-                <div className="text-left">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Day Closeout</p>
-                  <h4 className="text-sm font-bold text-zinc-200 group-hover:text-white">
-                    Win Your Night
-                  </h4>
+                  <div className="text-left">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Day Closeout</p>
+                    <h4 className="text-sm font-bold text-zinc-200 group-hover:text-white">
+                      Win Your Night
+                    </h4>
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex items-center gap-2 text-xs font-medium text-zinc-500 transition-colors group-hover:text-emerald-400 relative z-10">
-                <span>Lock in Progress</span>
-                <span className="transform transition-transform duration-300 group-hover:translate-x-1">→</span>
-              </div>
-            </button>
-          </div>
+                <div className="flex items-center gap-2 text-xs font-medium text-zinc-500 transition-colors group-hover:text-emerald-400 relative z-10">
+                  <span>Lock in Progress</span>
+                  <span className="transform transition-transform duration-300 group-hover:translate-x-1">→</span>
+                </div>
+              </button>
+            </div>
+          )}
 
           {/* Streak counter + reset timer */}
           <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-border pt-5">
