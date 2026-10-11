@@ -33,7 +33,7 @@ function SignupPage() {
 
       if (error) throw error;
       
-      navigate({ to: "/verify-email" });
+      navigate({ to: "/verify-email", search: { email } });
     } catch (err) {
       console.error("Signup failed:", err);
     } finally {

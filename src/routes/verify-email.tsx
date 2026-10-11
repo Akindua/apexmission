@@ -87,7 +87,7 @@ function VerifyEmailPage() {
                     
                     {/* Primary High-Urgency Action Button */}
                     <button
-                        onClick={() => navigate({ to: "/auth" })}
+                        onClick={() => navigate({ to: "/plans" })}
                         className="transform w-full rounded-xl bg-white py-3.5 text-sm font-bold text-black transition-all duration-300 ease-out hover:scale-102 hover:bg-emerald-400 hover:text-black hover:shadow-[0_0_25px_rgba(52,211,153,0.4)] active:scale-98 shadow-xl shadow-white/5"
                     >
                         I've Verified My Email →

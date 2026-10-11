@@ -1,7 +1,7 @@
 import { useChat } from "@ai-sdk/react";
 import { extractText } from "@/lib/document-parser";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { Lock, MessageCircle, X, Paperclip, Sparkles, Loader2 } from "lucide-react";
+import { Lock, MessageCircle, X, Paperclip, Sparkles, Loader2, ShieldAlert } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
@@ -13,7 +13,10 @@ import { Message, MessageContent, MessageResponse } from "@/components/ai-elemen
 import { Shimmer } from "@/components/ai-elements/shimmer";
 
 const STORAGE_KEY = "mission-coach-chat-v1";
+const LIMIT_KEY = "apexmission-coach-daily-tokens";
 const FREE_HISTORY_LIMIT = 6;
+// ⚡ HARD RATE LIMIT CAP: Restricts total server transmissions to protect your $4.50 credit pool
+const MAX_DAILY_MESSAGES = 10;
 
 const QUICK_STARTS = [
   { label: "📚 Help me study", prompt: "Help me study — I need a plan for the subject I'm struggling with." },
@@ -162,6 +165,22 @@ function CoachPanel({
 }) {
   const transport = useMemo(() => new DefaultChatTransport({ api: "/api/chat" }), []);
   const [error, setError] = useState<string | null>(null);
+
+  // --- 🔒 LOCAL BUDGETING TRACKER ENGINE ---
+  const [usageCount, setUsageCount] = useState(() => {
+    try {
+      const today = new Date().toDateString();
+      const raw = localStorage.getItem(LIMIT_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.date === today) return Number(parsed.count || 0);
+      }
+    } catch {}
+    return 0;
+  });
+
+  const isRateLimited = usageCount >= MAX_DAILY_MESSAGES;
+
   const { messages, sendMessage, status } = useChat({
     id: "mission-coach",
     messages: initialMessages,
@@ -183,9 +202,20 @@ function CoachPanel({
 
   function send(text: string) {
     const trimmed = text.trim();
-    if (!trimmed || busy) return;
+    if (!trimmed || busy || isRateLimited) return;
     setError(null);
     setInput("");
+
+    // Calculate, save, and increment local text usage blocks
+    const nextCount = usageCount + 1;
+    setUsageCount(nextCount);
+    try {
+      localStorage.setItem(LIMIT_KEY, JSON.stringify({
+        date: new Date().toDateString(),
+        count: nextCount
+      }));
+    } catch {}
+
     void sendMessage({
       text: uploadedText.trim() 
         ? `${trimmed}\n\nDOCUMENT CONTENT:\n\n${uploadedText}`
@@ -229,7 +259,7 @@ function CoachPanel({
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="ml-auto rounded-xl border border-zinc-900 bg-zinc-950 p-2 text-zinc-500 transition-colors hover:border-zinc-800 hover:text-white"
+            className="ml-auto rounded-xl border border-zinc-800 bg-zinc-950 p-2 text-zinc-500 transition-colors hover:border-zinc-800 hover:text-white"
           >
             <X className="size-4" />
           </button>
@@ -241,9 +271,9 @@ function CoachPanel({
             <button
               key={chip.label}
               type="button"
-              disabled={busy}
+              disabled={busy || isRateLimited}
               onClick={() => send(chip.prompt)}
-              className="rounded-xl border border-zinc-800 bg-zinc-950/40 px-3 py-1.5 text-xs font-semibold text-zinc-300 transition-all duration-200 hover:border-zinc-700 hover:bg-zinc-900 hover:text-white active:scale-95 disabled:opacity-50"
+              className="rounded-xl border border-zinc-800 bg-zinc-950/40 px-3 py-1.5 text-xs font-semibold text-zinc-300 transition-all duration-200 hover:border-zinc-700 hover:bg-zinc-900 hover:text-white active:scale-95 disabled:opacity-30"
             >
               {chip.label}
             </button>
@@ -259,6 +289,7 @@ function CoachPanel({
               </div>
             )}
             
+            {/* 🔒 DAILY BUDGETING HISTORY SYNC */}
             {!premium && messages.length > FREE_HISTORY_LIMIT && (
               <button
                 type="button"
@@ -270,6 +301,7 @@ function CoachPanel({
               </button>
             )}
 
+            {/* MESSAGE RENDERING ENGINE */}
             {messages.map((message, index) => {
               const text = message.parts.map((part) => (part.type === "text" ? part.text : "")).join("");
               if (!text) return null;
@@ -285,6 +317,7 @@ function CoachPanel({
                 </div>
               );
             })}
+            
             {status === "submitted" && (
               <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 p-2 text-left animate-pulse">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" /> Thinking...
@@ -295,7 +328,7 @@ function CoachPanel({
           <ConversationScrollButton />
         </Conversation>
 
-        {/* Tactical Input Dock Area */}
+        {/* Input Control Terminal */}
         <div className="border-t border-zinc-900 p-4 bg-black/20">
           <div className="flex flex-col gap-3 mb-4">
             <input
@@ -305,8 +338,10 @@ function CoachPanel({
               onChange={handleFileUpload}
               className="hidden"
               id="coach-upload"
+              disabled={isRateLimited}
             />
-            <div className="flex items-center gap-3">
+            
+            <div className="flex items-center justify-between gap-2">
               <label
                 htmlFor="coach-upload"
                 className="flex items-center gap-1.5 cursor-pointer rounded-xl border border-zinc-800 bg-zinc-950/60 px-3.5 py-2 text-xs font-bold text-zinc-400 transition-colors hover:border-zinc-700 hover:text-white"
@@ -314,27 +349,15 @@ function CoachPanel({
                 <Paperclip className="h-3.5 w-3.5" /> Attach Context
               </label>
 
-              {uploadedText && (
-                <button
-                  type="button"
-                  onClick={generateActionPlan}
-                  disabled={generatingPlan}
-                  className="transform flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-950/20 px-3.5 py-2 text-xs font-bold text-emerald-400 transition-all duration-300 hover:scale-102 hover:border-emerald-500 hover:shadow-[0_0_15px_rgba(16,185,129,0.2)] disabled:opacity-40"
-                >
-                  {generatingPlan ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-3.5 w-3.5" />
-                  )}
-                  {generatingPlan ? "Mapping..." : planGenerated ? "Regenerate Blueprint" : "Generate Matrix Plan"}
-                </button>
-              )}
+              <div className="font-mono text-[10px] font-bold bg-black border border-zinc-800 px-2 py-1 rounded text-zinc-500 uppercase tracking-wider">
+                {MAX_DAILY_MESSAGES - usageCount} Briefs Left Today
+              </div>
             </div>
 
             {files.length > 0 && (
-              <div className="space-y-1.5 text-left max-h-24 overflow-y-auto">
+              <div className="space-y-1 text-left max-h-20 overflow-y-auto">
                 {files.map((file) => (
-                  <div key={file.name} className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-black px-2.5 py-1 text-[10px] font-semibold text-zinc-400">
+                  <div key={file.name} className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-900 bg-zinc-950/40 px-2.5 py-1 text-[10px] font-semibold text-zinc-400">
                     📎 {file.name}
                   </div>
                 ))}
@@ -342,7 +365,6 @@ function CoachPanel({
             )}
           </div>
 
-          {/* Standard semantic HTML form ensures keyboard typing focus resets flawlessly */}
           <form
             onSubmit={(event) => {
               event.preventDefault();
@@ -355,13 +377,14 @@ function CoachPanel({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Brief your execution mentor... (Press Enter to Send)"
-              className="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-700 outline-none resize-none min-h-[48px] max-h-32 leading-relaxed"
+              placeholder={isRateLimited ? "Quota cap reached..." : "Brief your execution mentor... (Press Enter)"}
+              disabled={isRateLimited || busy}
+              className="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-700 outline-none resize-none min-h-[48px] max-h-32 disabled:opacity-30 leading-relaxed"
             />
             <div className="flex justify-end pt-2 border-t border-zinc-900/50 mt-2">
               <button
                 type="submit"
-                disabled={!input.trim() || busy}
+                disabled={!input.trim() || busy || isRateLimited}
                 className="rounded-lg bg-white text-black px-4 py-1.5 text-xs font-bold transition-all duration-200 hover:bg-emerald-400 hover:text-black disabled:opacity-20"
               >
                 {busy ? "Sending..." : "Send Brief →"}
