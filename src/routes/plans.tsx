@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Check, ShieldAlert, Sparkles, Zap, ArrowRight, ShieldCheck } from "lucide-react";
+import { Check, Sparkles, Zap, ShieldCheck } from "lucide-react";
 
 export const Route = createFileRoute("/plans")({
   component: PlansPage,
@@ -60,51 +60,50 @@ function PlansPage() {
               onClick={() => navigate({ to: "/app" })}
               className="mt-10 w-full rounded-xl border border-zinc-800 bg-transparent py-3.5 text-center text-sm font-bold text-zinc-300 transition-all duration-300 hover:border-zinc-700 hover:bg-zinc-900/40 hover:text-white active:scale-98"
             >
-              Launch Standard Dock →
+              Launch Standard Dashboard →
             </button>
           </div>
 
           {/* ⚡ PREMIUM COMMAND PLAN TIER CONTAINER */}
-          <div className="flex flex-col justify-between rounded-2xl border border-emerald-500/30 bg-[#0E1612]/30 p-6 text-left relative transition-all duration-300 shadow-[0_0_40px_rgba(16,185,129,0.04)]">
+          <div className="flex flex-col justify-between rounded-2xl border border-emerald-500/20 bg-[#0E1612]/10 p-6 text-left relative transition-all duration-300 shadow-[0_0_40px_rgba(16,185,129,0.02)]">
             
             {/* Absolute Core Spotlight Tag Banner */}
             <div className="absolute top-0 right-6 -translate-y-1/2 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1 shadow-lg">
-              <Sparkles className="h-2.5 w-2.5 animate-pulse" /> Highly Recommended
+              <Sparkles className="h-2.5 w-2.5 animate-pulse" /> Lifecycle Memory
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-4">
                 <span className="text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1"><Zap className="h-3.5 w-3.5 fill-emerald-400 text-emerald-400" /> Apex Command</span>
-                <span className="rounded-md bg-emerald-950/40 border border-emerald-500/20 px-2 py-0.5 text-[9px] font-black uppercase text-emerald-400">Beta Mode</span>
+                <span className="rounded-md bg-emerald-950/40 border border-emerald-500/20 px-2 py-0.5 text-[9px] font-black uppercase text-emerald-400">Premium</span>
               </div>
               
               <div className="flex items-baseline gap-1 mb-6">
-                <span className="text-4xl font-black text-white tracking-tight">$8</span>
-                <span className="text-xs font-semibold text-zinc-500">/ month</span>
+                <span className="text-2xl font-black text-white tracking-tight uppercase">Coming Soon</span>
               </div>
 
               {/* Complete Premium High-Leverage Advantage Grid */}
-              <div className="space-y-4 text-xs font-semibold text-zinc-300 border-t border-emerald-500/10 pt-6">
-                <p className="flex items-center gap-2.5"><Check className="h-4 w-4 shrink-0 text-emerald-400" /> Unlimited High-Focus Mission Cards</p>
-                <p className="flex items-center gap-2.5"><Check className="h-4 w-4 shrink-0 text-emerald-400" /> Smart Task Breakdown Matrix Engine</p>
-                <p className="flex items-center gap-2.5"><Check className="h-4 w-4 shrink-0 text-emerald-400" /> Advanced Morning Briefing Analytics</p>
-                <p className="flex items-center gap-2.5 text-white font-bold"><Check className="h-4 w-4 shrink-0 text-emerald-400" /> 24/7 Built-In Socratic AI Performance Coach</p>
+              <div className="space-y-4 text-xs font-semibold text-zinc-400 border-t border-emerald-500/10 pt-6">
+                <p className="flex items-center gap-2.5"><Check className="h-4 w-4 shrink-0 text-emerald-400" /> Long-Term Lifecycle Decision Storage Memory</p>
+                <p className="flex items-center gap-2.5"><Check className="h-4 w-4 shrink-0 text-emerald-400" /> Full Historical Win/Loss Trend Analytics</p>
+                <p className="flex items-center gap-2.5"><Check className="h-4 w-4 shrink-0 text-emerald-400" /> Strategic Long-Term Goal Optimization</p>
+                <p className="flex items-center gap-2.5 text-white font-bold"><Check className="h-4 w-4 shrink-0 text-emerald-400" /> 24/7 Socratic AI Memory Performance Mentor</p>
               </div>
             </div>
 
-            {/* Premium Glowing Interactive Active Trigger capsule */}
+            {/* Premium Coming Soon Button */}
             <button
               disabled
-              className="transform mt-10 w-full rounded-xl bg-white py-3.5 text-center text-sm font-bold text-black transition-all duration-300 ease-out hover:scale-102 hover:bg-emerald-400 hover:shadow-[0_0_25px_rgba(52,211,153,0.4)] active:scale-98 flex items-center justify-center gap-1.5 disabled:opacity-40"
+              className="transform mt-10 w-full rounded-xl border border-zinc-800 bg-zinc-900/40 py-3.5 text-center text-sm font-bold text-zinc-500 flex items-center justify-center gap-1.5 cursor-not-allowed"
             >
-              <ShieldCheck className="h-4 w-4 text-black shrink-0" /> Beta Access Open
+              <ShieldCheck className="h-4 w-4 text-zinc-600 shrink-0" /> Coming Soon
             </button>
           </div>
 
         </div>
 
         <p className="text-[10px] font-medium text-zinc-600 tracking-wide mt-8 max-w-sm leading-normal">
-          Beta features are permanently unlocked for alpha testing operators. Complete automated billing clears next month.
+          Beta features are currently scaling. Long-term behavioral core analysis tables are initialized.
         </p>
       </div>
     </div>

@@ -216,12 +216,23 @@ function CoachPanel({
       }));
     } catch {}
 
+    // --- 🧠 STRATEGIC LONG-TERM SYSTEM MEMORY LOG INJECTION ---
+    const historicalContext = `
+      [SYSTEM PARAMETER INTELLIGENCE LOG]
+      CURRENT OPERATOR STREAK ENGINE: ${state?.streak?.count || 0} consecutive execution cycles.
+      CURRENT ASSIGNED FOCUS STATEMENT: "${state?.daily?.text || "No target scheduled"}"
+      HISTORICAL WIN/LOSS NOTES: "${state?.reflection?.wins || "Initial lifecycle interval running."}"
+      
+      CORE MANDATE: Analyze the operator's message with full knowledge of their historical streak records and past decisions. Track bad patterns, praise good momentum, and steer their choices directly toward long-term life parameters.
+    `;
+
     void sendMessage({
       text: uploadedText.trim() 
-        ? `${trimmed}\n\nDOCUMENT CONTENT:\n\n${uploadedText}`
-        : trimmed,
+        ? `${trimmed}\n\n${historicalContext}\n\nDOCUMENT CONTENT:\n\n${uploadedText}`
+        : `${trimmed}\n\n${historicalContext}`,
     });
   }
+
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
