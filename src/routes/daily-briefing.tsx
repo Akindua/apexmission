@@ -1,5 +1,5 @@
+import React, { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { loadState, todayKey, saveState } from "@/lib/mission-store";
 import { Clock, CheckSquare, Square, Flame, Target } from "lucide-react";
