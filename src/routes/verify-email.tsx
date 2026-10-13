@@ -1,129 +1,151 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { CheckCircle2, AlertCircle } from "lucide-react";
+import { ShieldAlert, Loader2, Mail, CheckCircle } from "lucide-react";
 
 export const Route = createFileRoute("/verify-email")({
-    validateSearch: (search: Record<string, unknown>) => ({
-        email:
-            typeof search["email"] === "string"
-                ? search["email"]
-                : "",
-    }),
-    component: VerifyEmailPage,
+  component: VerifyEmailPage,
 });
 
 function VerifyEmailPage() {
-    const navigate = useNavigate();
-    const { email } = Route.useSearch();
-    
-    const [message, setMessage] = useState("");
-    const [messageType, setMessageType] = useState<"success" | "error" | null>(null);
-    const [busy, setBusy] = useState(false);
-    
-    async function handleResend() {
-        if (!email || busy) return;
-        setBusy(true);
-        setMessage("");
-        setMessageType(null);
-    
-        try {
-            const { error } = await supabase.auth.resend({
-                type: "signup",
-                email,
-            });
-    
-            if (error) throw error;
+  const navigate = useNavigate();
+  // Safe extraction lookup maps for the email search parameter strings
+  const { email } = useSearch({ from: "/verify-email" }) as { email?: string };
 
-            setMessage("Verification email resent successfully!");
-            setMessageType("success");
-        } catch (err) {
-            setMessage("Could not resend verification email. Try again.");
-            setMessageType("error");
-        } finally {
-            setBusy(false);
-        }
+  const [busy, setBusy] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  // Core authorization checking engine
+  const checkEmailVerificationStatus = async (isManualClick = false) => {
+    if (isManualClick) setChecking(true);
+    setErrorMessage(null);
+
+    try {
+      // 1. Force Supabase to refresh its local token memory parameters straight out of the cloud cluster
+      const { data: { session }, error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) throw refreshError;
+
+      // 2. Query the updated user configuration properties
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
+
+      if (user && user.email_confirmed_at) {
+        // Successful lock-in! Trigger victory indicators and forward to plans screen
+        setIsSuccess(true);
+        setTimeout(() => {
+          navigate({ to: "/plans" });
+        }, 1500);
+      } else if (isManualClick) {
+        // If it was a manual click and they still aren't confirmed, trigger defensive barrier alerts
+        setErrorMessage("Verification link not yet confirmed. Please inspect your email inbox or request a fresh token broadcast below.");
+      }
+    } catch (err) {
+      console.error("Verification engine lookup fail:", err);
+      if (isManualClick) {
+        setErrorMessage("Could not re-route token status queries. Check your network terminal links and try again.");
+      }
+    } finally {
+      setChecking(false);
     }
+  };
 
-    return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-black px-6 text-zinc-100">
-            <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-[#0D0D11] p-8 text-center shadow-2xl">
-                
-                {/* Minimalist Logo Anchor */}
-                <img
-                  src="/icon-192.png"
-                  alt="ApexMission"
-                  className="mx-auto h-16 w-16 object-contain mb-4"
-                />
+  // 🔄 AUTOMATIC BACKGROUND POLLING MATRIX
+  useEffect(() => {
+    // Poll the Supabase authentication cache lines every 3 seconds to catch external inbox validation link clicks automatically
+    const pollingInterval = setInterval(() => {
+      if (!isSuccess && !checking) {
+        checkEmailVerificationStatus(false);
+      }
+    }, 3000);
 
-                {/* Solid Neon Emerald Accent Label */}
-                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-emerald-400 mb-2">
-                    Security Verification
-                </p>
+    return () => clearInterval(pollingInterval);
+  }, [isSuccess, checking]);
 
-                <h1 className="text-3xl font-black tracking-tight text-white mb-4">
-                    Verify Your Email
-                </h1>
+  const handleResendEmail = async () => {
+    if (!email || busy) return;
+    setBusy(true);
+    setErrorMessage(null);
 
-                <p className="text-sm font-medium text-zinc-400 mb-2">
-                    We sent a secure activation link to:
-                </p>
-                <div className="rounded-xl bg-zinc-900/40 border border-zinc-800 p-3 mb-6">
-                    <strong className="text-sm font-bold text-white break-all">{email || "your email address"}</strong>
-                </div>
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/plans`,
+        },
+      });
+      if (error) throw error;
+      alert("🚀 Fresh verification link broadcasted to your inbox grid coordinates safely.");
+    } catch (err: any) {
+      setErrorMessage(err.message || "Could not re-transmit email parameters.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
-                <p className="text-xs font-medium text-zinc-500 leading-relaxed mb-6">
-                    Open the email and click the confirmation link to securely register your hardware cockpit profile configuration.
-                </p>
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-black px-6 py-12 text-zinc-100">
+      <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-[#0D0D11] p-8 text-center shadow-2xl relative overflow-hidden">
+        
+        {/* Aesthetic Gradient Accent */}
+        <div className={`pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-transparent to-transparent transition-all duration-500 ${
+          isSuccess ? "via-emerald-400" : "via-zinc-700"
+        }`} />
 
-                {/* Tactical Verification Checklist Box */}
-                <div className="rounded-xl border border-zinc-900 bg-black/40 p-4 text-left space-y-2 text-xs font-semibold text-zinc-400 mb-8">
-                    <p className="flex items-center gap-2 text-emerald-500"><span>✓</span> Check your core inbox folder</p>
-                    <p className="flex items-center gap-2"><span>✓</span> Scan your promotional dashboard filter</p>
-                    <p className="flex items-center gap-2"><span>✓</span> Inspect your spam/junk archive directory</p>
-                </div>
-
-                <div className="w-full flex flex-col gap-3">
-                    
-                    {/* Primary High-Urgency Action Button */}
-                    <button
-                        onClick={() => navigate({ to: "/plans" })}
-                        className="transform w-full rounded-xl bg-white py-3.5 text-sm font-bold text-black transition-all duration-300 ease-out hover:scale-102 hover:bg-emerald-400 hover:text-black hover:shadow-[0_0_25px_rgba(52,211,153,0.4)] active:scale-98 shadow-xl shadow-white/5"
-                    >
-                        I've Verified My Email →
-                    </button>
-
-                    {/* Secondary Resend Trigger Capsule */}
-                    <button
-                        onClick={handleResend}
-                        disabled={busy}
-                        className="w-full rounded-xl border border-zinc-800 bg-[#0D0D11] py-3.5 text-sm font-bold text-zinc-300 transition-all duration-300 hover:border-zinc-700 hover:text-white active:scale-98 disabled:opacity-50"
-                    >
-                        {busy ? "Sending..." : "Resend Verification Email"}
-                    </button>
-                    
-                    {/* Return Navigation Anchor */}
-                    <button
-                        onClick={() => navigate({ to: "/auth" })}
-                        className="w-full rounded-xl border border-zinc-800 bg-transparent py-3.5 text-sm font-bold text-zinc-500 transition-all duration-300 hover:border-zinc-700 hover:text-zinc-300 active:scale-98"
-                    >
-                        Back to Sign In
-                    </button>
-                </div>
-
-                {/* Dynamic Feedback Message Banners */}
-                {message && (
-                    <div className={`mt-6 flex items-center justify-center gap-2 rounded-xl border p-4 text-xs font-bold transition-all duration-300 ${
-                        messageType === "success"
-                            ? "border-emerald-500/20 bg-emerald-950/20 text-emerald-400"
-                            : "border-rose-500/20 bg-rose-950/20 text-rose-400"
-                    }`}>
-                        {messageType === "success" ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
-                        <p>{message}</p>
-                    </div>
-                )}
-                
-            </div>
+        <div className={`mx-auto flex size-12 items-center justify-center rounded-xl border mb-6 transition-all duration-300 ${
+          isSuccess 
+            ? "border-emerald-500/20 bg-emerald-950/40 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]" 
+            : "border-zinc-800 bg-zinc-900/40 text-zinc-400"
+        }`}>
+          {isSuccess ? <CheckCircle className="h-5 w-5 animate-pulse" /> : <Mail className="h-5 w-5" />}
         </div>
-    );
+
+        <p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1.5 transition-colors ${isSuccess ? "text-emerald-400" : "text-zinc-500"}`}>
+          {isSuccess ? "Identity Secured" : "Security Lock Active"}
+        </p>
+        <h1 className="text-2xl font-black tracking-tight text-white mb-2">
+          {isSuccess ? "Email Confirmed!" : "Verify Your Identity"}
+        </h1>
+        <p className="text-xs font-medium text-zinc-500 leading-relaxed mb-6">
+          {isSuccess 
+            ? "Redirecting straight into your plan selection cockpit matrix parameters now..." 
+            : `A secure verification token has been deployed to ${email || "your email coordinates"}. Confirm the link to unlock execution access.`}
+        </p>
+
+        {errorMessage && (
+          <div className="mb-6 rounded-xl border border-rose-500/20 bg-rose-950/10 p-3.5 text-left flex items-start gap-2.5 text-xs text-rose-400 font-semibold animate-fade-in">
+            <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
+            <p>{errorMessage}</p>
+          </div>
+        )}
+
+        <div className="flex flex-col gap-3">
+          {/* Hardened Explicit Verification Trigger Capsule */}
+          <button
+            type="button"
+            disabled={checking || isSuccess}
+            onClick={() => checkEmailVerificationStatus(true)}
+            className="w-full h-11 flex items-center justify-center rounded-xl bg-white text-sm font-bold text-black transition-all duration-300 hover:bg-emerald-400 disabled:opacity-40 shadow-xl shadow-white/5"
+          >
+            {checking ? (
+              <Loader2 className="h-4 w-4 animate-spin text-black" />
+            ) : (
+              "I've Verified My Email →"
+            )}
+          </button>
+
+          <button
+            type="button"
+            disabled={busy || isSuccess}
+            onClick={handleResendEmail}
+            className="w-full h-11 rounded-xl border border-zinc-800 bg-transparent text-sm font-bold text-zinc-400 transition-all duration-300 hover:border-zinc-700 hover:text-white disabled:opacity-40"
+          >
+            {busy ? "Re-transmitting..." : "Resend Verification Email"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
