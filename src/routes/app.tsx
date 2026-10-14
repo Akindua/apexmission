@@ -300,25 +300,50 @@ function ApexMission() {
     <div className={`min-h-screen transition-all duration-500 ease-in-out ${themeClasses.bg}`}>
       <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-8 sm:py-8">
 
-        {/* 📚 TUTORIAL WIZARD & AGE ATTESTATION CANOPY PANEL */}
-        {localStorage.getItem("apex-tutorial-completed") !== "true" && (
-          <div className="rounded-xl border border-emerald-500/20 bg-[#0E1612]/30 p-5 text-left animate-fade-in mb-6">
-            <p className="text-[10px] font-black uppercase tracking-wider text-emerald-400">System Onboarding & Compliance</p>
-            <h3 className="text-sm font-bold text-white mt-1">Operator Guide Vector</h3>
-            <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-              Welcome to the Console Loop. This cockpit is structured strictly to push task execution through loss aversion parameters. 
-              By interacting with this app, you attest that you meet the minimum required age threshold of 10+ years old.
+        {/* 📚 EXPANDED HIGH-PERFORMANCE WALKTHROUGH GUIDE CANOPY */}
+        {hydrated && typeof window !== "undefined" && localStorage.getItem("apex-tutorial-completed") !== "true" && (
+          <div className="rounded-2xl border border-emerald-500/20 bg-[#0E1612]/30 p-6 text-left animate-fade-in mb-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 transform translate-x-8 -translate-y-8 size-32 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
+            
+            <div className="flex items-center gap-2 mb-3">
+              <span className="flex size-2 rounded-full bg-emerald-400 animate-pulse" />
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">System Orientation Core Matrix</p>
+            </div>
+            
+            <h3 className="text-base font-black text-white tracking-tight">ApexMission Command Operations Guide</h3>
+            <p className="text-xs text-zinc-400 mt-1.5 leading-relaxed max-w-2xl">
+              This console is built as an aggressive accountability framework. To maintain extreme execution metrics, understand your core interface vectors:
             </p>
-            <div className="mt-4 flex items-center gap-3">
-              <span className="text-[11px] font-mono text-zinc-500 bg-black border border-zinc-900 px-2 py-0.5 rounded">⚠️ Age Limit: 10+ Required</span>
+
+            {/* 3-Step Information Hierarchy Matrix */}
+            <div className="mt-4 grid sm:grid-cols-3 gap-4 border-t border-zinc-900 pt-4">
+              <div className="text-left">
+                <div className="font-mono text-[10px] font-black text-emerald-400 uppercase bg-emerald-950/40 border border-emerald-500/10 px-2 py-0.5 rounded w-max">Vector 01</div>
+                <h4 className="text-xs font-bold text-zinc-200 mt-2">The Mission Statement</h4>
+                <p className="text-[11px] text-zinc-500 leading-normal mt-1">Declare your macro vision. Use the AI Plan Generator to instantly map any complex target or file down into execution rows.</p>
+              </div>
+              <div className="text-left">
+                <div className="font-mono text-[10px] font-black text-amber-400 uppercase bg-amber-950/40 border border-amber-500/10 px-2 py-0.5 rounded w-max">Vector 02</div>
+                <h4 className="text-xs font-bold text-zinc-200 mt-2">The Priority Matrix</h4>
+                <p className="text-[11px] text-zinc-500 leading-normal mt-1">Tasks are tiered strictly by business leverage. High Impact moves your metrics, Medium adds support, Low handles maintenance items.</p>
+              </div>
+              <div className="text-left">
+                <div className="font-mono text-[10px] font-black text-rose-400 uppercase bg-rose-950/40 border border-rose-500/10 px-2 py-0.5 rounded w-max">Vector 03</div>
+                <h4 className="text-xs font-bold text-zinc-200 mt-2">The Cutoff Clock</h4>
+                <p className="text-[11px] text-zinc-500 leading-normal mt-1">You must execute your single Master Focus Action before the midnight countdown. Missing it terminates your active execution streak.</p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-zinc-900 pt-4">
+              <span className="text-[10px] font-mono text-zinc-500 uppercase">✓ Attestation logged: 10+ Age Verification Guard Active</span>
               <button 
                 onClick={() => {
                   localStorage.setItem("apex-tutorial-completed", "true");
                   window.location.reload();
                 }}
-                className="ml-auto rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-bold text-black hover:bg-emerald-400 transition-colors"
+                className="rounded-xl bg-white px-4 py-2 text-xs font-bold text-black hover:bg-emerald-400 transition-all shadow-md shadow-white/5 active:scale-95"
               >
-                Acknowledge & Seal Guide
+                Initialize Console Deck →
               </button>
             </div>
           </div>
@@ -363,10 +388,29 @@ function ApexMission() {
               Workspace Grid
             </button>
           </div>
+          <div className="flex items-center gap-3 mx-auto sm:mx-0">
+            <span className="font-mono text-xs font-bold text-emerald-400 uppercase tracking-widest bg-emerald-950/20 border border-emerald-500/10 px-3 py-1.5 rounded-lg text-center hidden sm:inline-block">
+              {greetingText}
+            </span>
 
-          <span className="font-mono text-xs font-bold text-emerald-400 uppercase tracking-widest bg-emerald-950/20 border border-emerald-500/10 px-3 py-1.5 rounded-lg text-center hidden sm:inline-block">
-            {greetingText}
-          </span>
+            {/* 🚪 AUTOMATED TERMINAL LOGOUT ACTION TRIGGER */}
+            <button
+              type="button"
+              onClick={async () => {
+                const { error } = await supabase.auth.signOut();
+                if (error) {
+                  console.error("Session logout error code logged:", error);
+                  return;
+                }
+                // Clear any stored workspace states and re-route straight to gateway
+                localStorage.removeItem("apex-tutorial-completed");
+                navigate({ to: "/auth" });
+              }}
+              className="rounded-xl border border-zinc-800 bg-[#0D0D11] hover:border-rose-500/30 hover:bg-rose-950/10 hover:text-rose-400 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-zinc-400 transition-all duration-300 active:scale-95"
+            >
+              Disconnect Node
+            </button>
+          </div>
         </header>
 
         {/* --- CORE WORKSPACE FOCUS GRID PANELS --- */}

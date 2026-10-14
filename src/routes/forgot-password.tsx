@@ -75,8 +75,8 @@ function ResetPasswordPage() {
 
         <form onSubmit={handlePasswordUpdate} className="space-y-4">
           <div className="flex flex-col gap-1.5 text-left">
-            <label htmlFor="key" className="text-[10px] font-black uppercase tracking-wider text-zinc-500">New Access Key</label>
-            <div className="flex items-center gap-2.5 rounded-xl border border-zinc-800 bg-black/40 px-3.5 transition-all focus-within:border-emerald-500/40">
+            <label htmlFor="key" className="text-[10px] font-black uppercase tracking-wider text-zinc-500">New Access Key Parameter</label>
+            <div className="flex items-center gap-2.5 rounded-xl border border-zinc-800 bg-[#050507] px-3.5 focus-within:border-emerald-500/40 focus-within:shadow-[0_0_15px_rgba(16,185,129,0.05)] transition-all duration-300">
               <KeyRound className="h-4 w-4 text-zinc-600 shrink-0" />
               <input
                 id="key"
@@ -91,8 +91,8 @@ function ResetPasswordPage() {
           </div>
 
           <div className="flex flex-col gap-1.5 text-left">
-            <label htmlFor="confirmKey" className="text-[10px] font-black uppercase tracking-wider text-zinc-500">Confirm Access Key</label>
-            <div className="flex items-center gap-2.5 rounded-xl border border-zinc-800 bg-black/40 px-3.5 transition-all focus-within:border-emerald-500/40">
+            <label htmlFor="confirmKey" className="text-[10px] font-black uppercase tracking-wider text-zinc-500">Confirm Access Key Parameter</label>
+            <div className="flex items-center gap-2.5 rounded-xl border border-zinc-800 bg-[#050507] px-3.5 focus-within:border-emerald-500/40 focus-within:shadow-[0_0_15px_rgba(16,185,129,0.05)] transition-all duration-300">
               <KeyRound className="h-4 w-4 text-zinc-600 shrink-0" />
               <input
                 id="confirmKey"
@@ -109,9 +109,16 @@ function ResetPasswordPage() {
           <button
             type="submit"
             disabled={busy || success}
-            className="w-full h-12 flex items-center justify-center gap-1.5 rounded-xl bg-white text-sm font-bold text-black transition-all duration-300 hover:bg-emerald-400 disabled:opacity-40 font-display mt-6 shadow-xl shadow-white/5"
+            className="w-full h-12 flex items-center justify-center gap-1.5 rounded-xl bg-white text-sm font-bold text-black transition-all duration-300 hover:bg-emerald-400 hover:shadow-[0_0_25px_rgba(52,211,153,0.3)] active:scale-98 font-display mt-6 shadow-xl shadow-white/5 disabled:opacity-40"
           >
-            {busy ? <Loader2 className="h-4 w-4 animate-spin text-black" /> : <><span>Update Access Key</span><ArrowRight className="h-4 w-4 text-black" /></>}
+            {busy ? (
+              <Loader2 className="h-4 w-4 animate-spin text-black" />
+            ) : (
+              <>
+                <span>Seal Access Parameters</span>
+                <ArrowRight className="h-4 w-4 text-black" />
+              </>
+            )}
           </button>
         </form>
       </div>

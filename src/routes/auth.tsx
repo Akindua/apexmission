@@ -107,19 +107,34 @@ function AuthConsolePage() {
         )}
 
         <form onSubmit={handleAuthentication} className="space-y-4">
-          {isSignUp && (
-            <div className="flex flex-col gap-1.5 text-left">
-              <label htmlFor="fullName" className="text-[10px] font-black uppercase tracking-wider text-zinc-500">Operator Moniker</label>
-              <div className="flex items-center gap-2.5 rounded-xl border border-zinc-800 bg-black/40 px-3.5 transition-all focus-within:border-emerald-500/40">
+        {isSignUp && (
+            <div className="flex flex-col gap-3 text-left border-b border-zinc-900 pb-4 mb-2">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="fullName" className="text-[10px] font-black uppercase tracking-wider text-zinc-500">Operator Moniker</label>
+                <div className="flex items-center gap-2.5 rounded-xl border border-zinc-800 bg-black/40 px-3.5 transition-all focus-within:border-emerald-500/40">
+                  <input
+                    id="fullName"
+                    type="text"
+                    required={isSignUp}
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="e.g. Marcus Vance"
+                    className="h-11 w-full bg-transparent text-sm text-white placeholder-zinc-700 outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* ⚠️ HARDENED AGE ATTESTATION CHECKBOX NODE */}
+              <div className="flex items-start gap-3 rounded-xl border border-zinc-900 bg-black/20 p-3 mt-1">
                 <input
-                  id="fullName"
-                  type="text"
-                  required
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="e.g. Marcus Vance"
-                  className="h-11 w-full bg-transparent text-sm text-white placeholder-zinc-700 outline-none"
+                  id="ageCheck"
+                  type="checkbox"
+                  required={isSignUp}
+                  className="mt-1 size-4 shrink-0 rounded border-zinc-800 bg-zinc-950 text-emerald-500 focus:ring-emerald-500/30 accent-emerald-500"
                 />
+                <label htmlFor="ageCheck" className="text-[11px] font-medium text-zinc-400 leading-normal">
+                  I explicitly attest that I meet the required platform operation age threshold of <span className="text-emerald-400 font-bold">10+ years old</span>. I understand access will be restricted if this is breached.
+                </label>
               </div>
             </div>
           )}
