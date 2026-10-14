@@ -14,6 +14,7 @@ import { Route as AppRouteImport } from './routes/app'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BillingRouteImport } from './routes/billing'
 import { Route as DailyBriefingRouteImport } from './routes/daily-briefing'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as NightReflectionRouteImport } from './routes/night-reflection'
 import { Route as PlansRouteImport } from './routes/plans'
 import { Route as PricingRouteImport } from './routes/pricing'
@@ -48,6 +49,11 @@ const BillingRoute = BillingRouteImport.update({
 const DailyBriefingRoute = DailyBriefingRouteImport.update({
   id: '/daily-briefing',
   path: '/daily-briefing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NightReflectionRoute = NightReflectionRouteImport.update({
@@ -107,6 +113,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/billing': typeof BillingRoute
   '/daily-briefing': typeof DailyBriefingRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/night-reflection': typeof NightReflectionRoute
   '/plans': typeof PlansRoute
   '/pricing': typeof PricingRoute
@@ -124,6 +131,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/billing': typeof BillingRoute
   '/daily-briefing': typeof DailyBriefingRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/night-reflection': typeof NightReflectionRoute
   '/plans': typeof PlansRoute
   '/pricing': typeof PricingRoute
@@ -142,6 +150,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/billing': typeof BillingRoute
   '/daily-briefing': typeof DailyBriefingRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/night-reflection': typeof NightReflectionRoute
   '/plans': typeof PlansRoute
   '/pricing': typeof PricingRoute
@@ -161,6 +170,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/billing'
     | '/daily-briefing'
+    | '/forgot-password'
     | '/night-reflection'
     | '/plans'
     | '/pricing'
@@ -178,6 +188,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/billing'
     | '/daily-briefing'
+    | '/forgot-password'
     | '/night-reflection'
     | '/plans'
     | '/pricing'
@@ -195,6 +206,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/billing'
     | '/daily-briefing'
+    | '/forgot-password'
     | '/night-reflection'
     | '/plans'
     | '/pricing'
@@ -213,6 +225,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   BillingRoute: typeof BillingRoute
   DailyBriefingRoute: typeof DailyBriefingRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   NightReflectionRoute: typeof NightReflectionRoute
   PlansRoute: typeof PlansRoute
   PricingRoute: typeof PricingRoute
@@ -260,6 +273,13 @@ declare module '@tanstack/react-router' {
       path: '/daily-briefing'
       fullPath: '/daily-briefing'
       preLoaderRoute: typeof DailyBriefingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/night-reflection': {
@@ -341,6 +361,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   BillingRoute: BillingRoute,
   DailyBriefingRoute: DailyBriefingRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   NightReflectionRoute: NightReflectionRoute,
   PlansRoute: PlansRoute,
   PricingRoute: PricingRoute,

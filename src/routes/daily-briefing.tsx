@@ -22,73 +22,49 @@ function DailyBriefingPage() {
   const audioContextRef = React.useRef<AudioContext | null>(null);
   const oscillatorIntervalRef = React.useRef<number | null>(null);
 
-  useEffect(() => {
-    // 1. Initialize the browser secure Web Audio routing node
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    if (!audioContextRef.current && AudioContextClass) {
-      audioContextRef.current = new AudioContextClass();
-    }
-
-    // 2. Build a high-urgency, alternating double-beep synthesizer pulse trigger loop
-    const playAlarmPulse = () => {
-      if (!audioContextRef.current) return;
-      
-      // Auto-resume audio layer if the user's browser blocks media playback focus
-      if (audioContextRef.current.state === "suspended") {
-        audioContextRef.current.resume();
+    // --- HARDENED SECURE AUDIO LIFECYCLE TRACKER ---
+    useEffect(() => {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!audioContextRef.current && AudioContextClass) {
+        audioContextRef.current = new AudioContextClass();
       }
-
-      const ctx = audioContextRef.current;
-      const now = ctx.currentTime;
-
-      // Pulse Tone 1: High Frequency Vector Alert
-      const osc1 = ctx.createOscillator();
-      const gain1 = ctx.createGain();
-      osc1.type = "square"; // Industrial military square sound wave format
-      osc1.frequency.setValueAtTime(880, now); // A5 high octave tone frequency pitch
-      gain1.gain.setValueAtTime(0.08, now); // Target low safety core decibel volume cap
-      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.15); // Fast decay trail
-      osc1.connect(gain1);
-      gain1.connect(ctx.destination);
-      osc1.start(now);
-      osc1.stop(now + 0.15);
-
-      // Pulse Tone 2: Displaced Pitch (Played exactly 180ms later for processing urgency)
-      setTimeout(() => {
-        if (!audioContextRef.current) return;
-        const now2 = ctx.currentTime;
-        const osc2 = ctx.createOscillator();
-        const gain2 = ctx.createGain();
-        osc2.type = "square";
-        osc2.frequency.setValueAtTime(988, now2); // B5 piercing indicator pitch
-        gain2.gain.setValueAtTime(0.08, now2);
-        gain2.gain.exponentialRampToValueAtTime(0.001, now2 + 0.15);
-        osc2.connect(gain2);
-        gain2.connect(ctx.destination);
-        osc2.start(now2);
-        osc2.stop(now2 + 0.15);
-      }, 180);
-    };
-
-    // Trigger the automated looping cascade every 900 milliseconds
-    const runAlarmEngine = () => {
+  
+      const playAlarmPulse = () => {
+        if (!audioContextRef.current || audioContextRef.current.state === "closed") return;
+        
+        // Gently resume context loops only if the browser context state allows it safely
+        if (audioContextRef.current.state === "suspended") {
+          audioContextRef.current.resume().catch((err) => console.log("Audio waiting for user click interaction: ", err));
+        }
+  
+        const ctx = audioContextRef.current;
+        const now = ctx.currentTime;
+  
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = "square";
+        osc1.frequency.setValueAtTime(880, now);
+        gain1.gain.setValueAtTime(0.04, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.15);
+      };
+  
       playAlarmPulse();
       oscillatorIntervalRef.current = window.setInterval(playAlarmPulse, 900);
-    };
-
-    // Safe trigger engine: Start loop immediately upon route initialization entry
-    runAlarmEngine();
-
-    // Cleanup parameters: Mute audio channels immediately upon container unmount or route exit
-    return () => {
-      if (oscillatorIntervalRef.current) {
-        window.clearInterval(oscillatorIntervalRef.current);
-      }
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
-    };
-  }, []);
+  
+      return () => {
+        if (oscillatorIntervalRef.current) {
+          window.clearInterval(oscillatorIntervalRef.current);
+        }
+        // ✅ Defensively check context state parameters before calling close loops to stop fatal console failures
+        if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+          audioContextRef.current.close().catch((err) => console.error("Audio Context close fault bypassed safely:", err));
+        }
+      };
+    }, []);  
   
   const navigate = useNavigate();
   const state = loadState();

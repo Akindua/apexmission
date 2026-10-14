@@ -63,7 +63,7 @@ export function MissionCoach({
   }, []);
 
   async function generateActionPlan() {
-    if (!uploadedText) return;
+    if (!uploadedText || generatingPlan) return;
     setGeneratingPlan(true);
     try {
       const response = await fetch("/api/mission-plan", {
@@ -71,16 +71,32 @@ export function MissionCoach({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mission: uploadedText }),
       });
-      if (!response.ok) throw new Error(`Mission Planner failed: ${response.status}`);
+      if (!response.ok) throw new Error(`Mission Planner processing failure: ${response.status}`);
       const plan = await response.json();
-      onActionPlanGenerated?.(plan);
+      
+      // ✅ Explicitly passes down clean nextId arrays for all columns to fix the missing medium tier bug
+      onActionPlanGenerated?.({
+        mission: plan.mission,
+        high: plan.high || [],
+        medium: plan.medium || [],
+        low: plan.low || [],
+        dailyAction: plan.dailyAction || ""
+      });
+      
       setPlanGenerated(true);
+      
+      // 🔄 AUTOMATIC CACHE CLEAR TRIGGER: Purges your attached files list badge instantly on completion
+      setFiles([]);
+      setUploadedText("");
+      
     } catch (error) {
-      console.error(error);
+      console.error("Document action plan mapping failed:", error);
+      alert("Could not extract parameters from the attached context file.");
     } finally {
       setGeneratingPlan(false);
     }
   }
+
 
   async function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const selected = Array.from(event.target.files ?? []);
@@ -216,21 +232,22 @@ function CoachPanel({
       }));
     } catch {}
 
-    // --- 🧠 STRATEGIC LONG-TERM SYSTEM MEMORY LOG INJECTION ---
+    // --- 🧠 RIGOROUS SOCRATIC DEFICIT TRANS-MATRIX INTERCEPT ---
     const historicalContext = `
-      [SYSTEM PARAMETER INTELLIGENCE LOG]
-      CURRENT OPERATOR STREAK ENGINE: ${state?.streak?.count || 0} consecutive execution cycles.
-      CURRENT ASSIGNED FOCUS STATEMENT: "${state?.daily?.text || "No target scheduled"}"
-      HISTORICAL WIN/LOSS NOTES: "${state?.reflection?.wins || "Initial lifecycle interval running."}"
+      [CRITICAL COGNITIVE AUDIT LEDGER]
+      CURRENT OPERATOR STREAK: ${state?.streak?.count || 0} Days.
+      CURRENT ASSIGNED FOCUS OBJECTIVE: "${state?.daily?.text || "No target scheduled"}"
+      YESTERDAY REFLECTION DATA: "${state?.reflection?.wins || "No historical wins or notes logged for the previous interval."}"
       
-      CORE MANDATE: Analyze the operator's message with full knowledge of their historical streak records and past decisions. Track bad patterns, praise good momentum, and steer their choices directly toward long-term life parameters.
+      CORE BEHAVIORAL DIRECTIVE: You are an unyielding, elite Socratic performance coach. You are not here to offer comfort; you are here to force absolute mission execution. Look closely at the operator's message and cross-examine it against their execution streak and past reflection data. 
+      If their streak is 0, or if their reflection signals a pattern of procrastination, choice anxiety, or broken promises, EXPLICITLY CALL OUT THEIR BAD PAST DECISIONS. Force them to confront why they are deviating from their long-term vision matrix. Do not allow intellectual side-stepping. Demand strategic clarity for the rest of their lifecycle.
     `;
 
-    void sendMessage({
-      text: uploadedText.trim() 
-        ? `${trimmed}\n\n${historicalContext}\n\nDOCUMENT CONTENT:\n\n${uploadedText}`
-        : `${trimmed}\n\n${historicalContext}`,
-    });
+    const activePayload = uploadedText.trim()
+      ? `${trimmed}\n\n${SocraticContext}\n\n[PARSED DOCUMENT FILE CONTEXT]:\n\n${uploadedText}`
+      : `${trimmed}\n\n${SocraticContext}`;
+
+    void sendMessage({ text: activePayload }); 
   }
 
 
@@ -339,7 +356,7 @@ function CoachPanel({
           <ConversationScrollButton />
         </Conversation>
 
-        {/* Input Control Terminal */}
+        {/* Input Control Terminal Layout Matrix */}
         <div className="border-t border-zinc-900 p-4 bg-black/20">
           <div className="flex flex-col gap-3 mb-4">
             <input
@@ -365,13 +382,38 @@ function CoachPanel({
               </div>
             </div>
 
-            {files.length > 0 && (
-              <div className="space-y-1 text-left max-h-20 overflow-y-auto">
-                {files.map((file) => (
-                  <div key={file.name} className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-900 bg-zinc-950/40 px-2.5 py-1 text-[10px] font-semibold text-zinc-400">
-                    📎 {file.name}
-                  </div>
-                ))}
+            {/* ✅ FIXED LAYER: Supports File Badges, Generation Triggers, and Regenerate Toggles cleanly */}
+            {(files.length > 0 || planGenerated) && (
+              <div className="flex flex-wrap items-center gap-2 p-2 rounded-xl bg-black/40 border border-zinc-900 animate-fade-in">
+                <div className="flex flex-col gap-1 flex-1 text-left min-w-[150px]">
+                  {files.length > 0 ? (
+                    files.map((file) => (
+                      <div key={file.name} className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-zinc-400 truncate">
+                        📎 {file.name}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-[10px] font-bold text-emerald-400/80 uppercase tracking-wider pl-1">
+                      ✓ Strategy Matrix Loaded
+                    </div>
+                  )}
+                </div>
+
+                {uploadedText && (
+                  <button
+                    type="button"
+                    onClick={generateActionPlan}
+                    disabled={generatingPlan}
+                    className="transform inline-flex h-8 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-[11px] font-bold text-black transition-all duration-300 hover:bg-emerald-400 active:scale-95 disabled:opacity-40"
+                  >
+                    {generatingPlan ? (
+                      <Loader2 className="h-3 w-3 animate-spin text-black" />
+                    ) : (
+                      <Sparkles className="h-3 w-3" />
+                    )}
+                    {generatingPlan ? "Extracting..." : planGenerated ? "Regenerate Mission Plan" : "Generate Mission Plan"}
+                  </button>
+                )}
               </div>
             )}
           </div>

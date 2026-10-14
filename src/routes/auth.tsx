@@ -1,177 +1,191 @@
+import React, { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { ShieldAlert, Loader2, KeyRound, Mail, ArrowRight, ShieldCheck } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
-  ssr: false,
-  validateSearch: (search: Record<string, unknown>) => ({
-    next: 
-      typeof search["next"] === "string" 
-        ? search["next"] 
-        : undefined,
-    mode:
-      search["mode"] === "signup"
-        ? "signup"
-        : "signin",
-  }),
-  head: () => ({
-    meta: [
-      { title: "Sign in — ApexMission" },
-      {
-        name: "description",
-        content: "Sign in to ApexMission to sync your mission, priorities and premium plan.",
-      },
-      { property: "og:title", content: "Sign in — ApexMission" },
-      {
-        property: "og:description",
-        content: "Sign in to ApexMission to sync your mission, priorities and premium plan.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-    ],
-  }),
-  component: AuthPage,
+  component: AuthConsolePage,
 });
 
-function AuthPage() {
-  const { next, mode: initialMode } = Route.useSearch();
+function AuthConsolePage() {
   const navigate = useNavigate();
-  
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [fullName, setFullName] = useState("");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showLoadingGate, setShowLoadingGate] = useState(false);
 
-  const destination = 
-    next && next.startsWith("/") 
-      ? next 
-      : "/app";
 
-  // --- AUTOMATED SIGNUP REDIRECT HANDLER ---
-  useEffect(() => {
-    // If the application requests a signup workflow, immediately redirect to your separate signup route
-    if (initialMode === "signup") {
-      navigate({ 
-        to: "/signup",
-        search: { next: destination }
-      });
-      return;
-    }
-
-    // Auto-forward home if an active secure session is already logged in
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) window.location.replace(destination);
-    });
-  }, [initialMode, destination, navigate]);
-
-  async function handleSignin(e: React.FormEvent) {
+  const handleAuthentication = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) return;
+    if (!email.trim() || !password.trim() || busy) return;
     setBusy(true);
-    setError(null);
+    setErrorMessage(null);
 
     try {
-      const { error: authError } = await supabase.auth.signInWithPassword({ 
-        email, 
-        password 
-      });
-      
-      if (authError) throw authError;
+      if (isSignUp) {
+        if (!fullName.trim()) throw new Error("Full operator name parameters required.");
+        
+        const { error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password: password.trim(),
+          options: {
+            emailRedirectTo: `${window.location.origin}/plans`,
+            data: {
+              full_name: fullName.trim(),
+            },
+          },
+        });
+        if (error) throw error;
+        
+        // Forward straight to holding gate for verification tracking
+        navigate({ to: "/verify-email", search: { email: email.trim() } });
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password: password.trim(),
+        });
+        if (error) throw error;
 
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        window.location.replace(destination);
+        // Trigger Loading Page Vector before landing onto dashboard console
+        setShowLoadingGate(true);
+        setTimeout(() => {
+          navigate({ to: "/app" });
+        }, 2000); // 2 second security buffer duration
+        
+        navigate({ to: "/app" });
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+    } catch (err: any) {
+      console.error("Auth terminal synchronization fault:", err);
+      setErrorMessage(err.message || "Failed to transmit secure session keys.");
     } finally {
       setBusy(false);
     }
-  }
+  };
 
-  // Prevent UI flashing if the router is actively forwarding a signup request away
-  if (initialMode === "signup") {
+  if (showLoadingGate) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black text-zinc-500 text-xs">
-        <div className="animate-pulse">Routing to custom signup portal...</div>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-black text-zinc-100 animate-fade-in">
+        <div className="flex flex-col items-center justify-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-emerald-400" />
+          <div className="text-center">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">System Hydration In Progress</p>
+            <h2 className="text-sm font-bold text-white mt-1">Calibrating Command Cockpit...</h2>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-black px-6 text-zinc-100">
-      <div className="w-full max-w-sm flex flex-col items-center justify-center text-center">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-black px-6 py-12 text-zinc-100">
+      <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-[#0D0D11] p-8 shadow-2xl relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />
         
-        {/* Minimalist Logo Anchor */}
-        <img
-          src="/icon-192.png"
-          alt="ApexMission"
-          className="h-16 w-16 object-contain mb-4"
-        />
+        {/* Console Header */}
+        <div className="mb-8 flex flex-col items-center justify-center text-center">
+          <img
+            src="/icon-192.png"
+            alt="ApexMission"
+            className="h-16 w-16 object-contain mb-4"
+          />
+          <p className="text-[10px] font-black uppercase tracking-[0.25em] text-emerald-400 mb-1">
+            Console Authorization Gateway
+          </p>
+          <h1 className="text-2xl font-black tracking-tight text-white uppercase font-display">
+            {isSignUp ? "Initialize Operator" : "Secure Node Access"}
+          </h1>
+        </div>
 
-        <h1 className="text-3xl font-black tracking-tight text-white mb-2">
-          Sign In
-        </h1>
-        <p className="text-xs font-medium text-zinc-500 mb-8">
-          Welcome back to ApexMission. Stop planning. Force execution.
-        </p>
+        {errorMessage && (
+          <div className="mb-5 rounded-xl border border-rose-500/20 bg-rose-950/10 p-3.5 text-left flex items-start gap-2.5 text-xs text-rose-400 font-semibold animate-fade-in">
+            <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
+            <p>{errorMessage}</p>
+          </div>
+        )}
 
-        <form onSubmit={handleSignin} className="w-full flex flex-col gap-4">
-          
-          {/* Email Input Box Container */}
-          <div className="text-left">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block mb-1.5">
-              Email Address
-            </label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@example.com"
-              disabled={busy}
-              className="w-full rounded-xl border border-zinc-800 bg-[#0D0D11] p-3.5 text-sm text-white placeholder-zinc-700 outline-none transition-all duration-300 focus:border-emerald-500/50 focus:shadow-[0_0_15px_rgba(16,185,129,0.1)] disabled:opacity-50"
-            />
+        <form onSubmit={handleAuthentication} className="space-y-4">
+          {isSignUp && (
+            <div className="flex flex-col gap-1.5 text-left">
+              <label htmlFor="fullName" className="text-[10px] font-black uppercase tracking-wider text-zinc-500">Operator Moniker</label>
+              <div className="flex items-center gap-2.5 rounded-xl border border-zinc-800 bg-black/40 px-3.5 transition-all focus-within:border-emerald-500/40">
+                <input
+                  id="fullName"
+                  type="text"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="e.g. Marcus Vance"
+                  className="h-11 w-full bg-transparent text-sm text-white placeholder-zinc-700 outline-none"
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-1.5 text-left">
+            <label htmlFor="email" className="text-[10px] font-black uppercase tracking-wider text-zinc-500">Security Email Address</label>
+            <div className="flex items-center gap-2.5 rounded-xl border border-zinc-800 bg-black/40 px-3.5 transition-all focus-within:border-emerald-500/40">
+              <Mail className="h-4 w-4 text-zinc-600 shrink-0" />
+              <input
+                id="email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="operator@apexmission.com"
+                className="h-11 w-full bg-transparent text-sm text-white placeholder-zinc-700 outline-none"
+              />
+            </div>
           </div>
 
-          {/* Password Input Box Container */}
-          <div className="text-left">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block mb-1.5">
-              Password
-            </label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              disabled={busy}
-              className="w-full rounded-xl border border-zinc-800 bg-[#0D0D11] p-3.5 text-sm text-white placeholder-zinc-700 outline-none transition-all duration-300 focus:border-emerald-500/50 focus:shadow-[0_0_15px_rgba(16,185,129,0.1)] disabled:opacity-50"
-            />
+          <div className="flex flex-col gap-1.5 text-left">
+            <label htmlFor="password" className="text-[10px] font-black uppercase tracking-wider text-zinc-500">Access Key Parameter</label>
+            <div className="flex items-center gap-2.5 rounded-xl border border-zinc-800 bg-black/40 px-3.5 transition-all focus-within:border-emerald-500/40">
+              <KeyRound className="h-4 w-4 text-zinc-600 shrink-0" />
+              <input
+                id="password"
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••••••"
+                className="h-11 w-full bg-transparent text-sm text-white placeholder-zinc-700 outline-none"
+              />
+            </div>
           </div>
 
-          {error && <p className="text-xs font-semibold text-rose-500 text-left mt-1">{error}</p>}
-
-          {/* Form Action Submit Trigger Button */}
+          {/* Core Master Trigger Button */}
           <button
             type="submit"
             disabled={busy}
-            className="transform mt-2 flex h-12 items-center justify-center gap-2 rounded-xl bg-white text-sm font-bold text-black transition-all duration-300 ease-out hover:scale-102 hover:bg-emerald-400 hover:text-black hover:shadow-[0_0_25px_rgba(52,211,153,0.4)] active:scale-98 disabled:opacity-50 shadow-xl shadow-white/5"
+            className="w-full h-12 flex items-center justify-center gap-1.5 rounded-xl bg-white text-sm font-bold text-black transition-all duration-300 hover:bg-emerald-400 hover:shadow-[0_0_25px_rgba(52,211,153,0.3)] active:scale-98 disabled:opacity-40 font-display mt-6 shadow-xl shadow-white/5"
           >
-            {busy && <Loader2 className="size-4 animate-spin text-black" />}
-            {busy ? "Signing in..." : "Sign in →"}
+            {busy ? (
+              <Loader2 className="h-4 w-4 animate-spin text-black" />
+            ) : (
+              <>
+                <span>{isSignUp ? "Initialize Console Routing" : "Sync Command Session"}</span>
+                <ArrowRight className="h-4 w-4 text-black" />
+              </>
+            )}
           </button>
         </form>
 
-        {/* Clear Cross-Routing Navigation Trigger to Custom Signup Page */}
-        <button
-          type="button"
-          onClick={() => navigate({ to: "/signup", search: { next: destination } })}
-          className="mt-6 text-xs text-zinc-500 underline underline-offset-4 hover:text-zinc-300 transition-colors"
-        >
-          No account? Create an account here
-        </button>
+        {/* Dynamic Mode Switch Link */}
+        <div className="mt-6 text-center">
+          <button
+            type="button"
+            onClick={() => {
+              setIsSignUp(!isSignUp);
+              setErrorMessage(null);
+            }}
+            className="text-xs font-semibold text-zinc-500 hover:text-emerald-400 transition-colors"
+          >
+            {isSignUp ? "Already registered? Access command deck" : "Need authorization? Register fresh console coordinates"}
+          </button>
+        </div>
       </div>
     </div>
   );

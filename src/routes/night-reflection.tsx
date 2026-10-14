@@ -1,176 +1,152 @@
+import React, { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { loadState, saveState, todayKey } from "@/lib/mission-store";
-import { Target, Check, X } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { loadState, todayKey, saveState } from "@/lib/mission-store";
+import { Moon, CheckCircle, Flame, ArrowRight, Loader2, MessageSquarePlus } from "lucide-react";
 
 export const Route = createFileRoute("/night-reflection")({
   component: NightReflectionPage,
 });
 
 function NightReflectionPage() {
-  const [learnings, setLearnings] = useState("");
   const navigate = useNavigate();
   const state = loadState();
 
-  const [wins, setWins] = useState("");
-  const [blockers, setBlockers] = useState("");
-  const [tomorrowAction, setTomorrowAction] = useState(state.daily.text);
-  const [completedToday, setCompletedToday] = useState<boolean | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [isFadingOut, setIsFadingOut] = useState(false);
+  const [reflectionText, setReflectionText] = useState("");
+  const [actionCompleted, setActionCompleted] = useState<boolean | null>(null);
 
-  function endDay() {
-    saveState({
-      ...state,
-      daily: {
-        text: tomorrowAction,
-        done: false,
-        date: todayKey(),
-      },
-      reflection: {
-        completedToday,
-        wins,
-        blockers,
-        tomorrowAction,
-      },
-    });
+  const [greetingText] = useState(() => {
+    const now = new Date();
+    return now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  });
 
-    navigate({ to: "/app" });
-  }  
+  const handleCloseoutDay = async () => {
+    if (actionCompleted === null || busy) return;
+    setBusy(true);
+
+    try {
+      const currentStore = loadState();
+      
+      // Update global store state with localized evening closeout data parameters
+      saveState({
+        ...currentStore,
+        reflection: {
+          ...currentStore.reflection,
+          completedToday: actionCompleted,
+          wins: reflectionText.trim() || "Completed execution interval.",
+          date: todayKey()
+        }
+      });
+
+      setIsFadingOut(true);
+      setTimeout(() => {
+        navigate({ to: "/app" });
+      }, 500);
+    } catch (err) {
+      console.error("Failed to commit evening closeout:", err);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-black px-6 py-12 text-zinc-100">
-      <div className="w-full max-w-2xl">
+    <div className={`flex min-h-screen items-center justify-center bg-black px-6 py-12 text-zinc-100 transition-all duration-500 ease-in-out ${
+      isFadingOut ? "opacity-0 scale-95 blur-md" : "opacity-100 scale-100 blur-0"
+    }`}>
+      <div className="w-full max-w-xl">
         
-        {/* Core Header Section */}
-        <div className="mb-6 flex flex-col items-center justify-center text-center">
-          <img
-            src="/icon-192.png"
-            alt="ApexMission"
-            className="h-20 w-20 object-contain mb-4"
-          />
-          <p className="text-xs font-black uppercase tracking-widest text-emerald-400 mb-2">
-            Deconstruct Performance
+        {/* Terminal Canopy Header */}
+        <div className="mb-8 flex flex-col items-center justify-center text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-indigo-500/20 bg-indigo-950/20 text-indigo-400 mb-4 shadow-[0_0_15px_rgba(99,102,241,0.15)]">
+            <Moon className="h-5 w-5 animate-pulse" />
+          </div>
+          <p className="text-[10px] font-black uppercase tracking-[0.25em] text-indigo-400 mb-1">
+            Day Closeout Telemetry · {greetingText}
           </p>
-          <h1 className="text-4xl font-black tracking-tight text-white md:text-5xl">
-            🌙 Night Reflection
+          <h1 className="text-3xl font-black tracking-tight text-white uppercase font-display">
+            Win Your Night
           </h1>
-          <p className="mt-2 text-sm text-zinc-500 font-medium">
-            Reflect honestly. Reset metrics. Prepare for tomorrow's execution.
+          <p className="mt-2 text-xs text-zinc-500 font-medium max-w-xs">
+            Review execution matrices, log tactical metrics, and prepare the mission deck for tomorrow morning.
           </p>
         </div>
 
-        {/* Master Performance Card */}
-        <div className="rounded-2xl border border-zinc-800 bg-[#0D0D11] p-8 shadow-2xl space-y-6">
+        {/* Tactical Form Panel */}
+        <div className="rounded-2xl border border-zinc-800 bg-[#0D0D11] p-6 sm:p-8 shadow-2xl space-y-6">
           
-          {/* Mission Core Container */}
-          <div>
-            <h2 className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
-              Active Strategic Mission
-            </h2>
-            <p className="mt-2 text-lg font-bold text-white tracking-tight">
-              {state.mission}
-            </p>
-          </div>
-
-          {/* Validation Checklist Switches */}
-          <div className="border-t border-zinc-900 pt-6">
-            <p className="text-xs font-bold text-zinc-300">
-              Did you execute today's One Action?
-            </p>
-            <div className="mt-3 flex gap-3">
+          {/* Step 1: Verification Node */}
+          <div className="text-left">
+            <label className="text-[10px] font-black uppercase tracking-wider text-zinc-500 block mb-3">
+              Did you execute today's primary action target?
+            </label>
+            <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                onClick={() => setCompletedToday(true)}
-                className={`flex-1 flex h-11 items-center justify-center gap-2 rounded-xl border text-xs font-bold transition-all duration-300 ${
-                  completedToday === true
-                    ? "border-emerald-500/40 bg-emerald-950/20 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.05)]"
-                    : "border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-700"
+                onClick={() => setActionCompleted(true)}
+                className={`h-12 flex items-center justify-center gap-2 rounded-xl border text-xs font-bold uppercase tracking-wider transition-all duration-300 ${
+                  actionCompleted === true
+                    ? "border-emerald-500/30 bg-emerald-950/20 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.05)]"
+                    : "border-zinc-900 bg-black/40 text-zinc-500 hover:border-zinc-800"
                 }`}
               >
-                <Check className="h-4 w-4" /> Mission Cleared
+                ✅ Absolute Success
               </button>
-
               <button
                 type="button"
-                onClick={() => setCompletedToday(false)}
-                className={`flex-1 flex h-11 items-center justify-center gap-2 rounded-xl border text-xs font-bold transition-all duration-300 ${
-                  completedToday === false
-                    ? "border-rose-500/40 bg-rose-950/20 text-rose-400 shadow-[0_0_15px_rgba(244,63,94,0.05)]"
-                    : "border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-700"
+                onClick={() => setActionCompleted(false)}
+                className={`h-12 flex items-center justify-center gap-2 rounded-xl border text-xs font-bold uppercase tracking-wider transition-all duration-300 ${
+                  actionCompleted === false
+                    ? "border-rose-500/30 bg-rose-950/20 text-rose-400 shadow-[0_0_15px_rgba(244,63,94,0.05)]"
+                    : "border-zinc-900 bg-black/40 text-zinc-500 hover:border-zinc-800"
                 }`}
               >
-                <X className="h-4 w-4" /> Mission Failed
+                ❌ Parameter Breach
               </button>
             </div>
           </div>
 
-          {/* Text Input Row: Wins */}
-          <div className="border-t border-zinc-900 pt-6">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block mb-2">
-              What went exceptionally well today? (Daily Wins)
+          {/* Step 2: Qualitative Audit Block */}
+          <div className="flex flex-col gap-2 text-left border-t border-zinc-900 pt-5">
+            <label htmlFor="reflection" className="text-[10px] font-black uppercase tracking-wider text-zinc-500 flex items-center gap-1">
+              <MessageSquarePlus className="h-3.5 w-3.5 text-zinc-600" /> Log Qualitative Reflection Notes
             </label>
             <textarea
-              value={wins}
-              onChange={(e) => setWins(e.target.value)}
-              placeholder="List system victories or milestones..."
-              className="w-full rounded-xl border border-zinc-800 bg-black p-3.5 text-sm text-white placeholder-zinc-700 outline-none transition-all duration-300 focus:border-emerald-500/50 focus:shadow-[0_0_15px_rgba(16,185,129,0.05)]"
-              rows={2}
+              id="reflection"
+              rows={3}
+              value={reflectionText}
+              onChange={(e) => setReflectionText(e.target.value)}
+              placeholder="Detail your operational bottleneck or critical wins captured over this interval..."
+              className="w-full rounded-xl border border-zinc-900 bg-black/40 p-3.5 text-sm text-zinc-100 placeholder-zinc-700 outline-none focus:border-zinc-800 transition-colors resize-none leading-relaxed"
             />
           </div>
 
-          {/* Text Input Row: Blockers */}
-          <div className="border-t border-zinc-900 pt-6">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block mb-2">
-              What bottlenecked your execution? (Blockers)
-            </label>
-            <textarea
-              value={blockers}
-              onChange={(e) => setBlockers(e.target.value)}
-              placeholder="What friction points held back velocity?"
-              className="w-full rounded-xl border border-zinc-800 bg-black p-3.5 text-sm text-white placeholder-zinc-700 outline-none transition-all duration-300 focus:border-emerald-500/50 focus:shadow-[0_0_15px_rgba(16,185,129,0.05)]"
-              rows={2}
-            />
+          {/* Step 3: Streak Status Display */}
+          <div className="flex items-center justify-between border-b border-zinc-950 rounded-xl bg-black/40 border border-zinc-900 px-4 py-3 text-xs">
+            <span className="font-semibold text-zinc-500 uppercase tracking-wider text-[9px]">Active Streak Cache:</span>
+            <span className="font-mono font-black text-orange-400 flex items-center gap-1 bg-zinc-900 px-2.5 py-1 rounded border border-zinc-800">
+              <Flame className="h-3.5 w-3.5 fill-orange-400 text-orange-500" /> {state?.streak?.count || 0} Interval Cycle
+            </span>
           </div>
 
-          {/* Text Input Row: Learnings */}
-          <div className="border-t border-zinc-900 pt-6">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block mb-2">
-              Strategic Key Learnings
-            </label>
-            <textarea
-              value={learnings}
-              onChange={(e) => setLearnings(e.target.value)}
-              placeholder="What will you optimize moving forward?"
-              className="w-full rounded-xl border border-zinc-800 bg-black p-3.5 text-sm text-white placeholder-zinc-700 outline-none transition-all duration-300 focus:border-emerald-500/50 focus:shadow-[0_0_15px_rgba(16,185,129,0.05)]"
-              rows={2}
-            />
-          </div>
-
-          {/* Input Row: Next Action */}
-          <div className="border-t border-zinc-900 pt-6">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-emerald-500 flex items-center gap-1.5 mb-2">
-              <Target className="h-3.5 w-3.5" /> Tomorrow's One Critical Action
-            </label>
-            <input
-              value={tomorrowAction}
-              onChange={(e) => setTomorrowAction(e.target.value)}
-              placeholder="Define tomorrow's dominant objective..."
-              className="w-full rounded-xl border border-zinc-800 bg-black p-3.5 text-sm text-white placeholder-zinc-700 outline-none transition-all duration-300 focus:border-emerald-500/50 focus:shadow-[0_0_15px_rgba(16,185,129,0.05)]"
-            />
-          </div>
-
-        </div>
-
-        {/* Submit Execution Button */}
-        <div className="mt-8 flex justify-center">
+          {/* Submit Trigger Action Button */}
           <button
             type="button"
-            onClick={endDay}
-            className="transform w-full max-w-xs rounded-xl bg-white py-4 text-sm font-bold text-black transition-all duration-300 ease-out hover:scale-102 hover:bg-emerald-400 hover:shadow-[0_0_25px_rgba(52,211,153,0.4)] active:scale-98 shadow-xl shadow-white/5"
+            disabled={actionCompleted === null || busy}
+            onClick={handleCloseoutDay}
+            className="w-full h-12 flex items-center justify-center gap-1.5 rounded-xl bg-white text-sm font-bold text-black transition-all duration-300 hover:bg-indigo-400 disabled:opacity-30 disabled:pointer-events-none mt-4 font-display shadow-xl shadow-white/5"
           >
-            Seal Day & Prepare Tomorrow →
+            {busy ? (
+              <Loader2 className="h-4 w-4 animate-spin text-black" />
+            ) : (
+              <>
+                <span>Seal Today's Parameters</span>
+                <ArrowRight className="h-4 w-4 text-black" />
+              </>
+            )}
           </button>
         </div>
-        
       </div>
     </div>
   );

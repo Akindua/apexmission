@@ -47,6 +47,7 @@ function ApexMission() {
 
   const [showMilestoneCelebration, setShowMilestoneCelebration] = useState<number | null>(null);
   const [activeLayoutTheme, setActiveLayoutTheme] = useState<string>("layout-default");
+  const [showPlanSuccessAlert, setShowPlanSuccessAlert] = useState(false);
 
   const BETA_MODE = true;
   const { premium: subscriptionPremium, tier } = useSubscriptionTier();
@@ -64,13 +65,16 @@ function ApexMission() {
 
   useEffect(() => {
     if (!hydrated) return;
-    const today = todayKey();
-    const lastSeen = localStorage.getItem("apexmission-morning-checkin");
-    
-    if (lastSeen !== today && state.daily.text.trim().length > 0) {
-      navigate({ to: "/daily-briefing" });
-    } 
-  }, [hydrated, navigate, state.daily.text]);
+
+    if (typeof window !== "undefined") {
+      const today = todayKey();
+      const lastSeen = localStorage.getItem("apexmission-morning-checkin");
+      
+      if (lastSeen !== today) {
+        navigate({ to: "/daily-briefing" });
+      }
+    }
+  }, [hydrated, navigate]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -204,9 +208,9 @@ function ApexMission() {
         ...s,
         mission: plan.mission || s.mission,
         tasks: {
-          high: plan.high.map((text) => ({ id: nextId(), text, done: false })),
-          medium: plan.medium.map((text) => ({ id: text, done: false })),
-          low: plan.low.map((text) => ({ id: nextId(), text, done: false })),
+          high: plan.high.map((text: string) => ({ id: nextId(), text, done: false })),
+          medium: plan.medium.map((text: string) => ({ id: nextId(), text, done: false })),
+          low: plan.low.map((text: string) => ({ id: nextId(), text, done: false })),
         },
         daily: { text: plan.dailyAction, done: false, date: todayKey() },
       }));
@@ -295,6 +299,43 @@ function ApexMission() {
   return (
     <div className={`min-h-screen transition-all duration-500 ease-in-out ${themeClasses.bg}`}>
       <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-8 sm:py-8">
+
+        {/* 📚 TUTORIAL WIZARD & AGE ATTESTATION CANOPY PANEL */}
+        {localStorage.getItem("apex-tutorial-completed") !== "true" && (
+          <div className="rounded-xl border border-emerald-500/20 bg-[#0E1612]/30 p-5 text-left animate-fade-in mb-6">
+            <p className="text-[10px] font-black uppercase tracking-wider text-emerald-400">System Onboarding & Compliance</p>
+            <h3 className="text-sm font-bold text-white mt-1">Operator Guide Vector</h3>
+            <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
+              Welcome to the Console Loop. This cockpit is structured strictly to push task execution through loss aversion parameters. 
+              By interacting with this app, you attest that you meet the minimum required age threshold of 10+ years old.
+            </p>
+            <div className="mt-4 flex items-center gap-3">
+              <span className="text-[11px] font-mono text-zinc-500 bg-black border border-zinc-900 px-2 py-0.5 rounded">⚠️ Age Limit: 10+ Required</span>
+              <button 
+                onClick={() => {
+                  localStorage.setItem("apex-tutorial-completed", "true");
+                  window.location.reload();
+                }}
+                className="ml-auto rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-bold text-black hover:bg-emerald-400 transition-colors"
+              >
+                Acknowledge & Seal Guide
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ⚡ FLOATING EMERALD ARCHITECTURE MAP SUCCESS NOTIFICATION BANNER */}
+        {showPlanSuccessAlert && (
+          <div className="fixed top-6 right-6 z-50 rounded-xl border border-emerald-500/30 bg-[#0E1612]/95 px-5 py-4 flex items-center gap-3 shadow-[0_0_30px_rgba(16,185,129,0.15)] backdrop-blur-md animate-fade-in">
+            <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-emerald-500 text-black">
+              <Check className="size-4 stroke-[3]" />
+            </div>
+            <div className="text-left">
+              <h4 className="text-xs font-black uppercase tracking-wider text-white">Blueprint Initialized</h4>
+              <p className="text-[11px] text-zinc-400 mt-0.5 font-medium">Mission parameter metrics, tasks, and daily actions extracted perfectly.</p>
+            </div>
+          </div>
+        )}
         
         {/* Navbar Header */}
         <header className={`flex flex-col gap-4 border-b pb-4 sm:flex-row sm:items-center sm:justify-between ${themeClasses.border}`}>
@@ -381,6 +422,25 @@ function ApexMission() {
               </div>
             </div>
           </section>
+
+          {/* 🎛️ INDUSTRY TELEMETRY COMPONENT DROPDOWN PROFILE SWITCHER */}
+          <div className="flex items-center gap-3 bg-[#0D0D11] border border-zinc-800 rounded-xl p-3 text-left">
+            <span className="text-[10px] font-black uppercase tracking-wider text-zinc-500 whitespace-nowrap pl-1">Audience Context:</span>
+            <select 
+              defaultValue="general"
+              onChange={(e) => {
+                const profile = e.target.value as keyof typeof AUDIENCE_PROFILES;
+                alert(`⚡ Operational placeholder parameters tuned for: ${e.target.options[e.target.selectedIndex].text}`);
+              }}
+              className="bg-black border border-zinc-900 rounded-lg h-9 px-3 text-xs font-bold text-emerald-400 outline-none focus:border-zinc-800 cursor-pointer w-full"
+            >
+              <option value="general">💼 Professional Standard</option>
+              <option value="ceo">🚀 Chief Executive Officer (CEO)</option>
+              <option value="corporate">🏢 Corporate Worker</option>
+              <option value="university">🎓 University Student</option>
+              <option value="student">🏫 High School Student</option>
+            </select>
+          </div>
 
           {/* 📊 2. THE PRIORITY MATRIX SPLIT COLUMNS */}
           <section className="grid flex-1 grid-cols-1 gap-4 md:grid-cols-3">
@@ -580,13 +640,17 @@ function ApexMission() {
               ...s,
               mission: plan.mission || s.mission,
               tasks: {
-                high: plan.high.map((text: string) => ({ id: nextId(), text, done: false })),
-                medium: plan.medium.map((text: string) => ({ id: text, done: false })),
-                low: plan.low.map((text: string) => ({ id: nextId(), text, done: false })),
+                high: (plan.high || []).map((text: string) => ({ id: nextId(), text, done: false })),
+                medium: (plan.medium || []).map((text: string) => ({ id: nextId(), text, done: false })),
+                low: (plan.low || []).map((text: string) => ({ id: nextId(), text, done: false })),
               },
-              daily: { text: plan.dailyAction, done: false, date: todayKey() },
+              daily: { text: plan.dailyAction || "", done: false, date: todayKey() },
             }));
-            setDailyDraft(plan.dailyAction);
+            setDailyDraft(plan.dailyAction || "");
+            
+            // 🚨 TRIGGER SUCCESS ALERT: Flash emerald banner notification row
+            setShowPlanSuccessAlert(true);
+            setTimeout(() => setShowPlanSuccessAlert(false), 4000);
           }}
         />
       </div>
@@ -624,6 +688,34 @@ function TaskRow({ task, onToggle, onRemove }: { task: Task, onToggle: () => voi
   );
 }
 
+export const AUDIENCE_PROFILES = {
+  ceo: {
+    high: "Capital Allocation / Executive Hirings",
+    medium: "Cross-Department Alignment Sweeps",
+    low: "Ebox Sorting / Calendar Curation"
+  },
+  corporate: {
+    high: "High-Priority Deliverables / QBR Decks",
+    medium: "Cross-Functional Sync Intercepts",
+    low: "Timesheet Logging / Jira Grooming"
+  },
+  university: {
+    high: "Thesis Writing / Core Lab Code",
+    medium: "Lecture Curation & Problem Sheets",
+    low: "Internship Grid Submissions"
+  },
+  student: {
+    high: "SAT Prep / Mastery Term Studies",
+    medium: "Extracurricular Documentation",
+    low: "Daily Homework Form Submission"
+  },
+  general: {
+    high: "Higher Leverage Strategy Focus Target",
+    medium: "Secondary Support Sub-Task Node",
+    low: "General Routine Maintenance Item"
+  }
+};
+
 const TIERS: Array<{
   key: ImpactTier;
   label: string;
@@ -631,6 +723,7 @@ const TIERS: Array<{
   borderClass: string;
   textClass: string;
   placeholder: string;
+
 }> = [
   { key: "high", label: "High Impact", accentClass: "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]", borderClass: "focus-within:border-rose-500/30", textClass: "text-rose-400 font-bold", placeholder: "Add higher leverage target…" },
   { key: "medium", label: "Medium Impact", accentClass: "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]", borderClass: "focus-within:border-amber-500/30", textClass: "text-amber-400 font-bold", placeholder: "Add secondary sub-task…" },
