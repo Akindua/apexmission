@@ -38,10 +38,12 @@ function loadMessages(): UIMessage[] {
 
 export function MissionCoach({
   premium = false,
+  state,
   onLockedHistory,
   onActionPlanGenerated,
 }: {
   premium?: boolean;
+  state: any;
   onLockedHistory?: () => void;
   onActionPlanGenerated?: (plan: any) => void;
 }) {
@@ -129,6 +131,7 @@ export function MissionCoach({
       generateActionPlan={generateActionPlan}
       generatingPlan={generatingPlan}
       planGenerated={planGenerated}
+      state={state}
     />
   );
 }
@@ -163,6 +166,7 @@ function CoachPanel({
   generateActionPlan,
   generatingPlan,
   planGenerated,
+  state,
 }: {
   uploadedText: string;
   open: boolean;
@@ -178,6 +182,7 @@ function CoachPanel({
   generateActionPlan: () => Promise<void>;
   generatingPlan: boolean;
   planGenerated: boolean;
+  state: any;
 }) {
   const transport = useMemo(() => new DefaultChatTransport({ api: "/api/chat" }), []);
   const [error, setError] = useState<string | null>(null);
@@ -233,7 +238,7 @@ function CoachPanel({
     } catch {}
 
     // --- 🧠 RIGOROUS SOCRATIC DEFICIT TRANS-MATRIX INTERCEPT ---
-    const historicalContext = `
+    const SocraticContext = `
       [CRITICAL COGNITIVE AUDIT LEDGER]
       CURRENT OPERATOR STREAK: ${state?.streak?.count || 0} Days.
       CURRENT ASSIGNED FOCUS OBJECTIVE: "${state?.daily?.text || "No target scheduled"}"
