@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { supabase } from "@/integrations/supabase/client";
 import { loadState, todayKey, saveState } from "@/lib/mission-store";
-import { Moon, CheckCircle, Flame, ArrowRight, Loader2, MessageSquarePlus } from "lucide-react";
+import { Moon, Flame, ArrowRight, Loader2, MessageSquarePlus } from "lucide-react";
 
 export const Route = createFileRoute("/night-reflection")({
   component: NightReflectionPage,
@@ -14,8 +13,13 @@ function NightReflectionPage() {
 
   const [busy, setBusy] = useState(false);
   const [isFadingOut, setIsFadingOut] = useState(false);
-  const [reflectionText, setReflectionText] = useState("");
   const [actionCompleted, setActionCompleted] = useState<boolean | null>(null);
+
+  // --- 📝 FOUR DISTINCT STRUCTURAL FOCUS LOG FIELDS ---
+  const [wentWell, setWentWell] = useState("");
+  const [couldImprove, setCouldImprove] = useState("");
+  const [lessonsLearned, setLessonsLearned] = useState("");
+  const [takeIntoTomorrow, setTakeIntoTomorrow] = useState("");
 
   const [greetingText] = useState(() => {
     const now = new Date();
@@ -29,13 +33,20 @@ function NightReflectionPage() {
     try {
       const currentStore = loadState();
       
-      // Update global store state with localized evening closeout data parameters
+      // Combine all answers cleanly into a structured review string for the AI coach to read later
+      const synthesizedReflection = `
+        1. WHAT WENT WELL: ${wentWell.trim() || "No entry recorded."}
+        2. DEFICIT AREAS: ${couldImprove.trim() || "No entry recorded."}
+        3. KEY ACQUIRED INTEL: ${lessonsLearned.trim() || "No entry recorded."}
+        4. NEXT VELOCITY BLOCK: ${takeIntoTomorrow.trim() || "No entry recorded."}
+      `;
+
       saveState({
         ...currentStore,
         reflection: {
           ...currentStore.reflection,
           completedToday: actionCompleted,
-          wins: reflectionText.trim() || "Completed execution interval.",
+          wins: synthesizedReflection,
           date: todayKey()
         }
       });
@@ -45,7 +56,7 @@ function NightReflectionPage() {
         navigate({ to: "/app" });
       }, 500);
     } catch (err) {
-      console.error("Failed to commit evening closeout:", err);
+      console.error("Failed to commit evening closeout data:", err);
     } finally {
       setBusy(false);
     }
@@ -68,9 +79,6 @@ function NightReflectionPage() {
           <h1 className="text-3xl font-black tracking-tight text-white uppercase font-display">
             Win Your Night
           </h1>
-          <p className="mt-2 text-xs text-zinc-500 font-medium max-w-xs">
-            Review execution matrices, log tactical metrics, and prepare the mission deck for tomorrow morning.
-          </p>
         </div>
 
         {/* Tactical Form Panel */}
@@ -107,23 +115,67 @@ function NightReflectionPage() {
             </div>
           </div>
 
-          {/* Step 2: Qualitative Audit Block */}
-          <div className="flex flex-col gap-2 text-left border-t border-zinc-900 pt-5">
-            <label htmlFor="reflection" className="text-[10px] font-black uppercase tracking-wider text-zinc-500 flex items-center gap-1">
-              <MessageSquarePlus className="h-3.5 w-3.5 text-zinc-600" /> Log Qualitative Reflection Notes
-            </label>
-            <textarea
-              id="reflection"
-              rows={3}
-              value={reflectionText}
-              onChange={(e) => setReflectionText(e.target.value)}
-              placeholder="Detail your operational bottleneck or critical wins captured over this interval..."
-              className="w-full rounded-xl border border-zinc-900 bg-black/40 p-3.5 text-sm text-zinc-100 placeholder-zinc-700 outline-none focus:border-zinc-800 transition-colors resize-none leading-relaxed"
-            />
+          {/* Step 2: Formulated Socratic Questions Array */}
+          <div className="space-y-4 border-t border-zinc-900 pt-5 text-left">
+            <h3 className="text-[10px] font-black uppercase tracking-wider text-zinc-400 flex items-center gap-1.5 mb-2">
+              <MessageSquarePlus className="h-3.5 w-3.5 text-zinc-600" /> Core Performance Review
+            </h3>
+
+            {/* Question 1 */}
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="q1" className="text-[10px] font-bold text-zinc-500">What went well today?</label>
+              <input
+                id="q1"
+                type="text"
+                value={wentWell}
+                onChange={(e) => setWentWell(e.target.value)}
+                placeholder="Identify exact wins or strategic execution markers..."
+                className="h-10 rounded-xl border border-zinc-900 bg-black/40 px-3.5 text-xs text-white outline-none focus:border-zinc-800 transition-colors"
+              />
+            </div>
+
+            {/* Question 2 */}
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="q2" className="text-[10px] font-bold text-zinc-500">What could have gone better?</label>
+              <input
+                id="q2"
+                type="text"
+                value={couldImprove}
+                onChange={(e) => setCouldImprove(e.target.value)}
+                placeholder="Pinpoint specific bottlenecks or distraction leaks..."
+                className="h-10 rounded-xl border border-zinc-900 bg-black/40 px-3.5 text-xs text-white outline-none focus:border-zinc-800 transition-colors"
+              />
+            </div>
+
+            {/* Question 3 */}
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="q3" className="text-[10px] font-bold text-zinc-500">What did you learn?</label>
+              <input
+                id="q3"
+                type="text"
+                value={lessonsLearned}
+                onChange={(e) => setLessonsLearned(e.target.value)}
+                placeholder="What operational insights did you capture?"
+                className="h-10 rounded-xl border border-zinc-900 bg-black/40 px-3.5 text-xs text-white outline-none focus:border-zinc-800 transition-colors"
+              />
+            </div>
+
+            {/* Question 4 */}
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="q4" className="text-[10px] font-bold text-zinc-500">What do you want to take into tomorrow?</label>
+              <input
+                id="q4"
+                type="text"
+                value={takeIntoTomorrow}
+                onChange={(e) => setTakeIntoTomorrow(e.target.value)}
+                placeholder="Define tomorrow morning's catalyst focus action target..."
+                className="h-10 rounded-xl border border-zinc-900 bg-black/40 px-3.5 text-xs text-white outline-none focus:border-zinc-800 transition-colors"
+              />
+            </div>
           </div>
 
-          {/* Step 3: Streak Status Display */}
-          <div className="flex items-center justify-between border-b border-zinc-950 rounded-xl bg-black/40 border border-zinc-900 px-4 py-3 text-xs">
+          {/* Active Streak Cache Node */}
+          <div className="flex items-center justify-between border-t border-zinc-950 rounded-xl bg-black/40 border border-zinc-900 px-4 py-3 text-xs">
             <span className="font-semibold text-zinc-500 uppercase tracking-wider text-[9px]">Active Streak Cache:</span>
             <span className="font-mono font-black text-orange-400 flex items-center gap-1 bg-zinc-900 px-2.5 py-1 rounded border border-zinc-800">
               <Flame className="h-3.5 w-3.5 fill-orange-400 text-orange-500" /> {state?.streak?.count || 0} Interval Cycle
