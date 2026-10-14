@@ -247,7 +247,9 @@ function CoachPanel({
       ? `${trimmed}\n\n${SocraticContext}\n\n[PARSED DOCUMENT FILE CONTEXT]:\n\n${uploadedText}`
       : `${trimmed}\n\n${SocraticContext}`;
 
-    void sendMessage({ text: activePayload }); 
+    void sendMessage({
+      text: activePayload
+    });
   }
 
 
