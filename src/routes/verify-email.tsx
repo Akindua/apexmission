@@ -17,39 +17,45 @@ function VerifyEmailPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // Core authorization checking engine
-  const checkEmailVerificationStatus = async (isManualClick = false) => {
-    if (isManualClick) setChecking(true);
-    setErrorMessage(null);
-
-    try {
-      // 1. Force Supabase to refresh its local token memory parameters straight out of the cloud cluster
-      const { data: { session }, error: refreshError } = await supabase.auth.refreshSession();
-      if (refreshError) throw refreshError;
-
-      // 2. Query the updated user configuration properties
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError) throw userError;
-
-      if (user && user.email_confirmed_at) {
-        // Successful lock-in! Trigger victory indicators and forward to plans screen
-        setIsSuccess(true);
-        setTimeout(() => {
-          navigate({ to: "/plans" });
-        }, 1500);
-      } else if (isManualClick) {
-        // If it was a manual click and they still aren't confirmed, trigger defensive barrier alerts
-        setErrorMessage("Verification link not yet confirmed. Please inspect your email inbox or request a fresh token broadcast below.");
+    // Core authentication status validator engine
+    const checkEmailVerificationStatus = async (isManualClick = false) => {
+      if (isManualClick) setChecking(true);
+      setErrorMessage(null);
+  
+      try {
+        // 1. Defensively retrieve the current browser user context configuration properties
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        // ✅ SSR/Auth Session Guard: Silently ignore background checks if the session is not yet loaded into browser memory
+        if (!user && !isManualClick) {
+          return; 
+        }
+  
+        if (user && user.email_confirmed_at) {
+          setIsSuccess(true);
+          setTimeout(() => {
+            navigate({ to: "/plans" });
+          }, 1500);
+        } else if (isManualClick) {
+          // Only force a hard token reload attempt if the operator explicitly requests it via a manual click interaction
+          const { error: refreshError } = await supabase.auth.refreshSession();
+          if (refreshError && refreshError.message.includes("session missing")) {
+            setErrorMessage("Verification link not yet confirmed. Please check your email inbox and click the secure confirmation link.");
+          } else if (refreshError) {
+            throw refreshError;
+          } else {
+            setErrorMessage("Verification link not yet confirmed. Please check your email inbox and click the secure confirmation link.");
+          }
+        }
+      } catch (err: any) {
+        console.error("Verification engine lookup exception bypassed safely:", err);
+        if (isManualClick) {
+          setErrorMessage(err.message || "Could not re-route token status queries. Check your network terminal links.");
+        }
+      } finally {
+        setChecking(false);
       }
-    } catch (err) {
-      console.error("Verification engine lookup fail:", err);
-      if (isManualClick) {
-        setErrorMessage("Could not re-route token status queries. Check your network terminal links and try again.");
-      }
-    } finally {
-      setChecking(false);
-    }
-  };
+    };  
 
   // 🔄 AUTOMATIC BACKGROUND POLLING MATRIX
   useEffect(() => {
