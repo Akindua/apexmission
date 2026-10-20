@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { loadState, todayKey } from "@/lib/mission-store";
 import { Clock, CheckSquare, Square, Target } from "lucide-react";
 
-export const Route = createFileRoute("/morning-checkin")({
+export const Route = createFileRoute("/MorningCheckIn")({
   component: DailyBriefingPage,
 });
 
@@ -81,6 +81,7 @@ function DailyBriefingPage() {
     const currentHour = new Date().getHours();
     const isMorningWindow = currentHour >= 5 && currentHour < 12;
     
+    // ✅ SECURE LOCK: If a user tries to access this route outside the morning interval, bounce them instantly
     if (!isMorningWindow) {
       navigate({ to: "/app" });
       return;

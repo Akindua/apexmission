@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as MorningCheckInRouteImport } from './routes/MorningCheckIn'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BillingRouteImport } from './routes/billing'
@@ -28,6 +29,11 @@ import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MorningCheckInRoute = MorningCheckInRouteImport.update({
+  id: '/MorningCheckIn',
+  path: '/MorningCheckIn',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
@@ -103,6 +109,7 @@ const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/MorningCheckIn': typeof MorningCheckInRoute
   '/app': typeof AppRoute
   '/auth': typeof AuthRoute
   '/billing': typeof BillingRoute
@@ -120,6 +127,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/MorningCheckIn': typeof MorningCheckInRoute
   '/app': typeof AppRoute
   '/auth': typeof AuthRoute
   '/billing': typeof BillingRoute
@@ -138,6 +146,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/MorningCheckIn': typeof MorningCheckInRoute
   '/app': typeof AppRoute
   '/auth': typeof AuthRoute
   '/billing': typeof BillingRoute
@@ -157,6 +166,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/MorningCheckIn'
     | '/app'
     | '/auth'
     | '/billing'
@@ -174,6 +184,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/MorningCheckIn'
     | '/app'
     | '/auth'
     | '/billing'
@@ -191,6 +202,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/MorningCheckIn'
     | '/app'
     | '/auth'
     | '/billing'
@@ -209,6 +221,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  MorningCheckInRoute: typeof MorningCheckInRoute
   AppRoute: typeof AppRoute
   AuthRoute: typeof AuthRoute
   BillingRoute: typeof BillingRoute
@@ -232,6 +245,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/MorningCheckIn': {
+      id: '/MorningCheckIn'
+      path: '/MorningCheckIn'
+      fullPath: '/MorningCheckIn'
+      preLoaderRoute: typeof MorningCheckInRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app': {
@@ -337,6 +357,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  MorningCheckInRoute: MorningCheckInRoute,
   AppRoute: AppRoute,
   AuthRoute: AuthRoute,
   BillingRoute: BillingRoute,

@@ -96,7 +96,7 @@ function ApexMission() {
       
       // Only route to morning check-in if the operator hasn't checked in yet today AND it is currently morning
       if (lastSeen !== today && isMorningWindow) {
-        navigate({ to: "/morning-checkin" });
+        navigate({ to: "/Morning-Checkin" });
       }
     }
   }, [hydrated, navigate]);
@@ -428,7 +428,7 @@ function ApexMission() {
               <button 
                 onClick={() => {
                   localStorage.setItem("apex-tutorial-completed", "true");
-                  window.location.reload();
+                  navigate({ to: "/app" });
                 }}
                 className="rounded-xl bg-white px-4 py-2 text-xs font-bold text-black hover:bg-emerald-400 transition-all shadow-md shadow-white/5 active:scale-95"
               >
