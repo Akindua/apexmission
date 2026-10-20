@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { loadState, todayKey } from "@/lib/mission-store";
 import { Clock, CheckSquare, Square, Target } from "lucide-react";
 
-export const Route = createFileRoute("/daily-briefing")({
+export const Route = createFileRoute("/morning-checkin")({
   component: DailyBriefingPage,
 });
 
@@ -105,12 +105,12 @@ function DailyBriefingPage() {
   }
 
   return (
-    <div 
-      className={`flex min-h-screen items-center justify-center bg-black px-6 py-12 text-zinc-100 transition-all duration-500 ease-in-out ${
+    <div className={`flex min-h-screen items-center justify-center bg-black px-6 py-12 text-zinc-100 transition-all duration-500 ease-in-out ${
         isFadingOut ? "opacity-0 scale-95 blur-md" : "opacity-100 scale-100 blur-0"
       }`}
     >
-      <div className="w-full max-w-2xl">
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 size-96 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none animate-pulse" />
+      <div className="w-full max-w-lg rounded-2xl border border-zinc-900 bg-[#0A0A0F]/90 p-8 text-center shadow-2xl relative overflow-hidden backdrop-blur-xl border-t-indigo-500/30 border-t-2">
         <div className="mb-6 flex flex-col items-center justify-center text-center">
           <img
             src="/icon-192.png"

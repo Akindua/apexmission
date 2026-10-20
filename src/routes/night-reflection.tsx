@@ -63,10 +63,11 @@ function NightReflectionPage() {
   };
 
   return (
-    <div className={`flex min-h-screen items-center justify-center bg-black px-6 py-12 text-zinc-100 transition-all duration-500 ease-in-out ${
+    <div className={`flex min-h-screen items-center justify-center bg-black px-6 py-12 text-zinc-100 relative overflow-hidden animate-scan-line transition-all duration-500 ease-in-out ${
       isFadingOut ? "opacity-0 scale-95 blur-md" : "opacity-100 scale-100 blur-0"
     }`}>
-      <div className="w-full max-w-xl">
+      <div className="absolute top-3/4 left-1/3 size-80 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="w-full max-w-xl relative z-10 transition-all duration-300">
         
         {/* Terminal Canopy Header */}
         <div className="mb-8 flex flex-col items-center justify-center text-center">

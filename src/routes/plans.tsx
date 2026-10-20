@@ -1,4 +1,6 @@
+import React, { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
 import { Check, Sparkles, Zap, ShieldCheck } from "lucide-react";
 
 export const Route = createFileRoute("/plans")({
@@ -7,11 +9,23 @@ export const Route = createFileRoute("/plans")({
 
 function PlansPage() {
   const navigate = useNavigate();
+  const [operatorMoniker, setOperatorMoniker] = useState("Operator");
+
+  // 📡 Live profile name token extraction layer
+  useEffect(() => {
+    const pullOperatorProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && user.user_metadata?.full_name) {
+        setOperatorMoniker(user.user_metadata.full_name);
+      }
+    };
+    pullOperatorProfile();
+  }, []);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-black px-6 py-12 text-zinc-100">
-      <div className="w-full max-w-3xl text-center flex flex-col items-center justify-center">
-        
+    <div className="min-h-screen flex flex-col items-center justify-center bg-black px-6 py-12 text-zinc-100 relative overflow-hidden animate-scan-line">
+      <div className="w-full max-w-3xl text-center flex flex-col items-center justify-center relative z-10 animate-fade-in duration-700">
+
         {/* Geometric Logo Anchor */}
         <img
           src="/icon-192.png"
@@ -21,7 +35,7 @@ function PlansPage() {
 
         {/* Solid Neon Emerald Accent Label */}
         <p className="text-[10px] font-black uppercase tracking-[0.25em] text-emerald-400 mb-2">
-          Tier Selection Cockpit
+          Tier Selection Cockpit · Welcome, {operatorMoniker}
         </p>
 
         <h1 className="text-4xl font-black tracking-tight text-white mb-3 md:text-5xl">

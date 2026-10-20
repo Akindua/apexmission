@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { ShieldAlert, Loader2, Mail, CheckCircle } from "lucide-react";
+import { ShieldAlert, Loader2, Mail, CheckCircle, Radio } from "lucide-react";
 
 export const Route = createFileRoute("/verify-email")({
   component: VerifyEmailPage,
@@ -9,7 +9,6 @@ export const Route = createFileRoute("/verify-email")({
 
 function VerifyEmailPage() {
   const navigate = useNavigate();
-  // Safe extraction lookup maps for the email search parameter strings
   const { email } = useSearch({ from: "/verify-email" }) as { email?: string };
 
   const [busy, setBusy] = useState(false);
@@ -17,57 +16,46 @@ function VerifyEmailPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
-    // Core authentication status validator engine
-    const checkEmailVerificationStatus = async (isManualClick = false) => {
-      if (isManualClick) setChecking(true);
-      setErrorMessage(null);
+  // Core authentication status validator engine
+  const checkEmailVerificationStatus = async (isManualClick = false) => {
+    // ✅ Guard: Block background execution triggers immediately
+    if (!isManualClick) return;
+    
+    setChecking(true);
+    setErrorMessage(null);
   
-      try {
-        // 1. Defensively retrieve the current browser user context configuration properties
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
-        // ✅ SSR/Auth Session Guard: Silently ignore background checks if the session is not yet loaded into browser memory
-        if (!user && !isManualClick) {
-          return; 
-        }
+    try {
+      // 1. Force a manual refresh token cache handshake from your remote database fields
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) throw refreshError;
   
-        if (user && user.email_confirmed_at) {
-          setIsSuccess(true);
-          setTimeout(() => {
-            navigate({ to: "/plans" });
-          }, 1500);
-        } else if (isManualClick) {
-          // Only force a hard token reload attempt if the operator explicitly requests it via a manual click interaction
-          const { error: refreshError } = await supabase.auth.refreshSession();
-          if (refreshError && refreshError.message.includes("session missing")) {
-            setErrorMessage("Verification link not yet confirmed. Please check your email inbox and click the secure confirmation link.");
-          } else if (refreshError) {
-            throw refreshError;
-          } else {
-            setErrorMessage("Verification link not yet confirmed. Please check your email inbox and click the secure confirmation link.");
-          }
-        }
-      } catch (err: any) {
-        console.error("Verification engine lookup exception bypassed safely:", err);
-        if (isManualClick) {
-          setErrorMessage(err.message || "Could not re-route token status queries. Check your network terminal links.");
-        }
-      } finally {
-        setChecking(false);
+      // 2. Retrieve user context configuration properties securely
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
+  
+      if (user && user.email_confirmed_at) {
+        setIsSuccess(true);
+        setTimeout(() => {
+          navigate({ to: "/plans" });
+        }, 1500);
+      } else {
+        // If they click manually but haven't authorized the inbox packet link, show a defensive alert
+        setErrorMessage("Verification link not yet confirmed. Please check your email inbox and click the secure confirmation link before proceeding.");
       }
-    };  
-
-  // 🔄 AUTOMATIC BACKGROUND POLLING MATRIX
+    } catch (err: any) {
+      console.error("Verification engine lookup exception:", err);
+      setErrorMessage("Could not re-route token status queries. Ensure you have clicked the confirmation link inside your email inbox.");
+    } finally {
+      setChecking(false);
+    }
+  };  
+  
+  // 🔄 FIXED: Automated background polling matrix removed to prevent involuntary automatic entry.
   useEffect(() => {
-    // Poll the Supabase authentication cache lines every 3 seconds to catch external inbox validation link clicks automatically
-    const pollingInterval = setInterval(() => {
-      if (!isSuccess && !checking) {
-        checkEmailVerificationStatus(false);
-      }
-    }, 3000);
-
-    return () => clearInterval(pollingInterval);
-  }, [isSuccess, checking]);
+    console.log("🔒 Identity verification lock initialized. Manual confirmation required.");
+    // The background interval loop is completely gone. System stays locked until button press.
+  }, []);
+  
 
   const handleResendEmail = async () => {
     if (!email || busy) return;
@@ -83,7 +71,7 @@ function VerifyEmailPage() {
         },
       });
       if (error) throw error;
-      alert("🚀 Fresh verification link broadcasted to your inbox grid coordinates safely.");
+      alert("🚀 Fresh verification link broadcasted to your inbox grid parameters safely.");
     } catch (err: any) {
       setErrorMessage(err.message || "Could not re-transmit email parameters.");
     } finally {
@@ -92,32 +80,38 @@ function VerifyEmailPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-black px-6 py-12 text-zinc-100">
-      <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-[#0D0D11] p-8 text-center shadow-2xl relative overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#040406] px-6 py-12 text-zinc-100 relative overflow-hidden animate-scan-line">
+      {/* Immersive Industrial Graphical Grid Background */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f293708_1px,transparent_1px),linear-gradient(to_bottom,#1f293708_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-[500px] bg-emerald-500/[0.02] rounded-full blur-3xl pointer-events-none" />
+      
+      {/* Core Cockpit Card Terminal Shell */}
+      <div className="w-full max-w-md rounded-2xl border border-zinc-800/80 bg-[#0A0A0F]/90 p-8 text-center shadow-[0_0_50px_rgba(0,0,0,0.8)] relative overflow-hidden backdrop-blur-xl transition-all duration-500 hover:border-zinc-700/50">
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />
         
-        {/* Aesthetic Gradient Accent */}
-        <div className={`pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-transparent to-transparent transition-all duration-500 ${
-          isSuccess ? "via-emerald-400" : "via-zinc-700"
-        }`} />
-
-        <div className={`mx-auto flex size-12 items-center justify-center rounded-xl border mb-6 transition-all duration-300 ${
+        {/* Animated Listening Radar Beacon */}
+        <div className={`mx-auto flex size-14 items-center justify-center rounded-xl border mb-6 transition-all duration-500 ${
           isSuccess 
-            ? "border-emerald-500/20 bg-emerald-950/40 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]" 
+            ? "border-emerald-500/30 bg-emerald-950/40 text-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.2)]" 
             : "border-zinc-800 bg-zinc-900/40 text-zinc-400"
         }`}>
-          {isSuccess ? <CheckCircle className="h-5 w-5 animate-pulse" /> : <Mail className="h-5 w-5" />}
+          {isSuccess ? (
+            <CheckCircle className="h-6 w-6 animate-pulse" />
+          ) : (
+            <Mail className="h-6 w-6 text-zinc-400" />
+          )}
         </div>
 
-        <p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1.5 transition-colors ${isSuccess ? "text-emerald-400" : "text-zinc-500"}`}>
+        <p className={`text-[10px] font-black uppercase tracking-[0.25em] mb-1.5 transition-colors duration-300 ${isSuccess ? "text-emerald-400" : "text-zinc-500"}`}>
           {isSuccess ? "Identity Secured" : "Security Lock Active"}
         </p>
-        <h1 className="text-2xl font-black tracking-tight text-white mb-2">
-          {isSuccess ? "Email Confirmed!" : "Verify Your Identity"}
+        <h1 className="text-2xl font-black tracking-tight text-white mb-2 uppercase font-mono">
+          {isSuccess ? "Session Verified!" : "Confirm Your Link"}
         </h1>
-        <p className="text-xs font-medium text-zinc-500 leading-relaxed mb-6">
+        <p className="text-xs font-medium text-zinc-400 leading-relaxed mb-6 max-w-xs mx-auto">
           {isSuccess 
-            ? "Redirecting straight into your plan selection cockpit matrix parameters now..." 
-            : `A secure verification token has been deployed to ${email || "your email coordinates"}. Confirm the link to unlock execution access.`}
+            ? "Token handshake synchronized cleanly. Transferring to plan configuration cockpit..." 
+            : `A secure verification token message packet has been successfully deployed over to ${email || "your credentials"}. Open your inbox, click the activation link, then return here to confirm.`}
         </p>
 
         {errorMessage && (
@@ -128,12 +122,12 @@ function VerifyEmailPage() {
         )}
 
         <div className="flex flex-col gap-3">
-          {/* Hardened Explicit Verification Trigger Capsule */}
+          {/* ⚡ ACTIVE SECURE MANUAL VERIFICATION TRIGGER CAPSULE */}
           <button
             type="button"
             disabled={checking || isSuccess}
             onClick={() => checkEmailVerificationStatus(true)}
-            className="w-full h-11 flex items-center justify-center rounded-xl bg-white text-sm font-bold text-black transition-all duration-300 hover:bg-emerald-400 disabled:opacity-40 shadow-xl shadow-white/5"
+            className="w-full h-12 flex items-center justify-center gap-1.5 rounded-xl bg-white text-sm font-bold text-black transition-all duration-300 hover:bg-emerald-400 hover:shadow-[0_0_25px_rgba(52,211,153,0.3)] active:scale-98 font-mono shadow-xl shadow-white/5 disabled:opacity-40"
           >
             {checking ? (
               <Loader2 className="h-4 w-4 animate-spin text-black" />
@@ -148,7 +142,7 @@ function VerifyEmailPage() {
             onClick={handleResendEmail}
             className="w-full h-11 rounded-xl border border-zinc-800 bg-transparent text-sm font-bold text-zinc-400 transition-all duration-300 hover:border-zinc-700 hover:text-white disabled:opacity-40"
           >
-            {busy ? "Re-transmitting..." : "Resend Verification Email"}
+            {busy ? "Re-transmitting Packet..." : "Resend Verification Email"}
           </button>
         </div>
       </div>

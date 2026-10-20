@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, Flame, Lock, Plus, Sparkles, Loader2, Target, TimerReset, Trash2 } from "lucide-react";
+import { Check, Flame, Lock, Plus, Sparkles, Loader2, Target, TimerReset, Trash2, Shield, Trophy } from "lucide-react";
 import { PaywallModal } from "@/components/PaywallModal";
 import { MissionCoach } from "@/components/MissionCoach";
 import { useSubscriptionTier } from "@/hooks/useSubscriptionTier";
@@ -33,6 +33,26 @@ function ApexMission() {
   const [justCompleted, setJustCompleted] = useState(false);
   const [resetMs, setResetMs] = useState<number | null>(null);
   const [paywall, setPaywall] = useState<string | null>(null);
+
+  // 🏛️ Professional Accountability Pool Parameters
+  const LEADERBOARD_POOL = [
+    { rank: 1, operator: "Vance.M", streak: 42, points: 4200, status: "Apex Elite" },
+    { rank: 2, operator: "Kaelen.G", streak: 28, points: 2850, status: "High Velocity" },
+    { rank: 3, operator: "S_Ariya", streak: 19, points: 1950, status: "Operational" },
+    { rank: 4, operator: "User (You)", streak: state?.streak?.count || 0, points: (state as any)?.points || 0, status: "Synchronizing" },
+  ];
+  
+  // 🛠️ Hardware Store Inventory Matrix
+  const HARDWARE_STORE_INVENTORY = [
+    { id: "theme-midnight", name: "Midnight Core Glass", cost: 500, type: "Aesthetic UI Overlay", desc: "Forces deep obsidian color calibrations across grid panels." },
+    { id: "theme-cyber", name: "Cyber Amber HUD", cost: 1200, type: "HUD Matrix Tint", desc: "Swaps command panel text layers into pure high-contrast performance amber." },
+    { id: "streak-shield-1", name: "Streak Freeze Matrix", cost: 3000, type: "Loss Prevention Parameter", desc: "Automated streak defense. Absorbs a single calendar deadline breach event." },
+  ];
+  
+  // Live state tracking managers
+  const [activeTab, setActiveTab] = useState<"workspace" | "leaderboard" | "hardware">("workspace");
+  const [surpriseLoot, setSurpriseLoot] = useState<{ active: boolean; msg: string; points: number } | null>(null);
+  
 
   const navigate = useNavigate();
   const checkout = useServerFn(startCheckout);
@@ -70,8 +90,13 @@ function ApexMission() {
       const today = todayKey();
       const lastSeen = localStorage.getItem("apexmission-morning-checkin");
       
-      if (lastSeen !== today) {
-        navigate({ to: "/daily-briefing" });
+      // ⏱️ TIME WINDOW GUARD: Check if the current time falls inside the morning zone (5 AM - 12 PM)
+      const currentHour = new Date().getHours();
+      const isMorningWindow = currentHour >= 5 && currentHour < 12;
+      
+      // Only route to morning check-in if the operator hasn't checked in yet today AND it is currently morning
+      if (lastSeen !== today && isMorningWindow) {
+        navigate({ to: "/morning-checkin" });
       }
     }
   }, [hydrated, navigate]);
@@ -89,6 +114,41 @@ function ApexMission() {
     setActiveLayoutTheme(activeLayout);
   }, []);
 
+  // 📉 ACCELERATED INTEL LOSS DEGRADATION MATRIX (Loss Aversion Engine)
+  useEffect(() => {
+    if (!hydrated) return;
+  
+    const executePenaltyAudit = () => {
+      const highImpactTasks = state.tasks?.high || [];
+      const pendingHighCount = highImpactTasks.filter(t => !t.done).length;
+  
+      if (pendingHighCount > 0) {
+        setState((s) => {
+          const currentPoints = (s as any).points || 0;
+          const penaltyAmount = pendingHighCount * 10; // Deduct 10 credits per unexecuted item
+          const optimizedPoints = Math.max(0, currentPoints - penaltyAmount);
+  
+          // Trigger a system notification feedback line defensively if context allows
+          if (penaltyAmount > 0 && typeof window !== "undefined") {
+            setSurpriseLoot({
+              active: true,
+              msg: `📉 ACCOUNTABILITY FAULT: Lost ${penaltyAmount} credits due to sustained procrastination on ${pendingHighCount} High-Impact objectives.`,
+              points: -penaltyAmount
+            });
+            setTimeout(() => setSurpriseLoot(null), 4000);
+          }
+  
+          return { ...s, points: optimizedPoints };
+        });
+      }
+    };
+  
+    // Audit and process degradation parameters every 60 minutes
+    const penaltyTimer = setInterval(executePenaltyAudit, 3600000);
+    return () => clearInterval(penaltyTimer);
+  }, [hydrated, state.tasks?.high]);
+  
+
   function handleGoToNightReflection() {
     navigate({ to: "/night-reflection" });
   }
@@ -102,34 +162,35 @@ function ApexMission() {
     return `${month}. ${dayNum}${suffix} ${year}`;
   });
 
-  const themeClasses = useMemo(() => {
-    switch (activeLayoutTheme) {
-      case "layout-midnight":
-        return {
-          bg: "bg-[#050508] text-zinc-100",
-          card: "bg-[#0A0A0F] border-emerald-500/20 shadow-[0_0_30px_rgba(16,185,129,0.02)]",
-          border: "border-emerald-500/20"
-        };
-      case "layout-cyber":
-        return {
-          bg: "bg-[#080500] text-amber-100",
-          card: "bg-[#0F0A00] border-amber-500/20 shadow-[0_0_30px_rgba(245,158,11,0.02)]",
-          border: "border-amber-500/20"
-        };
-      case "layout-stealth":
-        return {
-          bg: "bg-[#090A0F] text-slate-100",
-          card: "bg-[#111218] border-zinc-800 shadow-none",
-          border: "border-zinc-800"
-        };
-      default:
-        return {
-          bg: "bg-black text-zinc-100",
-          card: "bg-[#0D0D11] border-zinc-800 shadow-xl",
-          border: "border-zinc-800"
-        };
-    }
-  }, [activeLayoutTheme]);
+    // 🎨 OPTIMIZED INDUSTRIAL CYBER HUD INTERPOLATOR
+    const themeClasses = useMemo(() => {
+      switch (activeLayoutTheme) {
+        case "theme-midnight":
+          return {
+            bg: "bg-[#040406] text-zinc-100",
+            card: "bg-[#09090D] border-emerald-500/10 shadow-[0_0_50px_rgba(16,185,129,0.01)] backdrop-blur-md",
+            border: "border-zinc-900/60",
+            accent: "text-emerald-400 bg-emerald-950/20 border-emerald-500/20",
+            glow: "shadow-[0_0_15px_rgba(16,185,129,0.15)] bg-emerald-400"
+          };
+        case "theme-cyber":
+          return {
+            bg: "bg-[#0A0700] text-amber-100 font-mono",
+            card: "bg-[#140D00] border-amber-500/20 shadow-[0_0_50px_rgba(245,158,11,0.02)] border-dashed",
+            border: "border-amber-900/40",
+            accent: "text-amber-500 bg-amber-950/40 border-amber-500/30 font-black",
+            glow: "shadow-[0_0_20px_rgba(245,158,11,0.25)] bg-amber-500"
+          };
+        default:
+          return {
+            bg: "bg-black text-zinc-100",
+            card: "bg-[#0D0D11] border-zinc-800 shadow-xl",
+            border: "border-zinc-800",
+            accent: "text-emerald-400 bg-emerald-950/20 border-emerald-500/10",
+            glow: "shadow-[0_0_10px_rgba(52,211,153,0.3)] bg-emerald-400"
+          };
+      }
+    }, [activeLayoutTheme]);  
 
   const [userName, setUserName] = useState("User");
 
@@ -245,13 +306,41 @@ function ApexMission() {
   }
 
   function toggleTask(tier: ImpactTier, id: string) {
-    setState((s) => ({
-      ...s,
-      tasks: {
-        ...s.tasks,
-        [tier]: (s.tasks[tier] || []).map((t) => (t.id === id ? { ...t, done: !t.done } : t)),
-      },
-    }));
+    setState((s) => {
+      const currentTasks = s.tasks[tier] || [];
+      const targetTask = currentTasks.find(t => t.id === id);
+      const targetCompleting = targetTask ? !targetTask.done : false;
+
+      // 🎲 Skinner Box Variable Payoff Math: Calculates probabilities dynamically
+      let scoreBonus = 0;
+      let rewardNotice = "";
+      
+      if (targetCompleting) {
+        scoreBonus += 50; // Standard completion payload
+        const randomRoll = Math.random();
+        if (randomRoll > 0.85) {
+          scoreBonus += 250; // Critical hit payoff
+          rewardNotice = "CRITICAL BOOTSTRAP BONUS EXECUTED! Infused +250 extra currency parameters.";
+        } else if (randomRoll > 0.65) {
+          scoreBonus += 100;
+          rewardNotice = "SURPRISE TELEMETRY DROP UNLOCKED! Added +100 currency.";
+        }
+      }
+
+      if (rewardNotice) {
+        setSurpriseLoot({ active: true, msg: rewardNotice, points: scoreBonus });
+        setTimeout(() => setSurpriseLoot(null), 4500);
+      }
+
+      return {
+        ...s,
+        points: Math.max(0, ((s as any).points || 0) + scoreBonus),
+        tasks: {
+          ...s.tasks,
+          [tier]: currentTasks.map((t) => (t.id === id ? { ...t, done: !t.done } : t)),
+        },
+      };
+    });
   }
 
   function removeTask(tier: ImpactTier, id: string) {
@@ -297,8 +386,8 @@ function ApexMission() {
   }
 
   return (
-    <div className={`min-h-screen transition-all duration-500 ease-in-out ${themeClasses.bg}`}>
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-8 sm:py-8">
+    <div className={`min-h-screen transition-all duration-500 ease-in-out ${themeClasses.bg} text-zinc-100 relative overflow-hidden animate-scan-line`}>
+      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-8 sm:py-8 relative z-10">
 
         {/* 📚 EXPANDED HIGH-PERFORMANCE WALKTHROUGH GUIDE CANOPY */}
         {hydrated && typeof window !== "undefined" && localStorage.getItem("apex-tutorial-completed") !== "true" && (
@@ -363,10 +452,10 @@ function ApexMission() {
         )}
         
         {/* Navbar Header */}
-        <header className={`flex flex-col gap-4 border-b pb-4 sm:flex-row sm:items-center sm:justify-between ${themeClasses.border}`}>
-          <div className="flex items-center gap-2.5">
-          <div className="flex size-9 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-950/20 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
-              <Target className="size-4.5" />
+        <header className="flex flex-col gap-4 border-b border-zinc-900 pb-4 sm:flex-row sm:items-center sm:justify-between bg-black/40 p-4 rounded-xl">
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-950/20 text-emerald-400">
+              <Target className="size-4.5 animate-pulse" />
             </div>
             <div className="text-left">
               <span className="font-black text-sm font-display tracking-[0.25em] text-white uppercase block">
@@ -375,6 +464,21 @@ function ApexMission() {
               <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block mt-0.5">
                 Command Console · {userName}
               </span>
+            </div>
+          </div>
+
+          {/* Clean Segment Navigation Controls */}
+          <div className="flex items-center gap-1 rounded-lg bg-zinc-950 border border-zinc-900 p-1 font-mono text-[9px] font-black uppercase tracking-wider">
+            <button type="button" onClick={() => setActiveTab("workspace")} className={`rounded-md px-3 py-1.5 transition-all ${activeTab === "workspace" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"}`}>Workspace</button>
+            <button type="button" onClick={() => setActiveTab("leaderboard")} className={`rounded-md px-3 py-1.5 transition-all ${activeTab === "leaderboard" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"}`}>Ranks</button>
+            <button type="button" onClick={() => setActiveTab("hardware")} className={`rounded-md px-3 py-1.5 transition-all ${activeTab === "hardware" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"}`}>Hardware</button>
+          </div>
+
+          {/* Clean Performance Tracking Metrics Block Group */}
+          <div className="flex items-center gap-3 justify-end font-mono">
+            <div className="text-[10px] font-black bg-zinc-950 border border-zinc-900 px-3 py-2 rounded-lg flex items-center gap-1.5 text-zinc-400">
+              <Shield className="size-3.5 text-emerald-400 fill-emerald-400/10" />
+              <span>{(state as any).points || 0} Credits</span>
             </div>
           </div>
 
@@ -410,216 +514,285 @@ function ApexMission() {
             >
               Disconnect Node
             </button>
+
+            {/* 🔄 AUTOMATED LOCAL TESTING WIPE TRIGGER */}
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm("⚠️ SYSTEM FLASH RESET: Clear all local profiles, execution statistics, currency balances, and active task tiers?")) {
+                  // Purge every local testing token from the cache memory
+                  localStorage.clear();
+                  
+                  // Reset window view location back to root parameters instantly to re-prime state hooks
+                  alert("🚀 Cache rows flushed successfully. Node data reset complete.");
+                  window.location.reload();
+                }
+              }}
+              className="rounded-xl border border-zinc-800 bg-[#0D0D11] hover:border-amber-500/40 hover:bg-amber-950/10 hover:text-amber-400 px-3 py-1.5 text-xs font-mono font-bold uppercase tracking-wider text-zinc-500 transition-all duration-300 active:scale-95"
+            >
+              Flush Cache Matrix
+            </button>
           </div>
         </header>
 
         {/* --- CORE WORKSPACE FOCUS GRID PANELS --- */}
         <div className="flex flex-col gap-6 animate-fade-in">
+          {activeTab === "workspace" && (
+            <div className="flex flex-col gap-6 animate-fade-in">
           
-          {/* 🏢 1. THE MISSION CARD CONTAINER */}
-          <section className={`relative overflow-hidden rounded-2xl border p-6 sm:p-8 ${themeClasses.card}`}>
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent" />
-            <label htmlFor="mission" className="text-[10px] font-black tracking-widest text-zinc-500 uppercase block">
-              Core Vision Statement
-            </label>
-            <input
-              id="mission"
-              value={state.mission}
-              onChange={(e) => setState((s) => ({ ...s, mission: e.target.value }))}
-              placeholder="Lock down your high-leverage vision matrix…"
-              className="mt-3 w-full bg-transparent font-display text-2xl font-black tracking-tight text-white outline-none placeholder:text-zinc-800 sm:text-4xl"
-            />
-            
-            <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-zinc-900/60 pt-5">
-              <div className="flex flex-1 items-center gap-4 min-w-40">
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-900 border border-zinc-800">
-                  <div
-                    className="h-full rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.4)] transition-all duration-700 ease-out"
-                    style={{ width: `${progress}%` }}
-                  />
+              {/* 🏢 1. THE MISSION CARD CONTAINER */}
+              <section className={`relative overflow-hidden rounded-2xl border p-6 sm:p-8 ${themeClasses.card}`}>
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent" />
+                <label htmlFor="mission" className="text-[10px] font-black tracking-widest text-zinc-500 uppercase block">
+                  Core Vision Statement
+                </label>
+                <input
+                  id="mission"
+                  value={state.mission}
+                  onChange={(e) => setState((s) => ({ ...s, mission: e.target.value }))}
+                  placeholder="Lock down your high-leverage vision matrix…"
+                  className="mt-3 w-full bg-transparent font-display text-2xl font-black tracking-tight text-white outline-none placeholder:text-zinc-800 sm:text-4xl"
+                />
+                
+                <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-zinc-900/60 pt-5">
+                  <div className="flex flex-1 items-center gap-4 min-w-40">
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-900 border border-zinc-800">
+                      <div
+                        className="h-full rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.4)] transition-all duration-700 ease-out"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                    <span className="font-mono text-xs font-bold text-zinc-400 tabular-nums whitespace-nowrap bg-black border border-zinc-800 px-2 py-0.5 rounded">
+                      {total === 0 ? "0%" : `${progress}% Done`}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={generateActionPlan}
+                      disabled={isGeneratingMissionPlan || !hydrated}
+                      className="transform group flex h-10 items-center gap-2 rounded-xl bg-zinc-900 border border-zinc-800 px-4 text-xs font-bold tracking-wide text-zinc-200 transition-all duration-300 ease-out hover:scale-102 hover:border-emerald-500/40 hover:bg-emerald-950/20 hover:text-emerald-400 active:scale-98 disabled:opacity-40"
+                    >
+                      {isGeneratingMissionPlan ? (
+                        <Loader2 className="size-3.5 animate-spin text-emerald-400" />
+                      ) : (
+                        <Sparkles className="size-3.5 text-emerald-400 group-hover:rotate-12 transition-transform duration-300" />
+                      )}
+                      {isGeneratingMissionPlan ? "Analyzing Mission..." : hasGeneratedMissionPlan ? "Regenerate AI Plan" : "Generate AI Plan"}
+                    </button>
+                    
+                    {premium && (
+                      <span className="rounded-lg bg-emerald-950/40 border border-emerald-500/20 px-2.5 py-1.5 text-[10px] font-black tracking-wider text-emerald-400 uppercase">
+                        {tier === "lifetime" ? "Lifetime" : "Premium"}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <span className="font-mono text-xs font-bold text-zinc-400 tabular-nums whitespace-nowrap bg-black border border-zinc-800 px-2 py-0.5 rounded">
-                  {total === 0 ? "0%" : `${progress}% Done`}
-                </span>
+              </section>
+
+              {/* 🎛️ INDUSTRY TELEMETRY COMPONENT DROPDOWN PROFILE SWITCHER */}
+              <div className="flex items-center gap-3 bg-[#0D0D11] border border-zinc-800 rounded-xl p-3 text-left">
+                <span className="text-[10px] font-black uppercase tracking-wider text-zinc-500 whitespace-nowrap pl-1">Audience Context:</span>
+                <select 
+                  defaultValue="general"
+                  onChange={(e) => {
+                    const profile = e.target.value as keyof typeof AUDIENCE_PROFILES;
+                    alert(`⚡ Operational placeholder parameters tuned for: ${e.target.options[e.target.selectedIndex].text}`);
+                  }}
+                  className="bg-black border border-zinc-900 rounded-lg h-9 px-3 text-xs font-bold text-emerald-400 outline-none focus:border-zinc-800 cursor-pointer w-full"
+                >
+                  <option value="general">💼 Professional Standard</option>
+                  <option value="ceo">🚀 Chief Executive Officer (CEO)</option>
+                  <option value="corporate">🏢 Corporate Worker</option>
+                  <option value="university">🎓 University Student</option>
+                  <option value="student">🏫 High School Student</option>
+                </select>
               </div>
 
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={generateActionPlan}
-                  disabled={isGeneratingMissionPlan || !hydrated}
-                  className="transform group flex h-10 items-center gap-2 rounded-xl bg-zinc-900 border border-zinc-800 px-4 text-xs font-bold tracking-wide text-zinc-200 transition-all duration-300 ease-out hover:scale-102 hover:border-emerald-500/40 hover:bg-emerald-950/20 hover:text-emerald-400 active:scale-98 disabled:opacity-40"
-                >
-                  {isGeneratingMissionPlan ? (
-                    <Loader2 className="size-3.5 animate-spin text-emerald-400" />
-                  ) : (
-                    <Sparkles className="size-3.5 text-emerald-400 group-hover:rotate-12 transition-transform duration-300" />
-                  )}
-                  {isGeneratingMissionPlan ? "Analyzing Mission..." : hasGeneratedMissionPlan ? "Regenerate AI Plan" : "Generate AI Plan"}
-                </button>
-                
-                {premium && (
-                  <span className="rounded-lg bg-emerald-950/40 border border-emerald-500/20 px-2.5 py-1.5 text-[10px] font-black tracking-wider text-emerald-400 uppercase">
-                    {tier === "lifetime" ? "Lifetime" : "Premium"}
-                  </span>
+              {/* 📊 2. THE PRIORITY MATRIX SPLIT COLUMNS */}
+              <section className="grid flex-1 grid-cols-1 gap-4 md:grid-cols-3">
+                {TIERS.map((tier) => (
+                  <div key={tier.key} className={`flex flex-col rounded-2xl border p-5 ${themeClasses.card}`}>
+                    <div className="flex items-center gap-2 border-b border-zinc-900/60 pb-3 mb-3">
+                      <span className={`size-2 rounded-full ${tier.accentClass}`} />
+                      <h2 className={`text-[10px] font-black tracking-widest uppercase ${tier.textClass}`}>
+                        {tier.label}
+                      </h2>
+                      <span className="ml-auto font-mono text-[10px] font-bold bg-black border border-zinc-800 px-2 py-0.5 rounded text-zinc-400 tabular-nums">
+                        {(state.tasks[tier.key] || []).filter((t) => t.done).length}/{(state.tasks[tier.key] || []).length}
+                      </span>
+                    </div>
+
+                    <ul className="flex flex-1 flex-col gap-1.5 overflow-y-auto max-h-[260px] pr-1">
+                      {(state.tasks[tier.key] || []).map((task) => (
+                        <TaskRow 
+                          key={task.id} 
+                          task={task} 
+                          onToggle={() => toggleTask(tier.key, task.id)} 
+                          onRemove={() => removeTask(tier.key, task.id)} 
+                        />
+                      ))}
+                      {(state.tasks[tier.key] || []).length === 0 && (
+                        <li className="px-1 py-3 text-xs text-zinc-600 font-medium italic">No execution objects mapped.</li>
+                      )}
+                    </ul>
+
+                    <div className="mt-3 flex items-center gap-2 rounded-xl border border-zinc-800 bg-black/40 px-3 transition-all duration-300 focus-within:border-emerald-500/40 focus-within:shadow-[0_0_15px_rgba(16,185,129,0.05)]">
+                      <Plus className="size-3.5 shrink-0 text-zinc-600" />
+                      <input
+                        value={drafts[tier.key]}
+                        onChange={(e) => setDrafts((d) => ({ ...d, [tier.key]: e.target.value }))}
+                        onKeyDown={(e) => e.key === "Enter" && addTask(tier.key)}
+                        placeholder={tier.placeholder}
+                        className="h-10 w-full bg-transparent text-sm text-white placeholder-zinc-700 outline-none"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </section>
+
+              {/* ⚡ 3. THE DAILY HIGH-URGENCY ACTION STEP CARD */}
+              <section className={`rounded-2xl border p-6 sm:p-8 transition-all duration-500 shadow-xl ${themeClasses.card} ${state.daily.done ? "border-emerald-500/30 bg-[#0E1612]/20" : ""}`}>
+                <label htmlFor="daily-action" className="text-[10px] font-black tracking-widest text-zinc-500 uppercase block">
+                  Today's Master Focus Action
+                </label>
+
+                <div className="mt-4 flex flex-col items-start gap-5 sm:flex-row sm:items-center border-b border-zinc-900 pb-6 mb-6">
+                  <button
+                    type="button"
+                    onClick={toggleDaily}
+                    disabled={!hydrated || !state.daily.text.trim()}
+                    className={`group flex shrink-0 items-center justify-center rounded-2xl border-2 transition-all duration-300 ${
+                      state.daily.done
+                        ? "size-14 border-emerald-400 bg-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.3)]"
+                        : "size-14 border-zinc-800 bg-black/40 hover:border-zinc-700 disabled:opacity-40"
+                    } ${justCompleted ? "scale-110" : ""}`}
+                  >
+                    <Check
+                      className={`size-6 transition-all duration-200 ${
+                        state.daily.done ? "scale-100 text-black font-black" : "scale-50 text-transparent group-hover:text-zinc-600"
+                      }`}
+                      strokeWidth={3}
+                    />
+                  </button>
+
+                  <input
+                    id="daily-action"
+                    value={dailyDraft}
+                    onChange={(e) => setDailyDraft(e.target.value)}
+                    onBlur={commitDailyText}
+                    onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+                    placeholder="Lock down the single highest-impact metric block for today…"
+                    disabled={state.daily.done}
+                    className={`w-full bg-transparent font-display text-xl font-bold tracking-tight outline-none transition-all duration-300 placeholder:text-zinc-700 sm:text-2xl ${
+                      state.daily.done ? "text-zinc-600 line-through decoration-zinc-700 decoration-2" : "text-white"
+                    }`}
+                  />
+                </div>
+
+                {/* Night Reflection Portal Anchor */}
+                {isEvening && (
+                  <div className="w-full max-w-md mx-auto mb-6 p-1">
+                    <button
+                      onClick={handleGoToNightReflection}
+                      className="group relative flex w-full items-center justify-between overflow-hidden rounded-xl border border-zinc-800 bg-black p-4 transition-all duration-300 hover:border-emerald-500/40 hover:shadow-[0_0_20px_rgba(16,185,129,0.1)]"
+                    >
+                        <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-emerald-500/5 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
+                      <div className="flex items-center gap-3 relative z-10">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-400 group-hover:border-emerald-500/20 group-hover:bg-emerald-950/30 group-hover:text-emerald-400 transition-colors duration-300">
+                          <span className="text-xl">🌙</span>
+                        </div>
+                        <div className="text-left">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Day Closeout</p>
+                          <h4 className="text-sm font-bold text-zinc-200 group-hover:text-white">Win Your Night</h4>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs font-semibold text-zinc-500 transition-colors group-hover:text-emerald-400 relative z-10">
+                        <span>Lock in Progress</span>
+                        <span className="transform transition-transform duration-300 group-hover:translate-x-1">→</span>
+                      </div>
+                    </button>
+                  </div>
                 )}
-              </div>
+
+                {/* ⏱️ Streak counter + reset timer metrics */}
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`flex size-10 items-center justify-center rounded-xl border border-zinc-800 bg-black ${state.streak.count > 0 ? "border-orange-500/20 bg-orange-950/10 text-orange-400" : "text-zinc-600"}`}>
+                      <Flame className={`size-5 ${state.streak.count > 0 ? "fill-orange-400" : ""}`} />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-mono text-lg font-black text-white tabular-nums">
+                        {state.streak.count} Day{state.streak.count === 1 ? "" : "s"}
+                      </div>
+                      <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">
+                        Active Execution Streak
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-black px-4 py-2">
+                    <TimerReset className="size-4.5 text-zinc-500" />
+                    <div className="text-left">
+                      <div className="font-mono text-sm font-black text-emerald-400 tabular-nums">
+                        {resetMs === null ? "--:--:--" : formatCountdown(resetMs)}
+                      </div>
+                      <div className="text-[9px] font-bold tracking-wider text-zinc-500 uppercase">until calendar reset</div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+          )}  
+        </div>
+
+        {/* Dynamic Variable Reward Notification Banner */}
+        {surpriseLoot && (
+          <div className="w-full rounded-xl border border-emerald-500/20 bg-[#0E1612]/90 p-4 text-left flex items-center gap-3 text-xs font-bold text-emerald-400 border-l-4 border-l-emerald-500 animate-fade-in">
+            <Sparkles className="size-4 animate-spin shrink-0" />
+            <span>{surpriseLoot.msg}</span>
+          </div>
+        )}
+
+        {/* 🏆 Tab 2: Accountability Leaderboard */}
+        {activeTab === "leaderboard" && (
+          <section className={`rounded-2xl border p-6 text-left transform transition-all duration-500 translate-y-2 animate-fade-in ${themeClasses.card}`}>  <h2 className="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2 mb-4"><Trophy className="size-4 text-amber-400" /> Accountability Rank</h2>
+            <div className="overflow-hidden rounded-xl border border-zinc-900 bg-black/20 font-mono text-xs">
+              {LEADERBOARD_POOL.map((row) => (
+                <div key={row.rank} className="grid grid-cols-4 px-4 py-3 border-b border-zinc-900 last:border-b-0">
+                  <span>0{row.rank}</span>
+                  <span>{row.operator}</span>
+                  <span className="text-orange-400 font-bold">{row.streak}d</span>
+                  <span className="text-right text-zinc-400">{row.points} pts</span>
+                </div>
+              ))}
             </div>
           </section>
+        )}
 
-          {/* 🎛️ INDUSTRY TELEMETRY COMPONENT DROPDOWN PROFILE SWITCHER */}
-          <div className="flex items-center gap-3 bg-[#0D0D11] border border-zinc-800 rounded-xl p-3 text-left">
-            <span className="text-[10px] font-black uppercase tracking-wider text-zinc-500 whitespace-nowrap pl-1">Audience Context:</span>
-            <select 
-              defaultValue="general"
-              onChange={(e) => {
-                const profile = e.target.value as keyof typeof AUDIENCE_PROFILES;
-                alert(`⚡ Operational placeholder parameters tuned for: ${e.target.options[e.target.selectedIndex].text}`);
-              }}
-              className="bg-black border border-zinc-900 rounded-lg h-9 px-3 text-xs font-bold text-emerald-400 outline-none focus:border-zinc-800 cursor-pointer w-full"
-            >
-              <option value="general">💼 Professional Standard</option>
-              <option value="ceo">🚀 Chief Executive Officer (CEO)</option>
-              <option value="corporate">🏢 Corporate Worker</option>
-              <option value="university">🎓 University Student</option>
-              <option value="student">🏫 High School Student</option>
-            </select>
-          </div>
-
-          {/* 📊 2. THE PRIORITY MATRIX SPLIT COLUMNS */}
-          <section className="grid flex-1 grid-cols-1 gap-4 md:grid-cols-3">
-            {TIERS.map((tier) => (
-              <div key={tier.key} className={`flex flex-col rounded-2xl border p-5 ${themeClasses.card}`}>
-                <div className="flex items-center gap-2 border-b border-zinc-900/60 pb-3 mb-3">
-                  <span className={`size-2 rounded-full ${tier.accentClass}`} />
-                  <h2 className={`text-[10px] font-black tracking-widest uppercase ${tier.textClass}`}>
-                    {tier.label}
-                  </h2>
-                  <span className="ml-auto font-mono text-[10px] font-bold bg-black border border-zinc-800 px-2 py-0.5 rounded text-zinc-400 tabular-nums">
-                    {(state.tasks[tier.key] || []).filter((t) => t.done).length}/{(state.tasks[tier.key] || []).length}
-                  </span>
+        {/* 🛠️ Tab 3: Hardware Market */}
+        {activeTab === "hardware" && (
+          <section className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-fade-in text-left">
+            {HARDWARE_STORE_INVENTORY.map((item) => (
+              <div key={item.id} className={`flex flex-col justify-between rounded-2xl border p-5 ${themeClasses.card} bg-zinc-950/20`}>
+                <div>
+                  <span className="rounded-md bg-zinc-900 border border-zinc-800 px-2 py-0.5 text-[9px] font-black uppercase text-zinc-500 tracking-wider w-max block">{item.type}</span>
+                  <h4 className="text-sm font-black text-white mt-3">{item.name}</h4>
+                  <p className="text-[11px] text-zinc-500 mt-1">{item.desc}</p>
                 </div>
-
-                <ul className="flex flex-1 flex-col gap-1.5 overflow-y-auto max-h-[260px] pr-1">
-                  {(state.tasks[tier.key] || []).map((task) => (
-                    <TaskRow 
-                      key={task.id} 
-                      task={task} 
-                      onToggle={() => toggleTask(tier.key, task.id)} 
-                      onRemove={() => removeTask(tier.key, task.id)} 
-                    />
-                  ))}
-                  {(state.tasks[tier.key] || []).length === 0 && (
-                    <li className="px-1 py-3 text-xs text-zinc-600 font-medium italic">No execution objects mapped.</li>
-                  )}
-                </ul>
-
-                <div className="mt-3 flex items-center gap-2 rounded-xl border border-zinc-800 bg-black/40 px-3 transition-all duration-300 focus-within:border-emerald-500/40 focus-within:shadow-[0_0_15px_rgba(16,185,129,0.05)]">
-                  <Plus className="size-3.5 shrink-0 text-zinc-600" />
-                  <input
-                    value={drafts[tier.key]}
-                    onChange={(e) => setDrafts((d) => ({ ...d, [tier.key]: e.target.value }))}
-                    onKeyDown={(e) => e.key === "Enter" && addTask(tier.key)}
-                    placeholder={tier.placeholder}
-                    className="h-10 w-full bg-transparent text-sm text-white placeholder-zinc-700 outline-none"
-                  />
+                <div className="mt-6 flex items-center justify-between">
+                  <span className="font-mono text-xs font-black text-emerald-400">{item.cost} credits</span>
+                  <button type="button" onClick={() => {
+                    if (((state as any).points || 0) < item.cost) return alert("❌ Insufficient credits.");
+                    setState(s => ({ ...s, points: ((s as any).points || 0) - item.cost }));
+                    if (item.id.startsWith("theme-")) { localStorage.setItem("apexmission-active-theme", item.id); window.location.reload(); }
+                  }} className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-black hover:bg-emerald-400">Equip</button>
                 </div>
               </div>
             ))}
           </section>
-
-          {/* ⚡ 3. THE DAILY HIGH-URGENCY ACTION STEP CARD */}
-          <section className={`rounded-2xl border p-6 sm:p-8 transition-all duration-500 shadow-xl ${themeClasses.card} ${state.daily.done ? "border-emerald-500/30 bg-[#0E1612]/20" : ""}`}>
-            <label htmlFor="daily-action" className="text-[10px] font-black tracking-widest text-zinc-500 uppercase block">
-              Today's Master Focus Action
-            </label>
-
-            <div className="mt-4 flex flex-col items-start gap-5 sm:flex-row sm:items-center border-b border-zinc-900 pb-6 mb-6">
-              <button
-                type="button"
-                onClick={toggleDaily}
-                disabled={!hydrated || !state.daily.text.trim()}
-                className={`group flex shrink-0 items-center justify-center rounded-2xl border-2 transition-all duration-300 ${
-                  state.daily.done
-                    ? "size-14 border-emerald-400 bg-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.3)]"
-                    : "size-14 border-zinc-800 bg-black/40 hover:border-zinc-700 disabled:opacity-40"
-                } ${justCompleted ? "scale-110" : ""}`}
-              >
-                <Check
-                  className={`size-6 transition-all duration-200 ${
-                    state.daily.done ? "scale-100 text-black font-black" : "scale-50 text-transparent group-hover:text-zinc-600"
-                  }`}
-                  strokeWidth={3}
-                />
-              </button>
-
-              <input
-                id="daily-action"
-                value={dailyDraft}
-                onChange={(e) => setDailyDraft(e.target.value)}
-                onBlur={commitDailyText}
-                onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-                placeholder="Lock down the single highest-impact metric block for today…"
-                disabled={state.daily.done}
-                className={`w-full bg-transparent font-display text-xl font-bold tracking-tight outline-none transition-all duration-300 placeholder:text-zinc-700 sm:text-2xl ${
-                  state.daily.done ? "text-zinc-600 line-through decoration-zinc-700 decoration-2" : "text-white"
-                }`}
-              />
-            </div>
-
-            {/* Night Reflection Portal Anchor */}
-            {isEvening && (
-              <div className="w-full max-w-md mx-auto mb-6 p-1">
-                <button
-                  onClick={handleGoToNightReflection}
-                  className="group relative flex w-full items-center justify-between overflow-hidden rounded-xl border border-zinc-800 bg-black p-4 transition-all duration-300 hover:border-emerald-500/40 hover:shadow-[0_0_20px_rgba(16,185,129,0.1)]"
-                >
-                    <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-emerald-500/5 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
-                  <div className="flex items-center gap-3 relative z-10">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-400 group-hover:border-emerald-500/20 group-hover:bg-emerald-950/30 group-hover:text-emerald-400 transition-colors duration-300">
-                      <span className="text-xl">🌙</span>
-                    </div>
-                    <div className="text-left">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Day Closeout</p>
-                      <h4 className="text-sm font-bold text-zinc-200 group-hover:text-white">Win Your Night</h4>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs font-semibold text-zinc-500 transition-colors group-hover:text-emerald-400 relative z-10">
-                    <span>Lock in Progress</span>
-                    <span className="transform transition-transform duration-300 group-hover:translate-x-1">→</span>
-                  </div>
-                </button>
-              </div>
-            )}
-
-            {/* ⏱️ Streak counter + reset timer metrics */}
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className={`flex size-10 items-center justify-center rounded-xl border border-zinc-800 bg-black ${state.streak.count > 0 ? "border-orange-500/20 bg-orange-950/10 text-orange-400" : "text-zinc-600"}`}>
-                  <Flame className={`size-5 ${state.streak.count > 0 ? "fill-orange-400" : ""}`} />
-                </div>
-                <div className="text-left">
-                  <div className="font-mono text-lg font-black text-white tabular-nums">
-                    {state.streak.count} Day{state.streak.count === 1 ? "" : "s"}
-                  </div>
-                  <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">
-                    Active Execution Streak
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-black px-4 py-2">
-                <TimerReset className="size-4.5 text-zinc-500" />
-                <div className="text-left">
-                  <div className="font-mono text-sm font-black text-emerald-400 tabular-nums">
-                    {resetMs === null ? "--:--:--" : formatCountdown(resetMs)}
-                  </div>
-                  <div className="text-[9px] font-bold tracking-wider text-zinc-500 uppercase">until calendar reset</div>
-                </div>
-              </div>
-            </div>
-          </section>
-        </div>
+        )}
 
         <PaywallModal
           open={paywall !== null}
@@ -767,12 +940,12 @@ const TIERS: Array<{
   borderClass: string;
   textClass: string;
   placeholder: string;
-
 }> = [
   { key: "high", label: "High Impact", accentClass: "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]", borderClass: "focus-within:border-rose-500/30", textClass: "text-rose-400 font-bold", placeholder: "Add higher leverage target…" },
   { key: "medium", label: "Medium Impact", accentClass: "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]", borderClass: "focus-within:border-amber-500/30", textClass: "text-amber-400 font-bold", placeholder: "Add secondary sub-task…" },
   { key: "low", label: "Low Impact", accentClass: "bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.4)]", borderClass: "focus-within:border-sky-500/30", textClass: "text-sky-400 font-bold", placeholder: "Add maintenance item…" }
 ];
+
 
 function formatCountdown(ms: number): string {
   const totalSec = Math.max(0, Math.floor(ms / 1000));

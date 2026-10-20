@@ -120,3 +120,37 @@
     0 0 32px color-mix(in oklab, var(--color-success) 18%, transparent),
     inset 0 0 24px color-mix(in oklab, var(--color-success) 7%, transparent);
 }
+
+@layer utilities {
+  /* 🌌 Premium High-Performance Tactical Motion Vectors */
+  .animate-scan-line {
+    background: linear-gradient(to bottom, transparent 50%, rgba(16, 185, 129, 0.03) 50%);
+    background-size: 100% 4px;
+    animation: cockpitRadarScan 12s linear infinite;
+  }
+  
+  .animate-amber-pulse {
+    animation: amberTelemetry Glow 3s ease-in-out infinite;
+  }
+
+  .animate-drift-bg {
+    background-size: 200% 200%;
+    animation: smoothDrift 20s ease infinite;
+  }
+}
+
+@keyframes cockpitRadarScan {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 100%; }
+}
+
+@keyframes amberTelemetryGlow {
+  0%, 100% { opacity: 0.8; filter: drop-shadow(0 0 2px rgba(245,158,11,0.2)); }
+  50% { opacity: 1; filter: drop-shadow(0 0 8px rgba(245,158,11,0.5)); }
+}
+
+@keyframes smoothDrift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+

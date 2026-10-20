@@ -27,35 +27,59 @@ function AuthConsolePage() {
     try {
       if (isSignUp) {
         if (!fullName.trim()) throw new Error("Full operator name parameters required.");
+
+        // 🔍 PRE-FLIGHT AUTH VALIDATION GATE
+        // Explicitly check if this operator record already exists in your public profiles before Supabase can sign them in
+        const { data: existingProfile, error: profileCheckError } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("email", email.trim())
+          .maybeSingle();
+
+        if (profileCheckError) console.error("Database pre-flight check bypassed:", profileCheckError);
+
+        if (existingProfile) {
+          // Collision Intercepted: Halt registration execution parameters immediately
+          setErrorMessage("🔒 OPERATOR PROFILE CONFLICT: This email coordinates node is already registered. Please toggle to the 'Secure Node Access' view below and sign in with your access key parameter.");
+          setBusy(false);
+          return;
+        }
         
+        // Proceed with registration parameters safely if the pre-flight gate clears completely
         const { error } = await supabase.auth.signUp({
           email: email.trim(),
           password: password.trim(),
           options: {
-            emailRedirectTo: `${window.location.origin}/plans`,
+            emailRedirectTo: `${window.location.origin}/verify-email`,
             data: {
               full_name: fullName.trim(),
             },
           },
         });
-        if (error) throw error;
         
-        // Forward straight to holding gate for verification tracking
+        if (error) {
+          if (error.message.toLowerCase().includes("rate limit") || error.status === 429) {
+            setErrorMessage("🔒 NETWORK BROADCAST CAP REACHED: The system is throttling signup traffic parameters. Please wait 60 seconds.");
+            setBusy(false);
+            return;
+          }
+          throw error;
+        }
+        
         navigate({ to: "/verify-email", search: { email: email.trim() } });
       } else {
+        // Standard Secure Login Node Operation
         const { error } = await supabase.auth.signInWithPassword({
           email: email.trim(),
           password: password.trim(),
         });
+        
         if (error) throw error;
 
-        // Trigger Loading Page Vector before landing onto dashboard console
         setShowLoadingGate(true);
         setTimeout(() => {
           navigate({ to: "/app" });
-        }, 2000); // 2 second security buffer duration
-        
-        navigate({ to: "/app" });
+        }, 2000);
       }
     } catch (err: any) {
       console.error("Auth terminal synchronization fault:", err);
@@ -81,6 +105,9 @@ function AuthConsolePage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-black px-6 py-12 text-zinc-100">
+      {/* Background Grid Pattern Depth Layout */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f29370a_1px,transparent_1px),linear-gradient(to_bottom,#1f29370a_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+      <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-[#0D0D11]/90 p-8 shadow-2xl relative overflow-hidden backdrop-blur-md transition-all duration-500 hover:border-zinc-700/60 translate-y-0 hover:-translate-y-1"></div>
       <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-[#0D0D11] p-8 shadow-2xl relative overflow-hidden">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />
         
