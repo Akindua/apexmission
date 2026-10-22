@@ -968,10 +968,10 @@ function ApexMission() {
           }}
         />
 
-       {/* Floating Support Button */}
+        {/* Floating Support Button */}
         <button
           onClick={() => setShowSupport(true)}
-          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full border border-zinc-700 bg-[#0D0D11] px-4 py-2.5 text-xs font-bold text-zinc-300 shadow-lg transition-all hover:border-emerald-500/50 hover:text-emerald-400 hover:shadow-[0_0_20px_rgba(16,185,129,0.15)]"
+          className="fixed bottom-24 right-6 z-40 flex items-center gap-2 rounded-full border border-zinc-700 bg-[#0D0D11] px-4 py-2.5 text-xs font-bold text-zinc-300 shadow-lg transition-all hover:border-emerald-500/50 hover:text-emerald-400 hover:shadow-[0_0_20px_rgba(16,185,129,0.15)]"
         >
           <span className="text-sm">💬</span>
           Support
