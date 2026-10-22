@@ -34,25 +34,46 @@ function ApexMission() {
   const [resetMs, setResetMs] = useState<number | null>(null);
   const [paywall, setPaywall] = useState<string | null>(null);
 
-  // 🏛️ Professional Accountability Pool Parameters
-  const LEADERBOARD_POOL = [
-    { rank: 1, operator: "Vance.M", streak: 42, points: 4200, status: "Apex Elite" },
-    { rank: 2, operator: "Kaelen.G", streak: 28, points: 2850, status: "High Velocity" },
-    { rank: 3, operator: "S_Ariya", streak: 19, points: 1950, status: "Operational" },
-    { rank: 4, operator: "User (You)", streak: state?.streak?.count || 0, points: (state as any)?.points || 0, status: "Synchronizing" },
-  ];
-  
+  // 🏛️ DYNAMIC OPERATOR REAL-TIME ROSTER TELEMETRY STATES
+  const [leaderboardOperators, setLeaderboardOperators] = useState<any[]>([]);
+  const [loadingRoster, setLoadingRoster] = useState(false);
+
+  // ← MOVE activeTab HERE (before any useEffect that uses it)
+  const [activeTab, setActiveTab] = useState<"workspace" | "leaderboard" | "hardware">("workspace");
+  const [surpriseLoot, setSurpriseLoot] = useState<{ active: boolean; msg: string; points: number } | null>(null);
+
+  // Live real-time database query pipeline selector function
+  const fetchLiveAccountabilityRoster = async () => {
+    if (loadingRoster) return;
+    setLoadingRoster(true);
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name, current_streak, max_streak, failure_count, operational_status, beta_points")
+        .order("beta_points", { ascending: false });
+
+      if (error) throw error;
+      if (data) setLeaderboardOperators(data);
+    } catch (err) {
+      console.error("Failed to map dynamic roster profiles ledger:", err);
+    } finally {
+      setLoadingRoster(false);
+    }
+  };
+
+  // Re-trigger network data sync hooks whenever the Ranks tab becomes active
+  useEffect(() => {
+    if (activeTab === "leaderboard" && hydrated) {
+      fetchLiveAccountabilityRoster();
+    }
+  }, [activeTab, hydrated]);
+
   // 🛠️ Hardware Store Inventory Matrix
   const HARDWARE_STORE_INVENTORY = [
     { id: "theme-midnight", name: "Midnight Core Glass", cost: 500, type: "Aesthetic UI Overlay", desc: "Forces deep obsidian color calibrations across grid panels." },
     { id: "theme-cyber", name: "Cyber Amber HUD", cost: 1200, type: "HUD Matrix Tint", desc: "Swaps command panel text layers into pure high-contrast performance amber." },
     { id: "streak-shield-1", name: "Streak Freeze Matrix", cost: 3000, type: "Loss Prevention Parameter", desc: "Automated streak defense. Absorbs a single calendar deadline breach event." },
   ];
-  
-  // Live state tracking managers
-  const [activeTab, setActiveTab] = useState<"workspace" | "leaderboard" | "hardware">("workspace");
-  const [surpriseLoot, setSurpriseLoot] = useState<{ active: boolean; msg: string; points: number } | null>(null);
-  
 
   const navigate = useNavigate();
   const checkout = useServerFn(startCheckout);
@@ -755,21 +776,89 @@ function ApexMission() {
           </div>
         )}
 
-        {/* 🏆 Tab 2: Accountability Leaderboard */}
+        {/* 🏆 Tab 2: Accountability Leaderboard (100% Real Live Database Stream) */}
         {activeTab === "leaderboard" && (
-          <section className={`rounded-2xl border p-6 text-left transform transition-all duration-500 translate-y-2 animate-fade-in ${themeClasses.card}`}>  <h2 className="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2 mb-4"><Trophy className="size-4 text-amber-400" /> Accountability Rank</h2>
+          <section className={`rounded-2xl border p-6 text-left transform transition-all duration-500 translate-y-2 animate-fade-in ${themeClasses.card}`}>  
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-900 pb-4 mb-4">
+              <div>
+                <h2 className="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2">
+                  <Trophy className="size-4 text-amber-400" /> Real-Time Network Operator Standings
+                </h2>
+                <p className="text-xs text-zinc-500 mt-1">Cross-examine absolute consistency vectors. Only real authenticated system operators currently mapped to this network cluster are displayed.</p>
+              </div>
+              
+              <button
+                type="button"
+                disabled={loadingRoster}
+                onClick={fetchLiveAccountabilityRoster}
+                className="flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-black/40 px-3 py-1.5 font-mono text-[10px] font-black uppercase text-zinc-400 hover:text-white transition-colors"
+              >
+                {loadingRoster ? <Loader2 className="size-3 animate-spin text-emerald-400" /> : "🔄 Resync Ledger"}
+              </button>
+            </div>
+            
             <div className="overflow-hidden rounded-xl border border-zinc-900 bg-black/20 font-mono text-xs">
-              {LEADERBOARD_POOL.map((row) => (
-                <div key={row.rank} className="grid grid-cols-4 px-4 py-3 border-b border-zinc-900 last:border-b-0">
-                  <span>0{row.rank}</span>
-                  <span>{row.operator}</span>
-                  <span className="text-orange-400 font-bold">{row.streak}d</span>
-                  <span className="text-right text-zinc-400">{row.points} pts</span>
-                </div>
-              ))}
+              {/* Clean Multi-Column Header Index */}
+              <div className="grid grid-cols-6 bg-zinc-950/80 px-4 py-3 text-[9px] font-black uppercase tracking-wider text-zinc-500 border-b border-zinc-900 text-center sm:text-left">
+                <span>Rank</span>
+                <span className="text-left">Operator Node</span>
+                <span className="text-center">Current</span>
+                <span className="text-center">Max Peak</span>
+                <span className="text-center">Failures / HUD</span>
+                <span className="text-right">Credit Balance</span>
+              </div>
+
+              <div className="divide-y divide-zinc-900/60">
+                {leaderboardOperators.map((operator, index) => {
+                  // Catch if the mapped record aligns with the current active browser identity
+                  const isCurrentClientNode = operator.id === (supabase.auth.getUser() as any)?.data?.user?.id;
+                  
+                  return (
+                    <div 
+                      key={operator.id} 
+                      className={`grid grid-cols-6 px-4 py-4 items-center text-center sm:text-left text-zinc-300 transition-colors duration-200 hover:bg-zinc-900/10 ${
+                        isCurrentClientNode ? "bg-emerald-950/10 text-emerald-400 font-bold border-y border-emerald-500/20" : ""
+                      }`}
+                    >
+                      <span className="font-bold text-zinc-500">
+                        {index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${String(index + 1).padStart(2, "0")}`}
+                      </span>
+                      
+                      <span className="truncate font-semibold text-white text-left flex items-center gap-2">
+                        {operator.full_name || "Anonymous Operator"}
+                        {isCurrentClientNode && <span className="text-[8px] tracking-widest uppercase bg-emerald-950 border border-emerald-500/30 text-emerald-400 px-1 rounded">YOU</span>}
+                      </span>
+                      
+                      <span className="text-center text-orange-400 font-bold tabular-nums">{operator.current_streak}d</span>
+                      <span className="text-center text-amber-500 font-bold tabular-nums">{operator.max_streak}d</span>
+                      
+                      {/* Operational Deficit Mapping Vector */}
+                      <span className="text-center flex flex-col sm:flex-row items-center justify-center gap-1">
+                        <span className="text-rose-400 font-semibold tabular-nums bg-rose-950/20 px-1.5 py-0.5 rounded border border-rose-500/10">{operator.failure_count}</span>
+                        <span className={`text-[8px] font-black uppercase px-1 rounded tracking-wide border ${
+                          operator.operational_status === "Operational" 
+                            ? "bg-emerald-950/30 text-emerald-500 border-emerald-500/20" 
+                            : "bg-rose-950/30 text-rose-500 border-rose-500/20 animate-pulse"
+                        }`}>
+                          {operator.operational_status}
+                        </span>
+                      </span>
+                      
+                      <span className="text-right text-emerald-400 font-bold font-mono tabular-nums">{operator.beta_points} pts</span>
+                    </div>
+                  );
+                })}
+
+                {leaderboardOperators.length === 0 && (
+                  <div className="p-8 text-center text-zinc-600 italic">
+                    {loadingRoster ? "Establishing network stream channels..." : "No active profiles discovered inside network cluster parameters."}
+                  </div>
+                )}
+              </div>
             </div>
           </section>
         )}
+
 
         {/* 🛠️ Tab 3: Hardware Market */}
         {activeTab === "hardware" && (

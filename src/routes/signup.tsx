@@ -17,25 +17,26 @@ function SignupPage() {
   const handleSignup = async () => {
     if (!email || !password || !fullName) return;
     setLoading(true);
-
+  
     try {
-      const { error } = await supabase.auth.signUp({
-        email,
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/verify-email`,
-          // Securely pass the user's name into Supabase's identity metadata dictionary
           data: {
             full_name: fullName.trim(),
           },
         },
       });
-
+  
       if (error) throw error;
-      
-      navigate({ to: "/verify-email", search: { email } });
-    } catch (err) {
+  
+      console.log("Signup success:", data);
+      navigate({ to: "/verify-email", search: { email: email.trim() } });
+    } catch (err: any) {
       console.error("Signup failed:", err);
+      alert(`Signup failed: ${err.message || err}`); // temporary for debugging
     } finally {
       setLoading(false);
     }
