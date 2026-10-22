@@ -971,10 +971,12 @@ function ApexMission() {
         {/* Floating Support Button */}
         <button
           onClick={() => setShowSupport(true)}
-          className="fixed bottom-24 right-6 z-40 flex items-center gap-2 rounded-full border border-zinc-700 bg-[#0D0D11] px-4 py-2.5 text-xs font-bold text-zinc-300 shadow-lg transition-all hover:border-emerald-500/50 hover:text-emerald-400 hover:shadow-[0_0_20px_rgba(16,185,129,0.15)]"
+          className="group fixed bottom-24 right-6 z-40 flex items-center gap-0 rounded-full border border-zinc-700 bg-[#0D0D11] px-3.5 py-2.5 text-xs font-bold text-zinc-300 shadow-lg transition-all duration-300 hover:gap-2 hover:border-emerald-500/50 hover:px-4 hover:text-emerald-400 hover:shadow-[0_0_20px_rgba(16,185,129,0.15)]"
         >
           <span className="text-sm">💬</span>
-          Support
+          <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover:max-w-[80px] group-hover:opacity-100">
+            Support
+          </span>
         </button>
 
         {/* Support Modal */}
