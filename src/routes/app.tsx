@@ -41,6 +41,7 @@ function ApexMission() {
   // ← MOVE activeTab HERE (before any useEffect that uses it)
   const [activeTab, setActiveTab] = useState<"workspace" | "leaderboard" | "hardware">("workspace");
   const [surpriseLoot, setSurpriseLoot] = useState<{ active: boolean; msg: string; points: number } | null>(null);
+  const [showSupport, setShowSupport] = useState(false);
 
   // Live real-time database query pipeline selector function
   const fetchLiveAccountabilityRoster = async () => {
@@ -493,6 +494,13 @@ function ApexMission() {
             <button type="button" onClick={() => setActiveTab("workspace")} className={`rounded-md px-3 py-1.5 transition-all ${activeTab === "workspace" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"}`}>Workspace</button>
             <button type="button" onClick={() => setActiveTab("leaderboard")} className={`rounded-md px-3 py-1.5 transition-all ${activeTab === "leaderboard" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"}`}>Ranks</button>
             <button type="button" onClick={() => setActiveTab("hardware")} className={`rounded-md px-3 py-1.5 transition-all ${activeTab === "hardware" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"}`}>Hardware</button>
+            <button
+              type="button"
+              onClick={() => setShowSupport(true)}
+              className="rounded-md px-3 py-1.5 transition-all text-zinc-500 hover:text-zinc-300"
+            >
+              Support
+            </button>
           </div>
 
           {/* Clean Performance Tracking Metrics Block Group */}
@@ -626,7 +634,7 @@ function ApexMission() {
                   <option value="general">💼 Professional Standard</option>
                   <option value="ceo">🚀 Chief Executive Officer (CEO)</option>
                   <option value="corporate">🏢 Corporate Worker</option>
-                  <option value="university">🎓 University Student</option>
+                  <option value="university/college">🎓 University/College Student</option>
                   <option value="student">🏫 High School Student</option>
                 </select>
               </div>
@@ -959,6 +967,54 @@ function ApexMission() {
             setTimeout(() => setShowPlanSuccessAlert(false), 4000);
           }}
         />
+
+       {/* Floating Support Button */}
+        <button
+          onClick={() => setShowSupport(true)}
+          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full border border-zinc-700 bg-[#0D0D11] px-4 py-2.5 text-xs font-bold text-zinc-300 shadow-lg transition-all hover:border-emerald-500/50 hover:text-emerald-400 hover:shadow-[0_0_20px_rgba(16,185,129,0.15)]"
+        >
+          <span className="text-sm">💬</span>
+          Support
+        </button>
+
+        {/* Support Modal */}
+        {showSupport && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 backdrop-blur-sm">
+            <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-[#0D0D11] p-6 text-left shadow-xl">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-black uppercase tracking-wider text-white">
+                  Support & Feedback
+                </h3>
+                <button
+                  onClick={() => setShowSupport(false)}
+                  className="text-zinc-500 hover:text-white text-lg leading-none"
+                >
+                  ×
+                </button>
+              </div>
+
+              <p className="text-sm text-zinc-400 leading-relaxed mb-4">
+                Found a bug, have a suggestion, or need help?  
+                Send me an email and I’ll get back to you.
+              </p>
+
+              <div className="rounded-xl border border-zinc-800 bg-black/40 px-4 py-3 mb-5">
+                <p className="text-xs text-zinc-500">
+                  I reply to all messages within{" "}
+                  <span className="text-emerald-400 font-semibold">3–4 business days</span>.
+                </p>
+              </div>
+
+              <a
+                href="mailto:support@apexmissions.app?subject=ApexMission Support / Feedback"
+                className="flex w-full items-center justify-center rounded-xl bg-white py-3 text-sm font-bold text-black transition-all hover:bg-emerald-400"
+                onClick={() => setShowSupport(false)}
+              >
+                Email support@apexmissions.app →
+              </a>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
