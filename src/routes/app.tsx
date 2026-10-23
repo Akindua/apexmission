@@ -609,11 +609,11 @@ function ApexMission() {
             </div>
           </div>
 
-          {/* 📊 REAL-TIME CORE ANALYTICS GRAPH MODAL LAUNCHER */}
-          <button
+           {/* 📊 REAL-TIME CORE ANALYTICS GRAPH MODAL LAUNCHER */}
+           <button
             type="button"
             onClick={() => setShowAnalyticsModal(true)}
-            className="rounded-lg border border-zinc-900 bg-zinc-950 px-3 py-2 text-[10px] font-mono font-bold uppercase tracking-wider text-indigo-400 hover:border-indigo-500/20 hover:text-white transition-colors"
+            className="rounded-lg border border-emerald-500/20 bg-emerald-950/30 px-3 py-2 text-[10px] font-mono font-black uppercase tracking-wider text-emerald-400 hover:border-emerald-500/50 hover:bg-emerald-500 hover:text-black transition-all duration-300 shadow-[0_0_15px_rgba(16,185,129,0.05)]"
           >
             📈 Review Velocity Index
           </button>
@@ -852,24 +852,24 @@ function ApexMission() {
                   />
                 </div>
 
-                {/* Night Reflection Portal Anchor */}
-                {isEvening && (
+                 {/* Night Reflection Portal Anchor */}
+                 {isEvening && (
                   <div className="w-full max-w-md mx-auto mb-6 p-1">
                     <button
                       onClick={handleGoToNightReflection}
-                      className="group relative flex w-full items-center justify-between overflow-hidden rounded-xl border border-zinc-800 bg-black p-4 transition-all duration-300 hover:border-emerald-500/40 hover:shadow-[0_0_20px_rgba(16,185,129,0.1)]"
+                      className="group relative flex w-full items-center justify-between overflow-hidden rounded-xl border p-4 bg-gradient-to-r from-[#060D08] to-black transition-all duration-400 border-emerald-500/10 hover:border-emerald-500/40 hover:shadow-[0_0_25px_rgba(16,185,129,0.1)]"
                     >
-                        <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-emerald-500/5 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
+                      <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-emerald-500/5 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
                       <div className="flex items-center gap-3 relative z-10">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-400 group-hover:border-emerald-500/20 group-hover:bg-emerald-950/30 group-hover:text-emerald-400 transition-colors duration-300">
-                          <span className="text-xl">🌙</span>
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-emerald-500/10 bg-emerald-950/30 text-emerald-400 transition-colors duration-300 group-hover:border-emerald-500/30">
+                          <span className="text-sm">🌙</span>
                         </div>
                         <div className="text-left">
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Day Closeout</p>
-                          <h4 className="text-sm font-bold text-zinc-200 group-hover:text-white">Win Your Night</h4>
+                          <p className="text-[9px] font-black uppercase tracking-wider text-emerald-500/70">Day Closeout</p>
+                          <h4 className="text-xs font-bold text-zinc-200 group-hover:text-white uppercase font-mono tracking-wide">Win Your Night</h4>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 text-xs font-semibold text-zinc-500 transition-colors group-hover:text-emerald-400 relative z-10">
+                      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-zinc-500 transition-colors group-hover:text-emerald-400 relative z-10 font-mono">
                         <span>Lock in Progress</span>
                         <span className="transform transition-transform duration-300 group-hover:translate-x-1">→</span>
                       </div>
@@ -1213,21 +1213,21 @@ function ApexMission() {
 
                   {/* Individual Day Bar Graphs Logs Matrices */}
                   {[
-                    { day: "Mon", val: 40, color: "bg-zinc-800" },
-                    { day: "Tue", val: 65, color: "bg-zinc-700" },
-                    { day: "Wed", val: 20, color: "bg-rose-500/80 border-rose-400/20" },
-                    { day: "Thu", val: 85, color: "bg-indigo-500/80 border-indigo-400/20" },
-                    { day: "Fri", val: 100, color: "bg-gradient-to-t from-emerald-600 to-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.2)]" },
-                    { day: "Sat", val: 50, color: "bg-zinc-700" },
-                    { day: "Sun", val: progress, color: "bg-gradient-to-t from-teal-600 to-teal-400" },
+                    { day: "Mon", val: 40, color: "bg-emerald-950/40 border-emerald-500/20 text-emerald-400" },
+                    { day: "Tue", val: 65, color: "bg-emerald-900/40 border-emerald-400/20 text-emerald-400" },
+                    { day: "Wed", val: 20, color: "bg-rose-950/40 border-rose-500/30 text-rose-400 animate-pulse" }, // Accountability deficit highlight
+                    { day: "Thu", val: 85, color: "bg-emerald-800/40 border-emerald-400/30 text-emerald-300" },
+                    { day: "Fri", val: 100, color: "bg-gradient-to-t from-emerald-600 to-emerald-400 border-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.3)] text-white" },
+                    { day: "Sat", val: 50, color: "bg-emerald-900/30 border-emerald-600/10 text-emerald-500" },
+                    { day: "Sun", val: progress, color: "bg-gradient-to-t from-teal-600 to-teal-400 border-teal-300 shadow-[0_0_15px_rgba(45,212,191,0.2)] text-white" },
                   ].map((bar, i) => (
                     <div key={i} className="flex-1 flex flex-col items-center gap-2 h-full justify-end relative z-10">
-                      <span className="text-[9px] font-bold text-zinc-500 font-mono tabular-nums">{bar.val}%</span>
+                      <span className="text-[9px] font-mono font-black tabular-nums text-emerald-400/90">{bar.val}%</span>
                       <div 
                         className={`w-full rounded-t-md transition-all duration-1000 border-t ${bar.color}`}
-                        style={{ height: `${Math.max(6, bar.val * 0.75)}%` }}
+                        style={{ height: `${Math.max(8, bar.val * 0.72)}%` }}
                       />
-                      <span className="text-[9px] font-black uppercase text-zinc-600 tracking-wider mt-1">{bar.day}</span>
+                      <span className="text-[9px] font-black uppercase text-zinc-500 tracking-wider mt-1">{bar.day}</span>
                     </div>
                   ))}
                 </div>
@@ -1245,7 +1245,7 @@ function ApexMission() {
               <button
                 type="button"
                 onClick={() => setShowAnalyticsModal(false)}
-                className="w-full h-11 rounded-xl bg-white text-xs font-bold text-black transition-all mt-5 hover:bg-indigo-400"
+                className="w-full h-11 rounded-xl bg-emerald-500 text-xs font-black uppercase tracking-wider text-black transition-all duration-300 hover:bg-emerald-400 hover:shadow-[0_0_25px_rgba(52,211,153,0.35)] font-mono"
               >
                 Close Metrics Overview
               </button>
