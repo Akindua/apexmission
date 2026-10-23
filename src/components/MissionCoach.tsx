@@ -243,7 +243,7 @@ function CoachPanel({
     let failureTally = state?.failure_count || 0;
   
     if (indicatesSlacking) {
-      const aiPenalty = 100; // ✅ FIXED: Moved above freshPoints initialization
+      const aiPenalty = 100; 
       const freshPoints = Math.max(0, cleanCurrentPoints - aiPenalty);
       
       try {
@@ -251,7 +251,7 @@ function CoachPanel({
         if (activeStateStr) {
           const parsedState = JSON.parse(activeStateStr);
           if (parsedState && typeof parsedState.points === "number") {
-            cleanCurrentPoints = parsedState.points; // Now allowed because it's a 'let' variable!
+            cleanCurrentPoints = parsedState.points; 
           }
         }
       } catch (e) {
@@ -264,15 +264,6 @@ function CoachPanel({
         localStorage.setItem("apexmission-state", JSON.stringify(currentStore));
       }
 
-      void supabase.auth.getUser().then(({ data: { user } }) => {
-        if (user) {
-          void supabase
-            .from("profiles")
-            .update({ points: freshPoints, operational_status: "FALLEN" })
-            .eq("id", user.id);
-        }
-      });
-      
       // 🔊 INTENSE OSCILLATOR SWEEP AUDIO HARBINGER CHIME FOR AI CHAT REBUKES
       try {
         const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
@@ -294,15 +285,6 @@ function CoachPanel({
           osc.stop(ctx.currentTime + 0.5);
         }
       } catch (e) {}
-    }
-      void supabase.auth.getUser().then(({ data: { user } }) => {
-        if (user) {
-          void supabase
-            .from("profiles")
-            .update({ points: freshPoints, operational_status: "FALLEN" })
-            .eq("id", user.id);
-        }
-      });
     }
 
     // Calculate, save, and increment local text usage blocks
@@ -339,7 +321,8 @@ function CoachPanel({
       // Fallback: If your component directly invokes a TanStack query mutation array hook
       void executeChatMutation({ text: activePayload });
     }
-
+  }
+  
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
