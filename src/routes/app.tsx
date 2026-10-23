@@ -56,6 +56,7 @@ function ApexMission() {
 
       if (error) throw error;
       if (data) setLeaderboardOperators(data);
+      localStorage.setItem("apexmission-leaderboard-cache", JSON.stringify(data));
     } catch (err) {
       console.error("Failed to map dynamic roster profiles ledger:", err);
     } finally {

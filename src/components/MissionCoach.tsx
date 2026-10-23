@@ -299,10 +299,29 @@ function CoachPanel({
     const SocraticContext = `
       [CRITICAL IDENTITY TELEMETRY BALANCES]
       CURRENT OPERATOR STREAK: ${currentStreakCount} Days.
-      NET CREDIT ACCOUNT BALANCE: ${userCredits} Points.
+      NET CREDIT ACCOUNT BALANCE: ${userCredits} Credits.
       OPERATIONAL HUD RECON STATUS: "${currentStatus}"
       RECORDED DEADLINE BREAK FAULTS: ${failureTally} Failures.
-      CURRENT ASSIGNED FOCUS OBJECTIVE: "${state?.daily?.text || "No target scheduled"}"
+      GLOBAL NETWORK LEADERBOARD PLACEMENT: ${calculatedRankDisplay}
+      
+      [CORE MATRIX FOCUS DATA TIERS]
+      MASTER STRATEGIC VISION STATEMENT: "${state?.mission || "No overall mission statement declared inside dashboard card."}"
+      TODAY'S CRITICAL FOCUS ACTION: "${state?.daily?.text || "No single master action item scheduled for this interval."}"
+      DAILY ACTION CHECKLIST SEALED: ${state?.daily?.done ? "YES (100% Metric Attained)" : "NO (Incomplete Deficit Risk)"}
+
+      [ACTIVE PRIORITY MATRIX GRID ROWS]
+      HIGH IMPACT LEVERAGE TASKS:
+      text
+      ${highImpactTasks}
+      
+      MEDIUM IMPACT ALIGNMENT TASKS:
+      text
+      ${mediumImpactTasks}
+      
+      LOW IMPACT MAINTENANCE TASKS:
+      text
+      ${lowImpactTasks}
+      
       YESTERDAY REFLECTION SUMMARY: "${state?.reflection?.wins || "No historical notes logged for previous interval."}"
       
       CORE BEHAVIORAL DIRECTIVE: You are an unyielding, elite Socratic performance coach. You are not here to offer comfort; you are here to force absolute mission execution. Look closely at the operator's message and cross-examine it against their execution streak, execution balances, failures, and past reflection data. 
@@ -314,6 +333,7 @@ function CoachPanel({
       : `${trimmed}\n\n${SocraticContext}`;
 
     void sendMessage({ text: activePayload });
+    setInput("");
   }
   
 
