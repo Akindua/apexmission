@@ -237,10 +237,9 @@ function CoachPanel({
     const trimmed = text.trim(); 
     const textLower = trimmed.toLowerCase();
     const indicatesSlacking = textLower.includes("procrastinate") || textLower.includes("gave up") || textLower.includes("lazy") || textLower.includes("didn't do");
-    const cleanCurrentPoints = state?.points || 0;
+    let cleanCurrentPoints = state?.points || 0;
   
     if (indicatesSlacking) {
-      let cleanCurrentPoints = state?.points || 0;
       const aiPenalty = 100; // ✅ FIXED: Moved above freshPoints initialization
       const freshPoints = Math.max(0, cleanCurrentPoints - aiPenalty);
       
