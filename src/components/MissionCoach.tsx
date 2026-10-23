@@ -240,6 +240,18 @@ function CoachPanel({
     let currentStatus = state?.operational_status || "Operational";
     let failureTally = state?.failure_count || 0;
     const userCredits = cleanCurrentPoints;
+
+    const highImpactTasks = (state?.tasks?.high || [])
+      .map((t: any) => `[${t.done ? "✓" : " "}] ${t.text}`)
+      .join("\n      ") || "No high impact vectors initialized.";
+
+    const mediumImpactTasks = (state?.tasks?.medium || [])
+      .map((t: any) => `[${t.done ? "✓" : " "}] ${t.text}`)
+      .join("\n      ") || "No medium impact vectors initialized.";
+
+    const lowImpactTasks = (state?.tasks?.low || [])
+      .map((t: any) => `[${t.done ? "✓" : " "}] ${t.text}`)
+      .join("\n      ") || "No low impact maintenance items mapped.";
   
     if (indicatesSlacking) {
       const aiPenalty = 100; 
@@ -472,7 +484,7 @@ function CoachPanel({
               <div className="flex flex-wrap items-center gap-2 p-2 rounded-xl bg-black/40 border border-zinc-900 animate-fade-in">
                 <div className="flex flex-col gap-1 flex-1 text-left min-w-[150px]">
                   {files.length > 0 ? (
-                    files.map((file) => (
+                    files.map((file, idx) => (
                       <div key={file.name} className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-zinc-400 truncate">
                         📎 {file.name}
 
