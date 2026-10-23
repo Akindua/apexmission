@@ -388,6 +388,44 @@ function ApexMission() {
           scoreBonus += 100;
           rewardNotice = "SURPRISE TELEMETRY DROP UNLOCKED! Added +100 currency.";
         }
+
+        // 🔊 LIVE HARMONIC ESCALATION TASK COMPLETION AUDIO CHIME
+        if (typeof window !== "undefined") {
+          try {
+            const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
+            if (AudioCtxClass) {
+              const ctx = new AudioCtxClass();
+              
+              // Note 1: First Root Tone Handshake
+              const osc1 = ctx.createOscillator();
+              const gain1 = ctx.createGain();
+              osc1.type = "sine";
+              osc1.frequency.setValueAtTime(587.33, ctx.currentTime); // D5 Note
+              gain1.gain.setValueAtTime(0.04, ctx.currentTime);
+              gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+              osc1.connect(gain1);
+              gain1.connect(ctx.destination);
+              osc1.start();
+              osc1.stop(ctx.currentTime + 0.12);
+
+              // Note 2: Luminous Harmonic Major Escalation (Blipped with a tight 60ms offset)
+              setTimeout(() => {
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                osc2.type = "sine";
+                osc2.frequency.setValueAtTime(880.00, ctx.currentTime); // A5 Note High Boost
+                gain2.gain.setValueAtTime(0.05, ctx.currentTime);
+                gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+                osc2.connect(gain2);
+                gain2.connect(ctx.destination);
+                osc2.start();
+                osc2.stop(ctx.currentTime + 0.25);
+              }, 60);
+            }
+          } catch (audioErr) {
+            console.warn("Audio node context deferred by client browser interaction guard lines:", audioErr);
+          }
+        }
       }
 
       if (rewardNotice) {
@@ -736,11 +774,12 @@ function ApexMission() {
                     const selectedTrack = e.target.value as keyof typeof AUDIENCE_PROFILES;
                     const profileDefaults = AUDIENCE_PROFILES[selectedTrack];
                     
-                    // Confirm action before wiping current matrix grids
+                    // Trigger a professional confirmation dialog before wiping existing tasks
                     if (window.confirm(`⚡ SYNCHRONIZE TRACK PROFILE: Clear current workspace grids and auto-load baseline execution rows for the ${e.target.options[e.target.selectedIndex].text} matrix?`)) {
                       setState((s) => ({
                         ...s,
                         tasks: {
+                          // ✅ FIXED: Injects individual, beautifully isolated default task strings matching your exact tracking configurations
                           high: [{ id: `t-${Date.now()}-h`, text: profileDefaults.high, done: false }],
                           medium: [{ id: `t-${Date.now()}-m`, text: profileDefaults.medium, done: false }],
                           low: [{ id: `t-${Date.now()}-l`, text: profileDefaults.low, done: false }]
