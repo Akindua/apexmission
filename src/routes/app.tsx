@@ -420,6 +420,7 @@ function ApexMission() {
             });
           }, 300);
         }
+      }
       
       if (nextDone) {
         const currentCount = updatedStreak.count;
