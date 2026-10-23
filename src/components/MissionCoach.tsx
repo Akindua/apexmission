@@ -231,6 +231,7 @@ function CoachPanel({
     let currentStreakCount = state?.streak?.count || 0;
     let currentStatus = state?.operational_status || "Operational";
     let failureTally = state?.failure_count || 0;
+    const userCredits = cleanCurrentPoints;
   
     if (indicatesSlacking) {
       const aiPenalty = 100; 
@@ -305,7 +306,7 @@ function CoachPanel({
       ? `${trimmed}\n\n${SocraticContext}\n\n[PARSED DOCUMENT FILE CONTEXT]:\n\n${uploadedText}`
       : `${trimmed}\n\n${SocraticContext}`;
 
-      void sendMessage({ text: activePayload });
+    void sendMessage({ text: activePayload });
   }
   
 
