@@ -26,68 +26,6 @@ const QUICK_STARTS = [
     prompt: "I keep procrastinating. Help me figure out why and give me a way to start right now.",
   },
 ];
-function send(text: string) {
-    if (!text) return;
-    // 🧠 REAL-TIME AI COACH CHAT TEXT SCANNER & SLACKING DEDUCTION WITH NATIVE AUDIO CHIME
-    const trimmed = text.trim();
-    const textLower = trimmed.toLowerCase();
-    const indicatesSlacking = textLower.includes("procrastinate") || textLower.includes("gave up") || textLower.includes("lazy") || textLower.includes("didn't do");
-    
-    if (indicatesSlacking) {
-      const cleanCurrentPoints = state?.points || 0;
-      const freshPoints = Math.max(0, cleanCurrentPoints - aiPenalty);
-      const aiPenalty = 100;
-
-      try {
-        const activeStateStr = localStorage.getItem("apexmission-state");
-        if (activeStateStr) {
-          const parsedState = JSON.parse(activeStateStr);
-          if (parsedState && typeof parsedState.points === "number") {
-            cleanCurrentPoints = parsedState.points;
-          }
-        }
-      } catch (e) {
-        console.error("Local storage lookup bypassed safely:", e);
-      }
-      
-      if (typeof window !== "undefined") {
-        const currentStore = JSON.parse(localStorage.getItem("apexmission-state") || "{}");
-        currentStore.points = freshPoints;
-        localStorage.setItem("apexmission-state", JSON.stringify(currentStore));
-
-        // 🔊 INTENSE OSCILLATOR SWEEP AUDIO HARBINGER CHIME FOR AI CHAT REBUKES
-        try {
-          const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
-          if (AudioCtxClass) {
-            const ctx = new AudioCtxClass();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            
-            osc.type = "sawtooth";
-            osc.frequency.setValueAtTime(320, ctx.currentTime);
-            osc.frequency.linearRampToValueAtTime(80, ctx.currentTime + 0.5);
-            
-            gain.gain.setValueAtTime(0.12, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-            
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start();
-            osc.stop(ctx.currentTime + 0.5);
-          }
-        } catch (e) {}
-      }
-
-      void supabase.auth.getUser().then(({ data: { user } }) => {
-        if (user) {
-          void supabase
-            .from("profiles")
-            .update({ points: freshPoints, operational_status: "FALLEN" })
-            .eq("id", user.id);
-        }
-      });
-    }
-}
 
 function loadMessages(): UIMessage[] {
   try {
@@ -283,11 +221,86 @@ function CoachPanel({
 
   const busy = status === "submitted" || status === "streaming";
 
+  function handleRemoveFile(indexToRemove: number) {
+    // If files are managed via props, call your parent state array modifier setter here
+    if (typeof setFiles === "function") {
+      setFiles((prevFiles: File[]) => prevFiles.filter((_, idx) => idx !== indexToRemove));
+    }
+    // If you are tracking parsed string buffers locally, clear out the context row
+    if (typeof setUploadedText === "function") {
+      setUploadedText("");
+    }
+  }
+
   function send(text: string) {
-    const trimmed = text.trim();
-    if (!trimmed || busy || isRateLimited) return;
-    setError(null);
-    setInput("");
+    // 🧠 REAL-TIME AI COACH CHAT TEXT SCANNER & SLACKING DEDUCTION WITH NATIVE AUDIO CHIME
+    const trimmed = text.trim(); 
+    const textLower = trimmed.toLowerCase();
+    const indicatesSlacking = textLower.includes("procrastinate") || textLower.includes("gave up") || textLower.includes("lazy") || textLower.includes("didn't do");
+    
+    if (indicatesSlacking) {
+      let cleanCurrentPoints = state?.points || 0; // ✅ FIXED: Changed from const to let so it can be re-assigned
+      const aiPenalty = 100; // ✅ FIXED: Moved above freshPoints initialization
+      const freshPoints = Math.max(0, cleanCurrentPoints - aiPenalty);
+      
+      try {
+        const activeStateStr = localStorage.getItem("apexmission-state");
+        if (activeStateStr) {
+          const parsedState = JSON.parse(activeStateStr);
+          if (parsedState && typeof parsedState.points === "number") {
+            cleanCurrentPoints = parsedState.points; // Now allowed because it's a 'let' variable!
+          }
+        }
+      } catch (e) {
+        console.error("Local storage lookup bypassed safely:", e);
+      }
+
+      if (typeof window !== "undefined") {
+        const currentStore = JSON.parse(localStorage.getItem("apexmission-state") || "{}");
+        currentStore.points = freshPoints;
+        localStorage.setItem("apexmission-state", JSON.stringify(currentStore));
+      }
+
+      void supabase.auth.getUser().then(({ data: { user } }) => {
+        if (user) {
+          void supabase
+            .from("profiles")
+            .update({ points: freshPoints, operational_status: "FALLEN" })
+            .eq("id", user.id);
+        }
+      });
+      
+      // 🔊 INTENSE OSCILLATOR SWEEP AUDIO HARBINGER CHIME FOR AI CHAT REBUKES
+      try {
+        const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioCtxClass) {
+          const ctx = new AudioCtxClass();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          
+          osc.type = "sawtooth";
+          osc.frequency.setValueAtTime(320, ctx.currentTime);
+          osc.frequency.linearRampToValueAtTime(80, ctx.currentTime + 0.5);
+          
+          gain.gain.setValueAtTime(0.12, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+          
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.5);
+        }
+      } catch (e) {}
+    }
+      void supabase.auth.getUser().then(({ data: { user } }) => {
+        if (user) {
+          void supabase
+            .from("profiles")
+            .update({ points: freshPoints, operational_status: "FALLEN" })
+            .eq("id", user.id);
+        }
+      });
+    }
 
     // Calculate, save, and increment local text usage blocks
     const nextCount = usageCount + 1;
@@ -323,8 +336,6 @@ function CoachPanel({
       // Fallback: If your component directly invokes a TanStack query mutation array hook
       void executeChatMutation({ text: activePayload });
     }
-  }
-
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -491,6 +502,22 @@ function CoachPanel({
                 )}
               </div>
             )}
+            {/* 📄 ACTIVE ATTACHED CONTEXT DOCUMENT BADGE */}
+            {files && files.map((file, idx) => (
+              <div key={idx} className="flex items-center gap-2 rounded-xl bg-zinc-900 border border-zinc-800 px-3 py-1.5 text-[11px] text-zinc-300 font-mono shadow-inner animate-fade-in">
+                <span className="truncate max-w-[140px] font-semibold">{file.name}</span>
+                
+                {/* ✅ NATIVE EMERALD × REMOVAL TRIGGER BUTTON */}
+                <button
+                  type="button"
+                  onClick={() => handleRemoveFile(idx)}
+                  className="ml-1 flex size-4 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-800 hover:text-rose-400 font-black text-xs transition-colors duration-200"
+                  title="Discard attached context document"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
           </div>
 
           <form
