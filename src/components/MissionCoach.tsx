@@ -37,7 +37,7 @@ function send(text: string) {
       const cleanCurrentPoints = state?.points || 0;
       const freshPoints = Math.max(0, cleanCurrentPoints - aiPenalty);
       const aiPenalty = 100;
-      
+
       try {
         const activeStateStr = localStorage.getItem("apexmission-state");
         if (activeStateStr) {
@@ -317,9 +317,12 @@ function CoachPanel({
       ? `${trimmed}\n\n${SocraticContext}\n\n[PARSED DOCUMENT FILE CONTEXT]:\n\n${uploadedText}`
       : `${trimmed}\n\n${SocraticContext}`;
 
-    void sendMessage({
-      text: activePayload
-    });
+    if (typeof onSendMessage === "function") {
+      onSendMessage(activePayload);
+    } else {
+      // Fallback: If your component directly invokes a TanStack query mutation array hook
+      void executeChatMutation({ text: activePayload });
+    }
   }
 
 
