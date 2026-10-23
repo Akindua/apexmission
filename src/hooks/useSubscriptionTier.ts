@@ -50,7 +50,7 @@ export function useSubscriptionTier(): SubscriptionState {
       const { data: session } = await supabase.auth.getSession();
 
       const { data, error } = await supabase
-        .from("Profiles")
+        .from("profiles")
         .select("*")
         .maybeSingle();
       if (!active) return;

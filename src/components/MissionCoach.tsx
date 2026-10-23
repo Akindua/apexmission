@@ -234,6 +234,7 @@ function CoachPanel({
     const trimmed = text.trim(); 
     const textLower = trimmed.toLowerCase();
     const indicatesSlacking = textLower.includes("procrastinate") || textLower.includes("gave up") || textLower.includes("lazy") || textLower.includes("didn't do");
+    let calculatedRankDisplay = "Synchronizing node cluster standing...";
     let cleanCurrentPoints = state?.points || 0;
     let currentStreakCount = state?.streak?.count || 0;
     let currentStatus = state?.operational_status || "Operational";
