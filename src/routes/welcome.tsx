@@ -9,8 +9,13 @@ export const Route = createFileRoute("/welcome")({
 
 function WelcomePage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black px-6 text-zinc-100">
-      <div className="w-full max-w-sm text-center flex flex-col items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center bg-[#020203] px-6 text-zinc-100 relative overflow-hidden animate-scan-line">
+      {/* Luminous Ambient Backdrop Shroud */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-96 bg-emerald-500/[0.02] rounded-full blur-3xl pointer-events-none" />
+      
+      {/* ✅ FIXED: Applied pristine emerald glass wrapper styles to the welcome screen module panel card */}
+      <div className="w-full max-w-sm text-center flex flex-col items-center justify-center p-8 rounded-2xl border emerald-glass-core">
+        <img src="/icon-192.png" alt="ApexMission Logo" className="h-24 w-24 object-contain mb-4 animate-fade-in" />
         
         {/* Premium Geometric Logo Anchor */}
         <img

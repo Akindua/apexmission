@@ -133,12 +133,12 @@ function AuthConsolePage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-black px-6 py-12 text-zinc-100">
-      {/* Background Grid Pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f29370a_1px,transparent_1px),linear-gradient(to_bottom,#1f29370a_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
-
-      <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-[#0D0D11] p-8 shadow-2xl relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#020203] px-6 py-12 text-zinc-100 relative overflow-hidden animate-scan-line">
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f293704_1px,transparent_1px),linear-gradient(to_bottom,#1f293704_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+  
+        {/* ✅ FIXED: Transformed authorization interface capsule shell card block to match reference neon emerald reflections */}
+        <div className="w-full max-w-md rounded-2xl border p-8 shadow-2xl relative overflow-hidden emerald-glass-core">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />
 
         {/* Console Header */}
         <div className="mb-8 flex flex-col items-center justify-center text-center">

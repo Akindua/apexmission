@@ -676,7 +676,7 @@ function ApexMission() {
             <div className="flex flex-col gap-6 animate-fade-in">
           
               {/* 🏢 1. THE MISSION CARD CONTAINER */}
-              <section className={`relative overflow-hidden rounded-2xl border p-6 sm:p-8 ${themeClasses.card}`}>
+              <section className="relative overflow-hidden rounded-2xl border p-6 sm:p-8 emerald-glass-core">
                 <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent" />
                 <label htmlFor="mission" className="text-[10px] font-black tracking-widest text-zinc-500 uppercase block">
                   Core Vision Statement
@@ -1113,7 +1113,8 @@ function ApexMission() {
 
         <MissionCoach
           premium={premium}
-          onLockedHistory={() => setPaywall("Your full coach history is a premium feature. Upgrade to keep every conversation with your Mission Coach.")}
+          state={state} // Passes down your active mission matrix, daily actions, and streak tallies!
+          onLockedHistory={() => setPaywall("Your full coach history is a premium feature...")}
           onActionPlanGenerated={(plan) => {
             setState((s) => ({
               ...s,
@@ -1126,8 +1127,6 @@ function ApexMission() {
               daily: { text: plan.dailyAction || "", done: false, date: todayKey() },
             }));
             setDailyDraft(plan.dailyAction || "");
-            
-            // 🚨 TRIGGER SUCCESS ALERT: Flash emerald banner notification row
             setShowPlanSuccessAlert(true);
             setTimeout(() => setShowPlanSuccessAlert(false), 4000);
           }}

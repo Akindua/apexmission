@@ -155,42 +155,47 @@
 }
 
 @layer utilities {
-  /* ✨ Immersive Emerald Glass Shell */
-  .emerald-glass-panel {
-    background: rgba(4, 10, 6, 0.45) !important;
-    backdrop-filter: blur(14px) saturate(140%) !important;
-    -webkit-backdrop-filter: blur(14px) saturate(140%) !important;
-    border: 1px solid rgba(16, 185, 129, 0.12) !important;
+  /* ✨ Premium Luminous Emerald Glass Shell Template (Matches reference image) */
+  .emerald-glass-core {
+    background: linear-gradient(
+      135deg, 
+      rgba(16, 185, 129, 0.05) 0%, 
+      rgba(4, 10, 6, 0.6) 100%
+    ) !important;
+    backdrop-filter: blur(20px) saturate(160%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
+    border: 1px solid rgba(52, 211, 153, 0.18) !important;
     box-shadow: 
-      0 4px 30px rgba(0, 0, 0, 0.6), 
-      inset 0 1px 1px rgba(16, 185, 129, 0.05) !important;
+      0 20px 50px rgba(0, 0, 0, 0.7), 
+      inset 0 1px 2px rgba(52, 211, 153, 0.15) !important;
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
   }
 
-  /* 🟢 Dynamic Border Highlight Shroud on Hover */
-  .emerald-glass-panel:hover {
-    border-color: rgba(52, 211, 153, 0.35) !important;
+  /* 🟢 Luminous Hover Accent Activation Matrix */
+  .emerald-glass-core:hover {
+    border-color: rgba(52, 211, 153, 0.4) !important;
     box-shadow: 
-      0 12px 40px rgba(0, 0, 0, 0.8), 
-      0 0 25px rgba(16, 185, 129, 0.12),
-      inset 0 1px 2px rgba(52, 211, 153, 0.15) !important;
+      0 30px 60px rgba(0, 0, 0, 0.9), 
+      0 0 30px rgba(16, 185, 129, 0.18),
+      inset 0 1px 3px rgba(52, 211, 153, 0.25) !important;
     transform: translateY(-2px);
   }
 
-  /* 🔋 Tactical Sub-Surface Input Fields */
+  /* 🔋 Sub-Surface Neon Field Input Slots */
   .glass-input-node {
-    background: rgba(0, 0, 0, 0.6) !important;
-    border: 1px solid rgba(16, 185, 129, 0.1) !important;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4) !important;
-    transition: all 0.3s ease !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    border: 1px solid rgba(52, 211, 153, 0.12) !important;
+    border-radius: 12px !important;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5) !important;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
   }
 
   .glass-input-node:focus-within {
-    border-color: rgba(52, 211, 153, 0.45) !important;
-    background: rgba(16, 185, 129, 0.02) !important;
+    border-color: rgba(52, 211, 153, 0.5) !important;
+    background: rgba(16, 185, 129, 0.03) !important;
     box-shadow: 
-      0 0 15px rgba(16, 185, 129, 0.08),
-      inset 0 2px 4px rgba(0, 0, 0, 0.6) !important;
+      0 0 20px rgba(16, 185, 129, 0.15),
+      inset 0 2px 4px rgba(0, 0, 0, 0.7) !important;
   }
 }
 

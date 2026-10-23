@@ -147,9 +147,10 @@ function DailyBriefingPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-zinc-800 bg-[#0D0D11] p-8 shadow-2xl space-y-8">
+        {/* ✅ FIXED: Upgraded morning layout briefing routine blocks into premium glass overlays */}
+        <div className="rounded-2xl border p-8 shadow-2xl space-y-8 emerald-glass-core">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-500 flex items-center gap-1.5">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
               <Target className="h-3.5 w-3.5" /> Today's One Action
             </p>
             <p className="mt-2 text-2xl font-extrabold text-white tracking-tight">

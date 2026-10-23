@@ -49,7 +49,7 @@ function PlansPage() {
         <div className="w-full grid md:grid-cols-2 gap-6 items-stretch">
           
           {/* 🔘 TACTICAL FREE PLAN CONTAINER */}
-          <div className="flex flex-col justify-between rounded-2xl border border-zinc-900 bg-[#0D0D11]/60 p-6 text-left relative transition-all duration-300 hover:border-zinc-800 shadow-xl">
+          <div className="flex flex-col justify-between rounded-2xl p-6 text-left relative border emerald-glass-core">
             <div>
               <div className="flex items-center justify-between mb-4">
                 <span className="text-xs font-black uppercase tracking-widest text-zinc-500">Base Operator</span>

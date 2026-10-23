@@ -82,8 +82,8 @@ function NightReflectionPage() {
           </h1>
         </div>
 
-        {/* Tactical Form Panel */}
-        <div className="rounded-2xl border border-zinc-800 bg-[#0D0D11] p-6 sm:p-8 shadow-2xl space-y-6">
+      {/* ✅ FIXED: Aligned the evening closeout review card layout grid parameters with matching emerald glass boundaries */}
+      <div className="rounded-2xl border p-6 sm:p-8 shadow-2xl space-y-6 emerald-glass-core">
           
           {/* Step 1: Verification Node */}
           <div className="text-left">

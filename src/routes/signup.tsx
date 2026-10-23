@@ -43,8 +43,11 @@ function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-black px-6 text-zinc-100">
-      <div className="w-full max-w-sm flex flex-col items-center justify-center text-center">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#020203] px-6 text-zinc-100 relative overflow-hidden animate-scan-line">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-96 bg-emerald-500/[0.02] rounded-full blur-3xl pointer-events-none" />
+      
+      {/* ✅ FIXED: Transformed signup block into premium neon emerald glass container */}
+      <div className="w-full max-w-sm flex flex-col items-center justify-center text-center p-8 rounded-2xl border emerald-glass-core">
         
         {/* Minimalist Logo Anchor */}
         <img
