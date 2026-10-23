@@ -149,16 +149,13 @@ function ApexMission() {
       const pendingHighCount = highImpactTasks.filter(t => !t.done).length;
   
       if (pendingHighCount > 0) {
-        // Calculate penalty attributes
-        const penaltyAmount = pendingHighCount * 15; // Deduct 15 credits per sustained deficit objective
+        const penaltyAmount = pendingHighCount * 15;
         const targetCurrentPoints = (state as any).points || 0;
         const optimizedPoints = Math.max(0, targetCurrentPoints - penaltyAmount);
 
-        // 1. Instantly patch local client states to prevent layout delay
         setState((s) => ({ ...s, points: optimizedPoints }));
 
-        // 2. 📡 REAL-TIME REMOTE DATABASE SYNCHRONIZATION PIPELINE
-        // Instantly forces the updated points balance to your remote table so the leaderboard changes on sight
+        // 📡 REAL-TIME REMOTE DATABASE STANDINGS SYNCHRONIZATION
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           await supabase
@@ -170,8 +167,34 @@ function ApexMission() {
             })
             .eq("id", user.id);
         }
-  
+
+        // 🔊 LIVE RETRO-FUTURISTIC TELEMETRY PENALTY AUDIO INDICATOR CHIME
         if (typeof window !== "undefined") {
+          try {
+            const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+            if (AudioContextClass) {
+              const audioCtx = new AudioContextClass();
+              const osc = audioCtx.createOscillator();
+              const gainNode = audioCtx.createGain();
+              
+              // Custom falling sawtooth sweep to simulate structural asset loss
+              osc.type = "sawtooth";
+              osc.frequency.setValueAtTime(290, audioCtx.currentTime);
+              osc.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 0.4);
+              
+              gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime);
+              gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+              
+              osc.connect(gainNode);
+              gainNode.connect(audioCtx.destination);
+              
+              osc.start();
+              osc.stop(audioCtx.currentTime + 0.4);
+            }
+          } catch (audioErr) {
+            console.warn("Audio node context blocked by browser gesture guard lines:", audioErr);
+          }
+
           setSurpriseLoot({
             active: true,
             msg: `📉 COGNITIVE PENALTY ENFORCED: Lost ${penaltyAmount} credits. AI tracking flagged sustained slacking parameters. Leaderboard synced.`,
@@ -665,29 +688,63 @@ function ApexMission() {
                 </div>
               </section>
 
-              {/* 🎛️ INDUSTRY TELEMETRY COMPONENT DROPDOWN PROFILE SWITCHER */}
-              <div className="flex items-center gap-3 bg-[#0D0D11] border border-zinc-800 rounded-xl p-3 text-left">
-                <span className="text-[10px] font-black uppercase tracking-wider text-zinc-500 whitespace-nowrap pl-1">Audience Context:</span>
+              {/* 🎛️ AUDIENCE CONTEXT TASK TEMPLATE MATRIX INJECTOR */}
+              <div className="flex items-center gap-3 bg-[#0D0D11]/90 border border-zinc-800 rounded-xl p-3 text-left emerald-glass-panel">
+                <span className="text-[10px] font-black uppercase tracking-wider text-zinc-500 whitespace-nowrap pl-1">Audience Profile Track:</span>
                 <select 
                   defaultValue="general"
                   onChange={(e) => {
-                    const profile = e.target.value as keyof typeof AUDIENCE_PROFILES;
-                    alert(`⚡ Operational placeholder parameters tuned for: ${e.target.options[e.target.selectedIndex].text}`);
+                    const selectedTrack = e.target.value as keyof typeof AUDIENCE_PROFILES;
+                    const profileDefaults = AUDIENCE_PROFILES[selectedTrack];
+                    
+                    // Confirm action before wiping current matrix grids
+                    if (window.confirm(`⚡ SYNCHRONIZE TRACK PROFILE: Clear current workspace grids and auto-load baseline execution rows for the ${e.target.options[e.target.selectedIndex].text} matrix?`)) {
+                      setState((s) => ({
+                        ...s,
+                        tasks: {
+                          high: [{ id: `t-${Date.now()}-h`, text: profileDefaults.high, done: false }],
+                          medium: [{ id: `t-${Date.now()}-m`, text: profileDefaults.medium, done: false }],
+                          low: [{ id: `t-${Date.now()}-l`, text: profileDefaults.low, done: false }]
+                        }
+                      }));
+                      alert("🚀 ARCHITECTURE MATRIX LOADED: Baseline task sequences injected cleanly.");
+                    }
                   }}
                   className="bg-black border border-zinc-900 rounded-lg h-9 px-3 text-xs font-bold text-emerald-400 outline-none focus:border-zinc-800 cursor-pointer w-full"
                 >
-                  <option value="general">💼 Professional Standard</option>
+                  <option value="general">💼 Professional Standard Track</option>
                   <option value="ceo">🚀 Chief Executive Officer (CEO)</option>
-                  <option value="corporate">🏢 Corporate Worker</option>
-                  <option value="university/college">🎓 University/College Student</option>
-                  <option value="student">🏫 High School Student</option>
+                  <option value="corporate">🏢 Corporate Operational Track</option>
+                  <option value="university">🎓 University Scholar Matrix</option>
+                  <option value="student">🏫 High School Student Vector</option>
                 </select>
               </div>
 
-              {/* 📊 2. THE PRIORITY MATRIX SPLIT COLUMNS */}
-              <section className="grid flex-1 grid-cols-1 gap-4 md:grid-cols-3">
-                {TIERS.map((tier) => (
-                  <div key={tier.key} className={`flex flex-col rounded-2xl p-5 emerald-glass-panel`}>
+            {/* 📊 2. THE PRIORITY MATRIX SPLIT COLUMNS */}
+            <section className="grid flex-1 grid-cols-1 gap-4 md:grid-cols-3">
+              {TIERS.map((tier) => (
+                <div key={tier.key} className={`flex flex-col rounded-2xl p-5 emerald-glass-panel`}>
+                  
+                  {/* Column Header Metadata Block */}
+                  <div className="flex flex-col gap-2 border-b border-zinc-900/60 pb-3 mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className={`size-2 rounded-full ${tier.accentClass}`} />
+                      <h2 className={`text-[10px] font-black tracking-widest uppercase ${tier.textClass}`}>
+                        {tier.label}
+                      </h2>
+                      <span className="ml-auto font-mono text-[10px] font-bold bg-black border border-zinc-900 px-2 py-0.5 rounded text-zinc-400 tabular-nums">
+                        {(state.tasks[tier.key] || []).filter((t) => t.done).length}/{(state.tasks[tier.key] || []).length}
+                      </span>
+                    </div>
+
+                    {/* ⏱️ INDIVIDUAL TIER INTERVEL COUNTDOWN INDICATOR SUB-TICKER */}
+                    <div className="flex items-center justify-between font-mono text-[9px] text-zinc-600 uppercase mt-0.5">
+                      <span>Cutoff Vector Window:</span>
+                      <span className="text-zinc-400 font-bold tracking-wider tabular-nums animate-pulse">
+                        {resetMs === null ? "00:00:00" : formatCountdown(resetMs)}
+                      </span>
+                    </div>
+                  </div>
                     <div className="flex items-center gap-2 border-b border-zinc-900/60 pb-3 mb-3">
                       <span className={`size-2 rounded-full ${tier.accentClass}`} />
                       <h2 className={`text-[10px] font-black tracking-widest uppercase ${tier.textClass}`}>

@@ -27,33 +27,52 @@ const QUICK_STARTS = [
   },
 ];
 
-// 🧠 REAL-TIME AI COCH CHAT TEXT SCANNER & SLACKING DEDUCTION LOOP
-const textLower = trimmed.toLowerCase();
-const indicatesSlacking = textLower.includes("procrastinate") || textLower.includes("gave up") || textLower.includes("lazy") || textLower.includes("didn't do");
+    // 🧠 REAL-TIME AI COACH CHAT TEXT SCANNER & SLACKING DEDUCTION WITH NATIVE AUDIO CHIME
+    const textLower = trimmed.toLowerCase();
+    const indicatesSlacking = textLower.includes("procrastinate") || textLower.includes("gave up") || textLower.includes("lazy") || textLower.includes("didn't do");
+    
+    if (indicatesSlacking) {
+      const aiPenalty = 100;
+      const cleanCurrentPoints = state?.points || 0;
+      const freshPoints = Math.max(0, cleanCurrentPoints - aiPenalty);
+      
+      if (typeof window !== "undefined") {
+        const currentStore = JSON.parse(localStorage.getItem("apexmission-state") || "{}");
+        currentStore.points = freshPoints;
+        localStorage.setItem("apexmission-state", JSON.stringify(currentStore));
 
-if (indicatesSlacking) {
-  // AI detects slacking parameters directly out of text conversation streams
-  const aiPenalty = 100;
-  const cleanCurrentPoints = state?.points || 0;
-  const freshPoints = Math.max(0, cleanCurrentPoints - aiPenalty);
-  
-  // Update local storage and dispatch to global state handlers immediately
-  if (typeof window !== "undefined") {
-    const currentStore = JSON.parse(localStorage.getItem("apexmission-state") || "{}");
-    currentStore.points = freshPoints;
-    localStorage.setItem("apexmission-state", JSON.stringify(currentStore));
-  }
+        // 🔊 INTENSE OSCILLATOR SWEEP AUDIO HARBINGER CHIME FOR AI CHAT REBUKES
+        try {
+          const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
+          if (AudioCtxClass) {
+            const ctx = new AudioCtxClass();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            
+            osc.type = "sawtooth";
+            osc.frequency.setValueAtTime(320, ctx.currentTime);
+            osc.frequency.linearRampToValueAtTime(80, ctx.currentTime + 0.5);
+            
+            gain.gain.setValueAtTime(0.12, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+            
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.5);
+          }
+        } catch (e) {}
+      }
 
-  // Sync background database row columns immediately to alter leaderboard values on save
-  void supabase.auth.getUser().then(({ data: { user } }) => {
-    if (user) {
-      void supabase
-        .from("profiles")
-        .update({ points: freshPoints, operational_status: "FALLEN" })
-        .eq("id", user.id);
+      void supabase.auth.getUser().then(({ data: { user } }) => {
+        if (user) {
+          void supabase
+            .from("profiles")
+            .update({ points: freshPoints, operational_status: "FALLEN" })
+            .eq("id", user.id);
+        }
+      });
     }
-  });
-}
 
 function loadMessages(): UIMessage[] {
   try {
