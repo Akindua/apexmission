@@ -15,8 +15,7 @@ function WelcomePage() {
       
       {/* ✅ FIXED: Applied pristine emerald glass wrapper styles to the welcome screen module panel card */}
       <div className="w-full max-w-sm text-center flex flex-col items-center justify-center p-8 rounded-2xl border emerald-glass-core">
-        <img src="/icon-192.png" alt="ApexMission Logo" className="h-24 w-24 object-contain mb-4 animate-fade-in" />
-        
+
         {/* Premium Geometric Logo Anchor */}
         <img
           src="/icon-192.png"

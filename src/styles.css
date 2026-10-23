@@ -199,3 +199,48 @@
   }
 }
 
+@layer utilities {
+  /* ✨ Immersive Luminous Emerald Glass Shell (Matches Reference Layout Grid) */
+  .emerald-glass-core {
+    background: linear-gradient(
+      135deg, 
+      rgba(16, 185, 129, 0.04) 0%, 
+      rgba(3, 8, 5, 0.65) 100%
+    ) !important;
+    backdrop-filter: blur(20px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(150%) !important;
+    border: 1px solid rgba(52, 211, 153, 0.16) !important;
+    box-shadow: 
+      0 24px 60px rgba(0, 0, 0, 0.85), 
+      inset 0 1px 2px rgba(52, 211, 153, 0.12) !important;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  /* 🟢 Dynamic High-Velocity Border Highlight Glow on Hover */
+  .emerald-glass-core:hover {
+    border-color: rgba(52, 211, 153, 0.38) !important;
+    box-shadow: 
+      0 32px 70px rgba(0, 0, 0, 0.95), 
+      0 0 35px rgba(16, 185, 129, 0.2),
+      inset 0 1px 3px rgba(52, 211, 153, 0.22) !important;
+    transform: translateY(-2px);
+  }
+
+  /* 🔋 Tactical Sub-Surface Input Fields Matrix Slots */
+  .glass-input-node {
+    background: rgba(0, 0, 0, 0.55) !important;
+    border: 1px solid rgba(52, 211, 153, 0.12) !important;
+    border-radius: 12px !important;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6) !important;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  .glass-input-node:focus-within, .glass-input-node:focus {
+    border-color: rgba(52, 211, 153, 0.45) !important;
+    background: rgba(16, 185, 129, 0.02) !important;
+    box-shadow: 
+      0 0 20px rgba(16, 185, 129, 0.12),
+      inset 0 2px 4px rgba(0, 0, 0, 0.8) !important;
+  }
+}
+
