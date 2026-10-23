@@ -305,13 +305,9 @@ function CoachPanel({
       ? `${trimmed}\n\n${SocraticContext}\n\n[PARSED DOCUMENT FILE CONTEXT]:\n\n${uploadedText}`
       : `${trimmed}\n\n${SocraticContext}`;
 
-    if (typeof onSendMessage === "function") {
-      onSendMessage(activePayload);
-    } else {
-      // Fallback: If your component directly invokes a TanStack query mutation array hook
       void executeChatMutation({ text: activePayload });
-    }
   }
+  
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
