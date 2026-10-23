@@ -460,6 +460,44 @@ function ApexMission() {
       };
     });
 
+    // 🔊 RETRO SYNTH OPERATIONAL ACHIEVEMENT SUCCESS CHIME
+    if (nextDone && typeof window !== "undefined") {
+      try {
+        const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioCtxClass) {
+          const audioCtx = new AudioCtxClass();
+          
+          // Note 1: Root Tone Handshake
+          const osc1 = audioCtx.createOscillator();
+          const gain1 = audioCtx.createGain();
+          osc1.type = "sine";
+          osc1.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5 Note
+          gain1.gain.setValueAtTime(0.05, audioCtx.currentTime);
+          gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+          osc1.connect(gain1);
+          gain1.connect(audioCtx.destination);
+          osc1.start();
+          osc1.stop(audioCtx.currentTime + 0.15);
+
+          // Note 2: Harmonic Escalation Major Chord Note (Triggered with a 0.08s delay)
+          setTimeout(() => {
+            const osc2 = audioCtx.createOscillator();
+            const gain2 = audioCtx.createGain();
+            osc2.type = "sine";
+            osc2.frequency.setValueAtTime(659.25, audioCtx.currentTime); // E5 Note
+            gain2.gain.setValueAtTime(0.06, audioCtx.currentTime);
+            gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+            osc2.connect(gain2);
+            gain2.connect(audioCtx.destination);
+            osc2.start();
+            osc2.stop(audioCtx.currentTime + 0.3);
+          }, 80);
+        }
+      } catch (err) {
+        console.warn("Audio Context blocked by client gesture locks:", err);
+      }
+    }
+
     if (nextDone) {
       setJustCompleted(true);
       window.setTimeout(() => setJustCompleted(false), 500);
@@ -715,7 +753,7 @@ function ApexMission() {
                   <option value="general">💼 Professional Standard Track</option>
                   <option value="ceo">🚀 Chief Executive Officer (CEO)</option>
                   <option value="corporate">🏢 Corporate Operational Track</option>
-                  <option value="university">🎓 University Scholar Matrix</option>
+                  <option value="university">🎓 University/College Scholar Matrix</option>
                   <option value="student">🏫 High School Student Vector</option>
                 </select>
               </div>
@@ -723,7 +761,7 @@ function ApexMission() {
             {/* 📊 2. THE PRIORITY MATRIX SPLIT COLUMNS */}
             <section className="grid flex-1 grid-cols-1 gap-4 md:grid-cols-3">
               {TIERS.map((tier) => (
-                <div key={tier.key} className={`flex flex-col rounded-2xl p-5 emerald-glass-panel`}>
+                <div key={tier.key} className="flex flex-col rounded-2xl p-5 emerald-glass-panel">
                   
                   {/* Column Header Metadata Block */}
                   <div className="flex flex-col gap-2 border-b border-zinc-900/60 pb-3 mb-3">
@@ -737,7 +775,7 @@ function ApexMission() {
                       </span>
                     </div>
 
-                    {/* ⏱️ INDIVIDUAL TIER INTERVEL COUNTDOWN INDICATOR SUB-TICKER */}
+                    {/* ⏱️ INDIVIDUAL TIER INTERVAL COUNTDOWN INDICATOR SUB-TICKER */}
                     <div className="flex items-center justify-between font-mono text-[9px] text-zinc-600 uppercase mt-0.5">
                       <span>Cutoff Vector Window:</span>
                       <span className="text-zinc-400 font-bold tracking-wider tabular-nums animate-pulse">
@@ -745,39 +783,30 @@ function ApexMission() {
                       </span>
                     </div>
                   </div>
-                    <div className="flex items-center gap-2 border-b border-zinc-900/60 pb-3 mb-3">
-                      <span className={`size-2 rounded-full ${tier.accentClass}`} />
-                      <h2 className={`text-[10px] font-black tracking-widest uppercase ${tier.textClass}`}>
-                        {tier.label}
-                      </h2>
-                      <span className="ml-auto font-mono text-[10px] font-bold bg-black border border-zinc-800 px-2 py-0.5 rounded text-zinc-400 tabular-nums">
-                        {(state.tasks[tier.key] || []).filter((t) => t.done).length}/{(state.tasks[tier.key] || []).length}
-                      </span>
-                    </div>
 
-                    <ul className="flex flex-1 flex-col gap-1.5 overflow-y-auto max-h-[260px] pr-1">
-                      {(state.tasks[tier.key] || []).map((task) => (
-                        <TaskRow 
-                          key={task.id} 
-                          task={task} 
-                          onToggle={() => toggleTask(tier.key, task.id)} 
-                          onRemove={() => removeTask(tier.key, task.id)} 
-                        />
-                      ))}
-                      {(state.tasks[tier.key] || []).length === 0 && (
-                        <li className="px-1 py-3 text-xs text-zinc-600 font-medium italic">No execution objects mapped.</li>
-                      )}
-                    </ul>
-
-                    <div className="mt-3 flex items-center gap-2 rounded-xl px-3 glass-input-node">
-                      <Plus className="size-3.5 shrink-0 text-zinc-600" />
-                      <input
-                        value={drafts[tier.key]}
-                        onChange={(e) => setDrafts((d) => ({ ...d, [tier.key]: e.target.value }))}
-                        onKeyDown={(e) => e.key === "Enter" && addTask(tier.key)}
-                        placeholder={tier.placeholder}
-                        className="h-10 w-full bg-transparent text-sm text-white placeholder-zinc-700 outline-none"
+                  <ul className="flex flex-1 flex-col gap-1.5 overflow-y-auto max-h-[260px] pr-1">
+                    {(state.tasks[tier.key] || []).map((task) => (
+                      <TaskRow 
+                        key={task.id} 
+                        task={task} 
+                        onToggle={() => toggleTask(tier.key, task.id)} 
+                        onRemove={() => removeTask(tier.key, task.id)} 
                       />
+                    ))}
+                    {(state.tasks[tier.key] || []).length === 0 && (
+                      <li className="px-1 py-3 text-xs text-zinc-600 font-medium italic">No execution objects mapped.</li>
+                    )}
+                  </ul>
+
+                  <div className="mt-3 flex items-center gap-2 rounded-xl px-3 glass-input-node">
+                    <Plus className="size-3.5 shrink-0 text-zinc-600" />
+                    <input
+                      value={drafts[tier.key]}
+                      onChange={(e) => setDrafts((d) => ({ ...d, [tier.key]: e.target.value }))}
+                      onKeyDown={(e) => e.key === "Enter" && addTask(tier.key)}
+                      placeholder={tier.placeholder}
+                      className="h-10 w-full bg-transparent text-sm text-white placeholder-zinc-700 outline-none"
+                    />
                     </div>
                   </div>
                 ))}
