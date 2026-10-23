@@ -27,6 +27,34 @@ const QUICK_STARTS = [
   },
 ];
 
+// 🧠 REAL-TIME AI COCH CHAT TEXT SCANNER & SLACKING DEDUCTION LOOP
+const textLower = trimmed.toLowerCase();
+const indicatesSlacking = textLower.includes("procrastinate") || textLower.includes("gave up") || textLower.includes("lazy") || textLower.includes("didn't do");
+
+if (indicatesSlacking) {
+  // AI detects slacking parameters directly out of text conversation streams
+  const aiPenalty = 100;
+  const cleanCurrentPoints = state?.points || 0;
+  const freshPoints = Math.max(0, cleanCurrentPoints - aiPenalty);
+  
+  // Update local storage and dispatch to global state handlers immediately
+  if (typeof window !== "undefined") {
+    const currentStore = JSON.parse(localStorage.getItem("apexmission-state") || "{}");
+    currentStore.points = freshPoints;
+    localStorage.setItem("apexmission-state", JSON.stringify(currentStore));
+  }
+
+  // Sync background database row columns immediately to alter leaderboard values on save
+  void supabase.auth.getUser().then(({ data: { user } }) => {
+    if (user) {
+      void supabase
+        .from("profiles")
+        .update({ points: freshPoints, operational_status: "FALLEN" })
+        .eq("id", user.id);
+    }
+  });
+}
+
 function loadMessages(): UIMessage[] {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
