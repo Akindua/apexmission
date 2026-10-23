@@ -26,15 +26,29 @@ const QUICK_STARTS = [
     prompt: "I keep procrastinating. Help me figure out why and give me a way to start right now.",
   },
 ];
-
+function send(text: string) {
+    if (!text) return;
     // 🧠 REAL-TIME AI COACH CHAT TEXT SCANNER & SLACKING DEDUCTION WITH NATIVE AUDIO CHIME
+    const trimmed = text.trim();
     const textLower = trimmed.toLowerCase();
     const indicatesSlacking = textLower.includes("procrastinate") || textLower.includes("gave up") || textLower.includes("lazy") || textLower.includes("didn't do");
     
     if (indicatesSlacking) {
-      const aiPenalty = 100;
       const cleanCurrentPoints = state?.points || 0;
       const freshPoints = Math.max(0, cleanCurrentPoints - aiPenalty);
+      const aiPenalty = 100;
+      
+      try {
+        const activeStateStr = localStorage.getItem("apexmission-state");
+        if (activeStateStr) {
+          const parsedState = JSON.parse(activeStateStr);
+          if (parsedState && typeof parsedState.points === "number") {
+            cleanCurrentPoints = parsedState.points;
+          }
+        }
+      } catch (e) {
+        console.error("Local storage lookup bypassed safely:", e);
+      }
       
       if (typeof window !== "undefined") {
         const currentStore = JSON.parse(localStorage.getItem("apexmission-state") || "{}");
@@ -73,6 +87,7 @@ const QUICK_STARTS = [
         }
       });
     }
+}
 
 function loadMessages(): UIMessage[] {
   try {
