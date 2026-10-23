@@ -333,7 +333,6 @@ function CoachPanel({
       : `${trimmed}\n\n${SocraticContext}`;
 
     void sendMessage({ text: activePayload });
-    setInput("");
   }
   
 
