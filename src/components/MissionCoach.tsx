@@ -435,10 +435,6 @@ function CoachPanel({
               >
                 <Paperclip className="h-3.5 w-3.5" /> Attach Context
               </label>
-
-              <div className="font-mono text-[10px] font-bold bg-black border border-zinc-800 px-2 py-1 rounded text-zinc-500 uppercase tracking-wider">
-                {MAX_DAILY_MESSAGES - usageCount} Briefs Left Today
-              </div>
             </div>
 
             {/* ✅ FIXED LAYER: Supports File Badges, Generation Triggers, and Regenerate Toggles cleanly */}
