@@ -56,6 +56,17 @@ export function MissionCoach({
   const [generatingPlan, setGeneratingPlan] = useState(false);
   const [planGenerated, setPlanGenerated] = useState(false);
 
+  function handleRemoveFile(indexToRemove: number) {
+    // If files are managed via props, call your parent state array modifier setter here
+    if (typeof setFiles === "function") {
+      setFiles((prevFiles: File[]) => prevFiles.filter((_, idx) => idx !== indexToRemove));
+    }
+    // If you are tracking parsed string buffers locally, clear out the context row
+    if (typeof setUploadedText === "function") {
+      setUploadedText("");
+    }
+  }
+
   useEffect(() => {
     setPlanGenerated(false);
   }, [uploadedText]);
@@ -126,6 +137,7 @@ export function MissionCoach({
       premium={premium}
       onLockedHistory={onLockedHistory}
       files={files}
+      handleRemoveFile={handleRemoveFile}
       handleFileUpload={handleFileUpload}
       uploadedText={uploadedText}
       generateActionPlan={generateActionPlan}
@@ -161,6 +173,9 @@ function CoachPanel({
   premium,
   onLockedHistory,
   files,
+  handleRemoveFile,
+  setFiles,
+  setUploadedText,
   handleFileUpload,
   uploadedText,
   generateActionPlan,
@@ -178,6 +193,9 @@ function CoachPanel({
   premium: boolean;
   onLockedHistory?: () => void;
   files: File[];
+  handleRemoveFile: (index: number) => void;
+  setFiles: React.Dispatch<React.SetStateAction<File[]>>;
+  setUploadedText: React.Dispatch<React.SetStateAction<string>>;
   handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   generateActionPlan: () => Promise<void>;
   generatingPlan: boolean;
@@ -210,17 +228,6 @@ function CoachPanel({
   }, [open, status, textareaRef]);
 
   const busy = status === "submitted" || status === "streaming";
-
-  function handleRemoveFile(indexToRemove: number) {
-    // If files are managed via props, call your parent state array modifier setter here
-    if (typeof setFiles === "function") {
-      setFiles((prevFiles: File[]) => prevFiles.filter((_, idx) => idx !== indexToRemove));
-    }
-    // If you are tracking parsed string buffers locally, clear out the context row
-    if (typeof setUploadedText === "function") {
-      setUploadedText("");
-    }
-  }
 
   function send(text: string) {
     // 🧠 REAL-TIME AI COACH CHAT TEXT SCANNER & SLACKING DEDUCTION WITH NATIVE AUDIO CHIME
@@ -448,6 +455,15 @@ function CoachPanel({
                     files.map((file) => (
                       <div key={file.name} className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-zinc-400 truncate">
                         📎 {file.name}
+
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFile(idx)}
+                          className="ml-2 flex size-5 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-800 hover:text-rose-400 font-black text-xs transition-colors duration-200"
+                          title="Discard document context"
+                        >
+                          ×
+                        </button>
                       </div>
                     ))
                   ) : (
