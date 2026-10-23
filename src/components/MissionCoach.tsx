@@ -390,8 +390,11 @@ function CoachPanel({
 
             {/* MESSAGE RENDERING ENGINE */}
             {messages.map((message, index) => {
-              const text = message.parts.map((part) => (part.type === "text" ? part.text : "")).join("");
+              let text = message.parts.map((part) => (part.type === "text" ? part.text : "")).join("");
               if (!text) return null;
+              if (message.role === "user" && text.includes("[CRITICAL")) {
+                text = text.split("[CRITICAL")[0].trim();
+              }
               const locked = !premium && index < messages.length - FREE_HISTORY_LIMIT;
               return (
                 <div key={message.id} className={locked ? "relative opacity-40 grayscale blur-[4px] pointer-events-none select-none" : "w-full text-left"}>
