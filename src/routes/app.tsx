@@ -1139,7 +1139,7 @@ function ApexMission() {
               <div className="rounded-xl border border-zinc-800 bg-black/40 px-4 py-3 mb-5">
                 <p className="text-xs text-zinc-500">
                   I reply to all messages within{" "}
-                  <span className="text-emerald-400 font-semibold">3–4 business days</span>.
+                  <span className="text-emerald-400 font-semibold">1–4 business days</span>.
                 </p>
               </div>
 
