@@ -188,19 +188,9 @@ function CoachPanel({
   const [error, setError] = useState<string | null>(null);
 
   // --- 🔒 LOCAL BUDGETING TRACKER ENGINE ---
-  const [usageCount, setUsageCount] = useState(() => {
-    try {
-      const today = new Date().toDateString();
-      const raw = localStorage.getItem(LIMIT_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed.date === today) return Number(parsed.count || 0);
-      }
-    } catch {}
-    return 0;
-  });
+  const [usageCount, setUsageCount] = useState(0)
 
-  const isRateLimited = usageCount >= MAX_DAILY_MESSAGES;
+  const isRateLimited = false; 
 
   const { messages, sendMessage, status } = useChat({
     id: "mission-coach",
@@ -322,7 +312,7 @@ function CoachPanel({
       void executeChatMutation({ text: activePayload });
     }
   }
-  
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
