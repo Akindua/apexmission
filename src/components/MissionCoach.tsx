@@ -241,28 +241,29 @@ function CoachPanel({
     onError: (e) => setError(e.message || "The coach could not respond. Try again."),
   });
 
-  // 🚀 GUARANTEED AUTO-OPEN & WELCOME BRIEFING ON LOGIN
+  // 🚀 GUARANTEED TRIGGER ON EVERY NEW LOGIN SESSION (REGARDLESS OF EXISTING MESSAGES)
   useEffect(() => {
-    const welcomeKey = `apexmission-welcomed-${new Date().toDateString()}`;
-    const hasBeenWelcomedToday = localStorage.getItem(welcomeKey);
+    if (typeof window === "undefined") return;
 
-    if (!hasBeenWelcomedToday) {
-      localStorage.setItem(welcomeKey, "true");
-      setOpen(true); // Forces sidebar sheet open immediately on sign-in
+    const activeSessionKey = "apex-session-briefing-triggered";
+    const sessionAlreadyTriggered = sessionStorage.getItem(activeSessionKey);
 
-      const isFreshSignup = localStorage.getItem("apex-tutorial-completed") !== "true";
-      const promptText = isFreshSignup
-        ? "[SYSTEM_AUTO_TRIGGER_SIGNUP_ONBOARDING_GUIDE]"
-        : "[SYSTEM_AUTO_TRIGGER_LOGIN_BRIEFING]";
+    // If this session has NOT been briefed yet:
+    if (!sessionAlreadyTriggered && !hasTriggeredThisSession.current) {
+      hasTriggeredThisSession.current = true;
+      sessionStorage.setItem(activeSessionKey, "true");
 
-      // Delay briefly (400ms) to ensure chat transport stream is initialized
+      // Auto-open sidebar
+      setOpen(true);
+
+      // Trigger automatic coach speech/briefing
       const timer = setTimeout(() => {
-        send(promptText, true);
-      }, 400);
+        send("[SYSTEM_AUTO_TRIGGER_LOGIN_BRIEFING]", true);
+      }, 600);
 
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [setOpen]);
 
   useEffect(() => {
     try {
@@ -272,24 +273,9 @@ function CoachPanel({
 
   useEffect(() => {
     if (open) textareaRef.current?.focus();
-  }, [open, status, textareaRef]);
+  }, [open, status]);
 
   const busy = status === "submitted" || status === "streaming";
-
-  // 🌐 Global window interface routing hook to catch parent app logins
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      (window as any).__apex_coach_trigger = (triggerText: string) => {
-        // Automatically side-step human input loops and trigger an instant data query compile
-        send(triggerText, true);
-        // Cleanly open up the coach sidebar sheet view layout so the user sees the response stream
-        setOpen(true);
-      };
-    }
-    return () => {
-      if (typeof window !== "undefined") delete (window as any).__apex_coach_trigger;
-    };
-  }, [state]);
 
   function send(text: string, isSystemTrigger = false) {
     const trimmed = text.trim(); 
