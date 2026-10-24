@@ -229,9 +229,52 @@ function CoachPanel({
 
   const busy = status === "submitted" || status === "streaming";
 
+  // 🌐 Global window interface routing hook to catch parent app logins
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      (window as any).__apex_coach_trigger = (triggerText: string) => {
+        // Automatically side-step human input loops and trigger an instant data query compile
+        send(triggerText, true);
+        // Cleanly open up the coach sidebar sheet view layout so the user sees the response stream
+        setOpen(true);
+      };
+    }
+    return () => {
+      if (typeof window !== "undefined") delete (window as any).__apex_coach_trigger;
+    };
+  }, [state]);
+
   function send(text: string) {
-    // 🧠 REAL-TIME AI COACH CHAT TEXT SCANNER & SLACKING DEDUCTION WITH NATIVE AUDIO CHIME
     const trimmed = text.trim(); 
+      if (!trimmed) return;
+    
+    // 📡 DYNAMIC RE-ROUTING GATE: Handle fresh signups vs standard recurring briefings
+    let humanInputString = trimmed;
+    let explicitOnboardingDirective = "";
+
+    if (isSystemTrigger) {
+      if (trimmed === "[SYSTEM_AUTO_TRIGGER_SIGNUP_ONBOARDING_GUIDE]") {
+        humanInputString = "Initiate my operational onboarding command briefing. Break down how to get started on ApexMission.";
+        explicitOnboardingDirective = `
+          [CRITICAL COMMAND OVERRIDE: BRAND NEW SIGNUP OPERATOR ONBOARDING INITIALIZATION]
+          The operator has JUST CREATED THEIR ACCOUNT. They have skipped the old boring text box guide completely. 
+          You must act as a magnificent, immersive, highly engaging elite mission commander giving them a live vocal-style briefing about how to operate their dashboard. Talk directly to them in an unyielding, high-retention, cinematic style.
+          
+          YOU MUST THOROUGHLY BREAK DOWN EACH OF THESE MODULES IN ORDER:
+          1. ☀️ THE MORNING CHECK-IN NODE: Explain how they must open this app between 5:00 AM and 11:59 AM daily to seal their routine (hydration, focus, workout) or face instant 404 path locks.
+          2. 🏢 THE WORKSPACE GRID TIERS: Explain the leverage matrix. High Impact columns drain credits rapidly if left empty (loss aversion). Medium and Low handle tactical subtasks and daily maintenance rows.
+          3. ☀️ TODAY'S MASTER FOCUS ACTION: Explain that they must execute their single highest-impact target before the midnight cutoff. Completing it sounds a harmonic chord and progresses their day. Missing it shatters their streak.
+          4. 🌙 THE NIGHT REFLECTION PORTAL: Explain that when evening strikes (6:00 PM), they must close out their parameters and log their learned intel to prep for tomorrow.
+          5. 🛡️ CREDITS, THE HARDWARE STORE & RANKS: Explain that they start with 1,000 Credits. Completing goals awards points. Slacking off or procrastinating triggers an automatic AI deduction audit! Real credits are ranked live on the multi-column real-time Ranks Leaderboard table. They can burn credits in the Hardware Market to unlock aesthetic overrides, custom layouts, or premium alpha founder insignia badges!
+          
+          CONCLUDE BY SAYING: "Console systems synchronized. I have initialized your data matrices with 1,000 starting credits. Your priority columns are open. I am officially tracking your focus patterns. Go lock down your macro vision statement card right now and begin your countdown."
+        `;
+      } else {
+        humanInputString = "Initialize my core operational session briefing and analyze my dashboard data matrix nodes immediately.";
+      }
+    }
+
+    // 🧠 REAL-TIME AI COACH CHAT TEXT SCANNER & SLACKING DEDUCTION WITH NATIVE AUDIO CHIME
     const textLower = trimmed.toLowerCase();
     const indicatesSlacking = textLower.includes("procrastinate") || textLower.includes("gave up") || textLower.includes("lazy") || textLower.includes("didn't do");
     let calculatedRankDisplay = "Synchronizing node cluster standing...";
@@ -240,18 +283,6 @@ function CoachPanel({
     let currentStatus = state?.operational_status || "Operational";
     let failureTally = state?.failure_count || 0;
     const userCredits = cleanCurrentPoints;
-
-    const highImpactTasks = (state?.tasks?.high || [])
-      .map((t: any) => `[${t.done ? "✓" : " "}] ${t.text}`)
-      .join("\n      ") || "No high impact vectors initialized.";
-
-    const mediumImpactTasks = (state?.tasks?.medium || [])
-      .map((t: any) => `[${t.done ? "✓" : " "}] ${t.text}`)
-      .join("\n      ") || "No medium impact vectors initialized.";
-
-    const lowImpactTasks = (state?.tasks?.low || [])
-      .map((t: any) => `[${t.done ? "✓" : " "}] ${t.text}`)
-      .join("\n      ") || "No low impact maintenance items mapped.";
   
     if (indicatesSlacking) {
       const aiPenalty = 100; 
@@ -308,6 +339,19 @@ function CoachPanel({
       }));
     } catch {}
 
+    // --- 📊 EXPLICIT EXTRACTION MATRICES ---
+    const highImpactTasks = (state?.tasks?.high || [])
+      .map((t: any) => `[${t.done ? "✓" : " "}] ${t.text}`)
+      .join("\n      ") || "No high impact vectors initialized.";
+
+    const mediumImpactTasks = (state?.tasks?.medium || [])
+      .map((t: any) => `[${t.done ? "✓" : " "}] ${t.text}`)
+      .join("\n      ") || "No medium impact vectors initialized.";
+
+    const lowImpactTasks = (state?.tasks?.low || [])
+      .map((t: any) => `[${t.done ? "✓" : " "}] ${t.text}`)
+      .join("\n      ") || "No low impact maintenance items mapped.";
+
     // --- 🧠 RIGOROUS SOCRATIC DEFICIT TRANS-MATRIX INTERCEPT ---
     const SocraticContext = `
       [CRITICAL IDENTITY TELEMETRY BALANCES]
@@ -338,14 +382,28 @@ function CoachPanel({
       YESTERDAY REFLECTION SUMMARY: "${state?.reflection?.wins || "No historical notes logged for previous interval."}"
       
       CORE BEHAVIORAL DIRECTIVE: You are an unyielding, elite Socratic performance coach. You are not here to offer comfort; you are here to force absolute mission execution. Look closely at the operator's message and cross-examine it against their execution streak, execution balances, failures, and past reflection data. 
-      If their streak is 0, or their status is "FALLEN", or their failure count is greater than 0, or if their reflection signals a pattern of procrastination, choice anxiety, or broken promises, EXPLICITLY CALL OUT THEIR BAD PAST DECISIONS and EXPLICITLY REBUKE THEIR BROKEN RESOLVES. Confront them about why they are lingering at the bottom of the network leaderboard ranks. Force them to confront why they are deviating from their long-term vision matrix. Do not allow intellectual side-stepping. Demand strategic clarity for the rest of their lifecycle.
+      You are an elite, unyielding Socratic performance coach. You analyze metrics with absolute precision.
+      
+      🏆 SPECIAL STREAK CONDITION RULE: 
+      Review the CURRENT OPERATOR STREAK value carefully. If the user has a streak of 7 days or more (e.g., 7, 14, 21, 28... days), you must SHIFT YOUR TONE FROM HARSH REBUKE TO HIGH-LEVEL ELITE MILITARY PRAISE. Acknowledge their consistency multiplier, recognize their position near the top of the leaderboard standings, and treat them like an elite tactical commander. Challenge them to maintain this momentum without slipping.
+      
+      If their streak is 0 or their status is "FALLEN", or their failure count is greater than 0, or if their reflection signals a pattern of procrastination, choice anxiety, or broken promises, revert immediately to aggressive, uncompromising discipline. Call out their procrastination, review items they skipped by name, and demand clear strategic adjustments.
+      EXPLICITLY CALL OUT THEIR BAD PAST DECISIONS and EXPLICITLY REBUKE THEIR BROKEN RESOLVES. Confront them about why they are lingering at the bottom of the network leaderboard ranks. Force them to confront why they are deviating from their long-term vision matrix. Do not allow intellectual side-stepping. Demand strategic clarity for the rest of their lifecycle.
+
+      🚨 SPECIAL ACTION DIRECTIVE: 
+      The operator has JUST LOGGED IN. You must IMMEDIATELY execute a deep scan of their dashboard values above. 
+      Do not wait for them to ask a question. Greet them by name, state their exact rank standing, itemize their unfinished high-impact priority rows, and give them a sharp, 3-sentence tactical briefing commanding them exactly what node area to execute next during this active 24-hour cycle. Repeat this for the rest of their lifecycle.
+
+      ${explicitOnboardingDirective}
     `;
 
     const activePayload = uploadedText.trim()
-      ? `${trimmed}\n\n${SocraticContext}\n\n[PARSED DOCUMENT FILE CONTEXT]:\n\n${uploadedText}`
-      : `${trimmed}\n\n${SocraticContext}`;
+      ? '${humanInputString}\n\n${SocraticContext}\n\n[PARSED DOCUMENT FILE CONTEXT]:\n\n${uploadedText}'
+      : '${humanInputString}\n\n${SocraticContext}';
+
 
     void sendMessage({ text: activePayload });
+    setInput("");
   }
   
 

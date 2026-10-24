@@ -43,6 +43,7 @@ function ApexMission() {
   const [surpriseLoot, setSurpriseLoot] = useState<{ active: boolean; msg: string; points: number } | null>(null);
   const [showSupport, setShowSupport] = useState(false);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+  const [hasTriggeredAutoBrief, setHasTriggeredAutoBrief] = useState(false);
 
   // Live real-time database query pipeline selector function
   const fetchLiveAccountabilityRoster = async () => {
@@ -211,6 +212,59 @@ function ApexMission() {
     return () => clearInterval(penaltyTimer);
   }, [hydrated, state.tasks?.high]);
   
+  // 🔄 AUTOMATED LOGIN TELEMETRY SCANNER LAYER WITH INTEGRATED WELCOME CHIME
+  useEffect(() => {
+    if (hydrated && !hasTriggeredAutoBrief && state) {
+      setHasTriggeredAutoBrief(true);
+      
+      // 🔊 LIVE RETRO-FUTURISTIC CINEMATIC INITIALIZATION CHIME
+      if (typeof window !== "undefined") {
+        try {
+          const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+          if (AudioContextClass) {
+            const ctx = new AudioContextClass();
+            const now = ctx.currentTime;
+
+            // Trigger an ascending minor-seventh major-ninth cinematic sparkle chord
+            const notes = [261.63, 329.63, 392.00, 523.25, 659.25]; // C4, E4, G4, C5, E5
+            notes.forEach((freq, idx) => {
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              
+              osc.type = "sine";
+              osc.frequency.setValueAtTime(freq, now + idx * 0.05); // Delicately staggered notes arpeggio
+              
+              gain.gain.setValueAtTime(0.04, now + idx * 0.05);
+              gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.4);
+              
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              osc.start(now + idx * 0.05);
+              osc.stop(now + idx * 0.05 + 0.4);
+            });
+          }
+        } catch (audioErr) {
+          console.warn("Welcome chime deferred by client interaction safeguards:", audioErr);
+        }
+      }
+      
+      // Delay slightly (1.2 seconds) to let the cockpit graphics finish mounting cleanly
+      setTimeout(() => {
+        const coachChannel = (window as any).__apex_coach_trigger;
+        if (typeof coachChannel === "function") {
+          console.log("🛰️ INITIAL LOGIN HANDSHAKE: Transmitting full cockpit parameters to AI Coach...");
+          
+          // Check if this user is a brand new signup needing an interactive audio onboarding guide
+          const isFreshSignup = localStorage.getItem("apex-tutorial-completed") !== "true";
+          if (isFreshSignup) {
+            coachChannel("[SYSTEM_AUTO_TRIGGER_SIGNUP_ONBOARDING_GUIDE]");
+          } else {
+            coachChannel("[SYSTEM_AUTO_TRIGGER_LOGIN_BRIEFING]");
+          }
+        }
+      }, 1200);
+    }
+  }, [hydrated, state, hasTriggeredAutoBrief]);
 
   function handleGoToNightReflection() {
     navigate({ to: "/night-reflection" });
@@ -374,33 +428,42 @@ function ApexMission() {
       const targetTask = currentTasks.find(t => t.id === id);
       const targetCompleting = targetTask ? !targetTask.done : false;
 
-      // 🎲 Skinner Box Variable Payoff Math: Calculates probabilities dynamically
       let scoreBonus = 0;
       let rewardNotice = "";
       
       if (targetCompleting) {
-        scoreBonus += 50; // Standard completion payload
-        const randomRoll = Math.random();
-        if (randomRoll > 0.85) {
-          scoreBonus += 250; // Critical hit payoff
-          rewardNotice = "CRITICAL BOOTSTRAP BONUS EXECUTED! Infused +250 extra currency parameters.";
-        } else if (randomRoll > 0.65) {
-          scoreBonus += 100;
-          rewardNotice = "SURPRISE TELEMETRY DROP UNLOCKED! Added +100 currency.";
+        // --- 📈 ACCELERATED STREAK MULTIPLIER ENGINE ---
+        const activeStreak = s.streak?.count || 0;
+        // Allocates a +10% bonus modifier value for every single active day held on their streak clock
+        const streakMultiplier = 1 + (activeStreak * 0.1); 
+        const baseTaskPoints = 50;
+        
+        // Calculate the multiplied payout score and round it cleanly
+        const totalMultipliedPoints = Math.round(baseTaskPoints * streakMultiplier);
+        scoreBonus += totalMultipliedPoints;
+
+        if (activeStreak >= 7) {
+          rewardNotice = `⚡ STREAK MULTIPLIER ACTIVE (${streakMultiplier.toFixed(1)}x): Earned ${totalMultipliedPoints} credits for task execution!`;
         }
 
-        // 🔊 LIVE HARMONIC ESCALATION TASK COMPLETION AUDIO CHIME
+        // Skinner Box Variable Bonus Drops
+        const randomRoll = Math.random();
+        if (randomRoll > 0.85) {
+          const criticalBonus = Math.round(250 * streakMultiplier);
+          scoreBonus += criticalBonus;
+          rewardNotice = `🔥 CRITICAL BOOTSTRAP BONUS UNLOCKED: Infused +${criticalBonus} extra credits into your matrix!`;
+        }
+
+        // Live harmonic task completion audio chime execution
         if (typeof window !== "undefined") {
           try {
             const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
             if (AudioCtxClass) {
               const ctx = new AudioCtxClass();
-              
-              // Note 1: First Root Tone Handshake
               const osc1 = ctx.createOscillator();
               const gain1 = ctx.createGain();
               osc1.type = "sine";
-              osc1.frequency.setValueAtTime(587.33, ctx.currentTime); // D5 Note
+              osc1.frequency.setValueAtTime(587.33, ctx.currentTime);
               gain1.gain.setValueAtTime(0.04, ctx.currentTime);
               gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
               osc1.connect(gain1);
@@ -408,12 +471,11 @@ function ApexMission() {
               osc1.start();
               osc1.stop(ctx.currentTime + 0.12);
 
-              // Note 2: Luminous Harmonic Major Escalation (Blipped with a tight 60ms offset)
               setTimeout(() => {
                 const osc2 = ctx.createOscillator();
                 const gain2 = ctx.createGain();
                 osc2.type = "sine";
-                osc2.frequency.setValueAtTime(880.00, ctx.currentTime); // A5 Note High Boost
+                osc2.frequency.setValueAtTime(880.00, ctx.currentTime);
                 gain2.gain.setValueAtTime(0.05, ctx.currentTime);
                 gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
                 osc2.connect(gain2);
@@ -464,73 +526,85 @@ function ApexMission() {
     
     setState((s) => {
       const updatedStreak = nextDone ? completeDailyToday(s.streak) : s.streak;
-      let scoreBonus = nextDone ? 200 : 0; // Base daily completion credit award
+      let scoreBonus = nextDone ? 200 : 0;
 
       if (nextDone) {
         const currentCount = updatedStreak.count;
         
-        // 🎰 7-DAY STREAK PSYCHOLOGICAL BONUS PAYOFF LAYER
-        if (currentCount === 7) {
-          scoreBonus += 1000; // Drop massive surprise bonus payoff parameters
+        // 🎰 ENDLESS SCALABLE 7-DAY INTERVAL MILESTONE REWARD PIPELINE
+        // Automatically captures 7, 14, 21, 28, 35, 42... infinitely using a math modulo boundary check
+        if (currentCount > 0 && currentCount % 7 === 0) {
+          // Escalates the payoff dynamically: 7 days = 1000cr, 14 days = 2000cr, 21 days = 3000cr...
+          const dynamicMilestonePayoff = (currentCount / 7) * 1000;
+          scoreBonus += dynamicMilestonePayoff;
           
-          // Trigger a dedicated surprise alert overlay modal dynamically
+          // Trigger a dedicated surprise alert overlay modal dynamically on-screen
           setTimeout(() => {
             setSurpriseLoot({
               active: true,
-              msg: "🏆 ELITE 7-DAY CONSISTENCY ACHIEVEMENT UNLOCKED! Your account node has been infused with a surprise +1,000 credit bonus payoff.",
-              points: 1000
+              msg: `🏆 ELITE ${currentCount}-DAY CONSISTENCY ACHIEVEMENT SECURED! Your console node has been infused with an advanced +${dynamicMilestonePayoff.toLocaleString()} credit milestone payoff bundle.`,
+              points: dynamicMilestonePayoff
             });
           }, 300);
         }
-      }
-      
-      if (nextDone) {
-        const currentCount = updatedStreak.count;
-        const milestones = [3, 7, 14, 30]
-        if (milestones.includes(currentCount)) {
+
           setTimeout(() => setShowMilestoneCelebration(currentCount), 300);
         }
-      }
-      
+      })
+
       return {
         ...s,
+        points: Math.max(0, ((s as any).points || 0) + scoreBonus),
         daily: { ...s.daily, done: nextDone, date: todayKey() },
         streak: updatedStreak
       };
-    });
+  } 
 
-    // 🔊 RETRO SYNTH OPERATIONAL ACHIEVEMENT SUCCESS CHIME
+    // 🔊 ✅ INSTALLED: HIGH-RETENTION MASTER FOCUS COMPLETION CHORD EFFECT
     if (nextDone && typeof window !== "undefined") {
       try {
         const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
         if (AudioCtxClass) {
           const audioCtx = new AudioCtxClass();
           
-          // Note 1: Root Tone Handshake
+          // Harmonic Base Tone
           const osc1 = audioCtx.createOscillator();
           const gain1 = audioCtx.createGain();
           osc1.type = "sine";
-          osc1.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5 Note
-          gain1.gain.setValueAtTime(0.05, audioCtx.currentTime);
-          gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+          osc1.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+          gain1.gain.setValueAtTime(0.06, audioCtx.currentTime);
+          gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
           osc1.connect(gain1);
           gain1.connect(audioCtx.destination);
           osc1.start();
-          osc1.stop(audioCtx.currentTime + 0.15);
+          osc1.stop(audioCtx.currentTime + 0.2);
 
-          // Note 2: Harmonic Escalation Major Chord Note (Triggered with a 0.08s delay)
+          // Major Triad Resolution Escalation
           setTimeout(() => {
             const osc2 = audioCtx.createOscillator();
             const gain2 = audioCtx.createGain();
             osc2.type = "sine";
-            osc2.frequency.setValueAtTime(659.25, audioCtx.currentTime); // E5 Note
+            osc2.frequency.setValueAtTime(659.25, audioCtx.currentTime); // E5
             gain2.gain.setValueAtTime(0.06, audioCtx.currentTime);
-            gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+            gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
             osc2.connect(gain2);
             gain2.connect(audioCtx.destination);
             osc2.start();
-            osc2.stop(audioCtx.currentTime + 0.3);
-          }, 80);
+            osc2.stop(audioCtx.currentTime + 0.35);
+          }, 70);
+
+          setTimeout(() => {
+            const osc3 = audioCtx.createOscillator();
+            const gain3 = audioCtx.createGain();
+            osc3.type = "sine";
+            osc3.frequency.setValueAtTime(783.99, audioCtx.currentTime); // G5 High Sparkle
+            gain3.gain.setValueAtTime(0.07, audioCtx.currentTime);
+            gain3.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+            osc3.connect(gain3);
+            gain3.connect(audioCtx.destination);
+            osc3.start();
+            osc3.stop(audioCtx.currentTime + 0.5);
+          }, 140);
         }
       } catch (err) {
         console.warn("Audio Context blocked by client gesture locks:", err);
@@ -541,60 +615,10 @@ function ApexMission() {
       setJustCompleted(true);
       window.setTimeout(() => setJustCompleted(false), 500);
     }
-  }
 
   return (
     <div className={`min-h-screen transition-all duration-500 ease-in-out ${themeClasses.bg} text-zinc-100 relative overflow-hidden animate-scan-line`}>
       <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-8 sm:py-8 relative z-10">
-
-        {/* 📚 EXPANDED HIGH-PERFORMANCE WALKTHROUGH GUIDE CANOPY */}
-        {hydrated && typeof window !== "undefined" && localStorage.getItem("apex-tutorial-completed") !== "true" && (
-          <div className="rounded-2xl border border-emerald-500/20 bg-[#0E1612]/30 p-6 text-left animate-fade-in mb-6 relative overflow-hidden">
-            <div className="absolute top-0 right-0 transform translate-x-8 -translate-y-8 size-32 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
-            
-            <div className="flex items-center gap-2 mb-3">
-              <span className="flex size-2 rounded-full bg-emerald-400 animate-pulse" />
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">System Orientation Core Matrix</p>
-            </div>
-            
-            <h3 className="text-base font-black text-white tracking-tight">ApexMission Command Operations Guide</h3>
-            <p className="text-xs text-zinc-400 mt-1.5 leading-relaxed max-w-2xl">
-              This console is built as an aggressive accountability framework. To maintain extreme execution metrics, understand your core interface vectors:
-            </p>
-
-            {/* 3-Step Information Hierarchy Matrix */}
-            <div className="mt-4 grid sm:grid-cols-3 gap-4 border-t border-zinc-900 pt-4">
-              <div className="text-left">
-                <div className="font-mono text-[10px] font-black text-emerald-400 uppercase bg-emerald-950/40 border border-emerald-500/10 px-2 py-0.5 rounded w-max">Vector 01</div>
-                <h4 className="text-xs font-bold text-zinc-200 mt-2">The Mission Statement</h4>
-                <p className="text-[11px] text-zinc-500 leading-normal mt-1">Declare your macro vision. Use the AI Plan Generator to instantly map any complex target or file down into execution rows.</p>
-              </div>
-              <div className="text-left">
-                <div className="font-mono text-[10px] font-black text-amber-400 uppercase bg-amber-950/40 border border-amber-500/10 px-2 py-0.5 rounded w-max">Vector 02</div>
-                <h4 className="text-xs font-bold text-zinc-200 mt-2">The Priority Matrix</h4>
-                <p className="text-[11px] text-zinc-500 leading-normal mt-1">Tasks are tiered strictly by business leverage. High Impact moves your metrics, Medium adds support, Low handles maintenance items.</p>
-              </div>
-              <div className="text-left">
-                <div className="font-mono text-[10px] font-black text-rose-400 uppercase bg-rose-950/40 border border-rose-500/10 px-2 py-0.5 rounded w-max">Vector 03</div>
-                <h4 className="text-xs font-bold text-zinc-200 mt-2">The Cutoff Clock</h4>
-                <p className="text-[11px] text-zinc-500 leading-normal mt-1">You must execute your single Master Focus Action before the midnight countdown. Missing it terminates your active execution streak.</p>
-              </div>
-            </div>
-
-            <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-zinc-900 pt-4">
-              <span className="text-[10px] font-mono text-zinc-500 uppercase">✓ Attestation logged: 10+ Age Verification Guard Active</span>
-              <button 
-                onClick={() => {
-                  localStorage.setItem("apex-tutorial-completed", "true");
-                  navigate({ to: "/app" });
-                }}
-                className="rounded-xl bg-white px-4 py-2 text-xs font-bold text-black hover:bg-emerald-400 transition-all shadow-md shadow-white/5 active:scale-95"
-              >
-                Initialize Console Deck →
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* ⚡ FLOATING EMERALD ARCHITECTURE MAP SUCCESS NOTIFICATION BANNER */}
         {showPlanSuccessAlert && (
@@ -610,26 +634,22 @@ function ApexMission() {
         )}
         
         {/* Navbar Header */}
-        <header className="flex flex-col gap-4 border-b border-zinc-900 pb-4 sm:flex-row sm:items-center sm:justify-between bg-black/40 p-4 rounded-xl">
+        <header className="flex flex-col gap-4 pb-4 sm:flex-row sm:items-center sm:justify-between bg-emerald-950/5 border border-emerald-500/10 p-4 rounded-xl backdrop-blur-xl shadow-[0_8px_32px_0_rgba(0,0,0,0.4)]">
           <div className="flex items-center gap-3">
             <div className="flex size-9 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-950/20 text-emerald-400">
               <Target className="size-4.5 animate-pulse" />
             </div>
             <div className="text-left">
-              <span className="font-black text-sm font-display tracking-[0.25em] text-white uppercase block">
-                ApexMission
-              </span>
-              <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block mt-0.5">
-                Command Console · {userName}
-              </span>
+            <span className="font-black text-xs font-display tracking-[0.25em] text-white uppercase block">ApexMission</span>
+            <span className="text-[10px] font-bold text-emerald-500/50 uppercase tracking-wider block mt-0.5">Command Terminal · {userName}</span>
             </div>
           </div>
 
           {/* Clean Segment Navigation Controls */}
-          <div className="flex items-center gap-1 rounded-lg bg-zinc-950 border border-zinc-900 p-1 font-mono text-[9px] font-black uppercase tracking-wider">
-            <button type="button" onClick={() => setActiveTab("workspace")} className={`rounded-md px-3 py-1.5 transition-all ${activeTab === "workspace" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"}`}>Workspace</button>
-            <button type="button" onClick={() => setActiveTab("leaderboard")} className={`rounded-md px-3 py-1.5 transition-all ${activeTab === "leaderboard" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"}`}>Ranks</button>
-            <button type="button" onClick={() => setActiveTab("hardware")} className={`rounded-md px-3 py-1.5 transition-all ${activeTab === "hardware" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"}`}>Hardware</button>
+          <div className="flex items-center gap-1 rounded-lg bg-black/60 border border-zinc-800/60 p-1 font-mono text-[10px] font-black uppercase tracking-wider">
+            <button type="button" onClick={() => setActiveTab("workspace")} className={`rounded-md px-3.5 py-1.5 transition-all duration-300 ${activeTab === "workspace" ? "bg-emerald-500 text-black font-black shadow-[0_0_15px_rgba(16,185,129,0.3)]" : "text-zinc-400 hover:text-zinc-200"}`}>Workspace</button>
+            <button type="button" onClick={() => setActiveTab("leaderboard")} className={`rounded-md px-3.5 py-1.5 transition-all duration-300 ${activeTab === "leaderboard" ? "bg-emerald-500 text-black font-black shadow-[0_0_15px_rgba(16,185,129,0.3)]" : "text-zinc-400 hover:text-zinc-200"}`}>Ranks</button>
+            <button type="button" onClick={() => setActiveTab("hardware")} className={`rounded-md px-3.5 py-1.5 transition-all duration-300 ${activeTab === "hardware" ? "bg-emerald-500 text-black font-black shadow-[0_0_15px_rgba(16,185,129,0.3)]" : "text-zinc-400 hover:text-zinc-200"}`}>Hardware</button>
             <button
               type="button"
               onClick={() => setShowSupport(true)}
@@ -639,11 +659,11 @@ function ApexMission() {
             </button>
           </div>
 
-          {/* Clean Performance Tracking Metrics Block Group */}
-          <div className="flex items-center gap-3 justify-end font-mono">
-            <div className="text-[10px] font-black bg-zinc-950 border border-zinc-900 px-3 py-2 rounded-lg flex items-center gap-1.5 text-zinc-400">
+           {/* Retention Metrics Display Group */}
+           <div className="flex items-center gap-3 justify-end font-mono">
+            <div className="text-[10px] font-black bg-black/40 border border-emerald-500/20 px-3 py-2 rounded-lg flex items-center gap-1.5 text-emerald-400 shadow-[inset_0_1px_2px_rgba(52,211,153,0.1)]">
               <Shield className="size-3.5 text-emerald-400 fill-emerald-400/10" />
-              <span>{(state as any).points || 0} Credits</span>
+              <span>{state?.points || 0} Credits</span>
             </div>
           </div>
 
@@ -670,42 +690,6 @@ function ApexMission() {
             <span className="font-mono text-xs font-bold text-emerald-400 uppercase tracking-widest bg-emerald-950/20 border border-emerald-500/10 px-3 py-1.5 rounded-lg text-center hidden sm:inline-block">
               {greetingText}
             </span>
-
-            {/* 🚪 AUTOMATED TERMINAL LOGOUT ACTION TRIGGER */}
-            <button
-              type="button"
-              onClick={async () => {
-                const { error } = await supabase.auth.signOut();
-                if (error) {
-                  console.error("Session logout error code logged:", error);
-                  return;
-                }
-                // Clear any stored workspace states and re-route straight to gateway
-                localStorage.removeItem("apex-tutorial-completed");
-                navigate({ to: "/auth" });
-              }}
-              className="rounded-xl border border-zinc-800 bg-[#0D0D11] hover:border-rose-500/30 hover:bg-rose-950/10 hover:text-rose-400 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-zinc-400 transition-all duration-300 active:scale-95"
-            >
-              Disconnect Node
-            </button>
-
-            {/* 🔄 AUTOMATED LOCAL TESTING WIPE TRIGGER */}
-            <button
-              type="button"
-              onClick={() => {
-                if (window.confirm("⚠️ SYSTEM FLASH RESET: Clear all local profiles, execution statistics, currency balances, and active task tiers?")) {
-                  // Purge every local testing token from the cache memory
-                  localStorage.clear();
-                  
-                  // Reset window view location back to root parameters instantly to re-prime state hooks
-                  alert("🚀 Cache rows flushed successfully. Node data reset complete.");
-                  window.location.reload();
-                }
-              }}
-              className="rounded-xl border border-zinc-800 bg-[#0D0D11] hover:border-amber-500/40 hover:bg-amber-950/10 hover:text-amber-400 px-3 py-1.5 text-xs font-mono font-bold uppercase tracking-wider text-zinc-500 transition-all duration-300 active:scale-95"
-            >
-              Flush Cache Matrix
-            </button>
           </div>
         </header>
 
@@ -1292,6 +1276,35 @@ function ApexMission() {
           </div>
         )}
       </div>
+      {/* 🛠️ LOW-PROFILE SUB-SURFACE COCKPIT CONTROL PANEL */}
+      <footer className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-zinc-900/60 pt-4 px-2 text-zinc-600 font-mono text-[10px]">
+        <div>✓ Connected Securely to Remote Supabase Cluster Schema</div>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={async () => {
+              await supabase.auth.signOut();
+              localStorage.removeItem("apex-tutorial-completed");
+              navigate({ to: "/auth" });
+            }}
+            className="hover:text-rose-400 transition-colors uppercase font-bold"
+          >
+            [Disconnect Node]
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (window.confirm("⚠️ SYSTEM FLASH RESET: Wipe active local operational data?")) {
+                localStorage.clear();
+                window.location.reload();
+              }
+            }}
+            className="hover:text-amber-400 transition-colors uppercase font-bold"
+          >
+            [Flush Cache Matrix]
+          </button>
+        </div>
+      </footer>
     </div>
   );
 }
