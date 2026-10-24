@@ -39,7 +39,7 @@ function ApexMission() {
   const [loadingRoster, setLoadingRoster] = useState(false);
 
   const [activeTab, setActiveTab] = useState<"workspace" | "leaderboard" | "hardware">("workspace");
-  const [coachOpen, setCoachOpen] = useState(false); // Mobile coach visibility state control
+  const [coachOpen, setCoachOpen] = useState(false);
   const [surpriseLoot, setSurpriseLoot] = useState<{ active: boolean; msg: string; points: number } | null>(null);
   const [showSupport, setShowSupport] = useState(false);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
@@ -53,7 +53,12 @@ function ApexMission() {
   }, []);
 
   const userRankIndex = leaderboardOperators.findIndex(op => op.id === currentUserId);
-  const userRankText = userRankIndex !== -1 ? `#${userRankIndex + 1} of ${leaderboardOperators.length} Operators` : "Synchronizing node cluster standing...";
+  const userRankText = useMemo(() => {
+    if (leaderboardOperators.length === 0) return "Global Operator Node";
+    return userRankIndex !== -1 
+      ? `#${userRankIndex + 1} of ${leaderboardOperators.length} Operators` 
+      : `Unranked (${leaderboardOperators.length} Active Operators)`;
+  }, [userRankIndex, leaderboardOperators]);
 
   // Live real-time database query pipeline selector function
   const fetchLiveAccountabilityRoster = async () => {
