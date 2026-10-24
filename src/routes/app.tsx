@@ -44,6 +44,16 @@ function ApexMission() {
   const [showSupport, setShowSupport] = useState(false);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
   const [hasTriggeredAutoBrief, setHasTriggeredAutoBrief] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setCurrentUserId(user.id);
+    });
+  }, []);
+
+  const userRankIndex = leaderboardOperators.findIndex(op => op.id === currentUserId);
+  const userRankText = userRankIndex !== -1 ? `#${userRankIndex + 1} of ${leaderboardOperators.length} Operators` : "Synchronizing node cluster standing...";
 
   // Live real-time database query pipeline selector function
   const fetchLiveAccountabilityRoster = async () => {
@@ -1141,7 +1151,9 @@ function ApexMission() {
 
         <MissionCoach
           premium={premium}
-          state={state} // Passes down your active mission matrix, daily actions, and streak tallies!
+          state={state}
+          userName={userName}
+          userRank={userRankText}
           onLockedHistory={() => setPaywall("Your full coach history is a premium feature...")}
           onActionPlanGenerated={(plan) => {
             setState((s) => ({

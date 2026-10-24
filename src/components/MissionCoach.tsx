@@ -39,11 +39,15 @@ function loadMessages(): UIMessage[] {
 export function MissionCoach({
   premium = false,
   state,
+  userName = "User",
+  userRank = "Synchronizing node cluster standing...",
   onLockedHistory,
   onActionPlanGenerated,
 }: {
   premium?: boolean;
   state: any;
+  userName?: string;
+  userRank?: string;
   onLockedHistory?: () => void;
   onActionPlanGenerated?: (plan: any) => void;
 }) {
@@ -144,6 +148,8 @@ export function MissionCoach({
       generatingPlan={generatingPlan}
       planGenerated={planGenerated}
       state={state}
+      userName={userName}
+      userRank={userRank}
     />
   );
 }
@@ -182,6 +188,8 @@ function CoachPanel({
   generatingPlan,
   planGenerated,
   state,
+  userName,
+  userRank,
 }: {
   uploadedText: string;
   open: boolean;
@@ -201,6 +209,8 @@ function CoachPanel({
   generatingPlan: boolean;
   planGenerated: boolean;
   state: any;
+  userName: string;
+  userRank: string;
 }) {
   const transport = useMemo(() => new DefaultChatTransport({ api: "/api/chat" }), []);
   const [error, setError] = useState<string | null>(null);
@@ -277,7 +287,7 @@ function CoachPanel({
     // 🧠 REAL-TIME AI COACH CHAT TEXT SCANNER & SLACKING DEDUCTION WITH NATIVE AUDIO CHIME
     const textLower = trimmed.toLowerCase();
     const indicatesSlacking = textLower.includes("procrastinate") || textLower.includes("gave up") || textLower.includes("lazy") || textLower.includes("didn't do");
-    let calculatedRankDisplay = "Synchronizing node cluster standing...";
+    const calculatedRankDisplay = userRank;
     let cleanCurrentPoints = state?.points || 0;
     let currentStreakCount = state?.streak?.count || 0;
     let currentStatus = state?.operational_status || "Operational";
@@ -355,6 +365,7 @@ function CoachPanel({
     // --- 🧠 RIGOROUS SOCRATIC DEFICIT TRANS-MATRIX INTERCEPT ---
     const SocraticContext = `
       [CRITICAL IDENTITY TELEMETRY BALANCES]
+      OPERATOR NAME: ${userName}
       CURRENT OPERATOR STREAK: ${currentStreakCount} Days.
       NET CREDIT ACCOUNT BALANCE: ${userCredits} Credits.
       OPERATIONAL HUD RECON STATUS: "${currentStatus}"
