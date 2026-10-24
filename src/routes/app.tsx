@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, Flame, Lock, Plus, Sparkles, Loader2, Target, TimerReset, Trash2, Shield, Trophy } from "lucide-react";
+import { Check, Flame, Plus, Sparkles, Loader2, Target, TimerReset, Shield, Trophy, LayoutDashboard, Award, HardDrive, HelpCircle } from "lucide-react";
 import { PaywallModal } from "@/components/PaywallModal";
 import { MissionCoach } from "@/components/MissionCoach";
 import { useSubscriptionTier } from "@/hooks/useSubscriptionTier";
@@ -38,7 +38,6 @@ function ApexMission() {
   const [leaderboardOperators, setLeaderboardOperators] = useState<any[]>([]);
   const [loadingRoster, setLoadingRoster] = useState(false);
 
-  // ← MOVE activeTab HERE (before any useEffect that uses it)
   const [activeTab, setActiveTab] = useState<"workspace" | "leaderboard" | "hardware">("workspace");
   const [surpriseLoot, setSurpriseLoot] = useState<{ active: boolean; msg: string; points: number } | null>(null);
   const [showSupport, setShowSupport] = useState(false);
@@ -67,7 +66,6 @@ function ApexMission() {
 
       if (error) throw error;
       if (data) {
-        // Map database credits to points for local UI compatibility
         const normalizedData = data.map(op => ({ ...op, points: op.credits || 0 }));
         setLeaderboardOperators(normalizedData);
         localStorage.setItem("apexmission-leaderboard-cache", JSON.stringify(normalizedData));
@@ -88,7 +86,6 @@ function ApexMission() {
         const displayName = user.user_metadata?.full_name || user.email?.split('@')[0] || "User";
         setUserName(displayName.charAt(0).toUpperCase() + displayName.slice(1));
 
-        // 1. Fetch user's live credits from Supabase profiles table
         const { data: profileData } = await supabase
           .from("profiles")
           .select("credits")
@@ -100,7 +97,6 @@ function ApexMission() {
         }
       }
 
-      // 2. Fetch Leaderboard Roster immediately on mount so rank is instantly available
       try {
         const { data, error } = await supabase
           .from("profiles")
@@ -120,7 +116,6 @@ function ApexMission() {
     initializeAppSession();
   }, []);
 
-  // Re-trigger network data sync hooks whenever the Ranks tab becomes active
   useEffect(() => {
     if (activeTab === "leaderboard" && hydrated) {
       fetchLiveAccountabilityRoster();
@@ -132,9 +127,8 @@ function ApexMission() {
     { id: "theme-midnight", name: "Midnight Core Glass", cost: 700, type: "Aesthetic UI Overlay", desc: "Forces deep obsidian color calibrations across grid panels." },
     { id: "theme-cyber", name: "Cyber Amber HUD", cost: 1200, type: "HUD Matrix Tint", desc: "Swaps command panel text layers into pure high-contrast performance amber." },
     { id: "streak-shield-1", name: "Streak Freeze Matrix", cost: 3000, type: "Loss Prevention Parameter", desc: "Automated streak defense. Absorbs a single calendar deadline breach event." },
-     // 💎 PREMIUM ALPHA EMBLEM CONFIGURATIONS
-     { id: "badge-alpha-founder", name: "⚡ FOUNDING OPERATOR EMBLEM", cost: 2000, type: "Cosmetic Alpha Badge", desc: "Mounts a luminous neon alpha insignia directly next to your signature monogram inside the network standings leaderboard grid." },
-     { id: "badge-apex-sentinel", name: "🛡️ APEX SENTINEL VECTOR", cost: 3200, type: "Cosmetic Alpha Badge", desc: "Unlocks an animated emerald shielding shroud aura that glows behind your user canopy parameters." }
+    { id: "badge-alpha-founder", name: "⚡ FOUNDING OPERATOR EMBLEM", cost: 2000, type: "Cosmetic Alpha Badge", desc: "Mounts a luminous neon alpha insignia directly next to your signature monogram inside the network standings leaderboard grid." },
+    { id: "badge-apex-sentinel", name: "🛡️ APEX SENTINEL VECTOR", cost: 3200, type: "Cosmetic Alpha Badge", desc: "Unlocks an animated emerald shielding shroud aura that glows behind your user canopy parameters." }
   ];
 
   const navigate = useNavigate();
@@ -173,11 +167,9 @@ function ApexMission() {
       const today = todayKey();
       const lastSeen = localStorage.getItem("apexmission-morning-checkin");
       
-      // ⏱️ TIME WINDOW GUARD: Check if the current time falls inside the morning zone (5 AM - 12 PM)
       const currentHour = new Date().getHours();
       const isMorningWindow = currentHour >= 5 && currentHour < 12;
       
-      // Only route to morning check-in if the operator hasn't checked in yet today AND it is currently morning
       if (lastSeen !== today && isMorningWindow) {
         navigate({ to: "/Morning-Checkin" });
       }
@@ -212,7 +204,6 @@ function ApexMission() {
 
         setState((s) => ({ ...s, points: optimizedPoints }));
 
-        // 📡 REAL-TIME REMOTE DATABASE STANDINGS SYNCHRONIZATION
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           await supabase
@@ -225,7 +216,6 @@ function ApexMission() {
             .eq("id", user.id);
         }
 
-        // 🔊 LIVE RETRO-FUTURISTIC TELEMETRY PENALTY AUDIO INDICATOR CHIME
         if (typeof window !== "undefined") {
           try {
             const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
@@ -234,7 +224,6 @@ function ApexMission() {
               const osc = audioCtx.createOscillator();
               const gainNode = audioCtx.createGain();
               
-              // Custom falling sawtooth sweep to simulate structural asset loss
               osc.type = "sawtooth";
               osc.frequency.setValueAtTime(290, audioCtx.currentTime);
               osc.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 0.4);
@@ -262,15 +251,13 @@ function ApexMission() {
       }
     };
   
-    // Audit and process degradation parameters every 60 minutes
     const penaltyTimer = setInterval(executePenaltyAudit, 3600000);
     return () => clearInterval(penaltyTimer);
   }, [hydrated, state.tasks?.high]);
   
   // 🔄 AUTOMATED LOGIN TELEMETRY SCANNER LAYER WITH INTEGRATED WELCOME CHIME
   useEffect(() => {
-    // Ensure data is loaded (user profile + leaderboard roster) before auto-triggering
-    if (hydrated && !hasTriggeredAutoBrief && state && currentUserId && leaderboardOperators.length > 0) {
+    if (hydrated && !hasTriggeredAutoBrief && state && currentUserId) {
       setHasTriggeredAutoBrief(true);
       
       if (typeof window !== "undefined") {
@@ -298,12 +285,9 @@ function ApexMission() {
         }
       }
       
-      // Delay slightly (800ms) to let the cockpit graphics finish mounting cleanly
       setTimeout(() => {
         const coachChannel = (window as any).__apex_coach_trigger;
         if (typeof coachChannel === "function") {
-          console.log("🛰️ INITIAL LOGIN HANDSHAKE: Transmitting full cockpit parameters to AI Coach...");
-          
           const isFreshSignup = localStorage.getItem("apex-tutorial-completed") !== "true";
           if (isFreshSignup) {
             coachChannel("[SYSTEM_AUTO_TRIGGER_SIGNUP_ONBOARDING_GUIDE]");
@@ -311,7 +295,7 @@ function ApexMission() {
             coachChannel("[SYSTEM_AUTO_TRIGGER_LOGIN_BRIEFING]");
           }
         }
-      }, 800);
+      }, 500);
     }
   }, [hydrated, state, hasTriggeredAutoBrief, currentUserId]);
 
@@ -319,7 +303,7 @@ function ApexMission() {
     navigate({ to: "/night-reflection" });
   }
 
-  const [greetingText] = useState(() => {
+  const [formattedDate] = useState(() => {
     const now = new Date();
     const month = now.toLocaleDateString('en-US', { month: 'short' });
     const dayNum = now.getDate();
@@ -328,35 +312,34 @@ function ApexMission() {
     return `${month}. ${dayNum}${suffix} ${year}`;
   });
 
-    // 🎨 OPTIMIZED INDUSTRIAL CYBER HUD INTERPOLATOR
-    const themeClasses = useMemo(() => {
-      switch (activeLayoutTheme) {
-        case "theme-midnight":
-          return {
-            bg: "bg-[#040406] text-zinc-100",
-            card: "bg-[#09090D] border-emerald-500/10 shadow-[0_0_50px_rgba(16,185,129,0.01)] backdrop-blur-md",
-            border: "border-zinc-900/60",
-            accent: "text-emerald-400 bg-emerald-950/20 border-emerald-500/20",
-            glow: "shadow-[0_0_15px_rgba(16,185,129,0.15)] bg-emerald-400"
-          };
-        case "theme-cyber":
-          return {
-            bg: "bg-[#0A0700] text-amber-100 font-mono",
-            card: "bg-[#140D00] border-amber-500/20 shadow-[0_0_50px_rgba(245,158,11,0.02)] border-dashed",
-            border: "border-amber-900/40",
-            accent: "text-amber-500 bg-amber-950/40 border-amber-500/30 font-black",
-            glow: "shadow-[0_0_20px_rgba(245,158,11,0.25)] bg-amber-500"
-          };
-        default:
-          return {
-            bg: "bg-black text-zinc-100",
-            card: "bg-[#0D0D11] border-zinc-800 shadow-xl",
-            border: "border-zinc-800",
-            accent: "text-emerald-400 bg-emerald-950/20 border-emerald-500/10",
-            glow: "shadow-[0_0_10px_rgba(52,211,153,0.3)] bg-emerald-400"
-          };
-      }
-    }, [activeLayoutTheme]);  
+  const themeClasses = useMemo(() => {
+    switch (activeLayoutTheme) {
+      case "theme-midnight":
+        return {
+          bg: "bg-[#040406] text-zinc-100",
+          card: "bg-[#09090D] border-emerald-500/10 shadow-[0_0_50px_rgba(16,185,129,0.01)] backdrop-blur-md",
+          border: "border-zinc-900/60",
+          accent: "text-emerald-400 bg-emerald-950/20 border-emerald-500/20",
+          glow: "shadow-[0_0_15px_rgba(16,185,129,0.15)] bg-emerald-400"
+        };
+      case "theme-cyber":
+        return {
+          bg: "bg-[#0A0700] text-amber-100 font-mono",
+          card: "bg-[#140D00] border-amber-500/20 shadow-[0_0_50px_rgba(245,158,11,0.02)] border-dashed",
+          border: "border-amber-900/40",
+          accent: "text-amber-500 bg-amber-950/40 border-amber-500/30 font-black",
+          glow: "shadow-[0_0_20px_rgba(245,158,11,0.25)] bg-amber-500"
+        };
+      default:
+        return {
+          bg: "bg-black text-zinc-100",
+          card: "bg-[#0D0D11] border-zinc-800 shadow-xl",
+          border: "border-zinc-800",
+          accent: "text-emerald-400 bg-emerald-950/20 border-emerald-500/10",
+          glow: "shadow-[0_0_10px_rgba(52,211,153,0.3)] bg-emerald-400"
+        };
+    }
+  }, [activeLayoutTheme]);  
 
   const [userName, setUserName] = useState("User");
 
@@ -472,16 +455,6 @@ function ApexMission() {
   }
 
   function toggleTask(tier: ImpactTier, id: string) {
-    const syncCreditsToSupabase = async (updatedPoints: number) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from("profiles")
-          .update({ credits: updatedPoints })
-          .eq("id", user.id);
-      }
-    };
-
     setState((s) => {
       const currentTasks = s.tasks[tier] || [];
       const targetTask = currentTasks.find(t => t.id === id);
@@ -491,13 +464,10 @@ function ApexMission() {
       let rewardNotice = "";
       
       if (targetCompleting) {
-        // --- 📈 ACCELERATED STREAK MULTIPLIER ENGINE ---
         const activeStreak = s.streak?.count || 0;
-        // Allocates a +10% bonus modifier value for every single active day held on their streak clock
         const streakMultiplier = 1 + (activeStreak * 0.1); 
         const baseTaskPoints = 50;
         
-        // Calculate the multiplied payout score and round it cleanly
         const totalMultipliedPoints = Math.round(baseTaskPoints * streakMultiplier);
         scoreBonus += totalMultipliedPoints;
 
@@ -505,7 +475,6 @@ function ApexMission() {
           rewardNotice = `⚡ STREAK MULTIPLIER ACTIVE (${streakMultiplier.toFixed(1)}x): Earned ${totalMultipliedPoints} credits for task execution!`;
         }
 
-        // Skinner Box Variable Bonus Drops
         const randomRoll = Math.random();
         if (randomRoll > 0.85) {
           const criticalBonus = Math.round(250 * streakMultiplier);
@@ -513,7 +482,6 @@ function ApexMission() {
           rewardNotice = `🔥 CRITICAL BOOTSTRAP BONUS UNLOCKED: Infused +${criticalBonus} extra credits into your matrix!`;
         }
 
-        // Live harmonic task completion audio chime execution
         if (typeof window !== "undefined") {
           try {
             const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
@@ -582,16 +550,6 @@ function ApexMission() {
     
     const wasDone = state.daily.done;
     const nextDone = !wasDone;
-
-    const syncCreditsToSupabase = async (updatedPoints: number) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from("profiles")
-          .update({ credits: updatedPoints })
-          .eq("id", user.id);
-      }
-    };
     
     setState((s) => {
       const updatedStreak = nextDone ? completeDailyToday(s.streak) : s.streak;
@@ -600,14 +558,10 @@ function ApexMission() {
       if (nextDone) {
         const currentCount = updatedStreak.count;
         
-        // 🎰 ENDLESS SCALABLE 7-DAY INTERVAL MILESTONE REWARD PIPELINE
-        // Automatically captures 7, 14, 21, 28, 35, 42... infinitely using a math modulo boundary check
         if (currentCount > 0 && currentCount % 7 === 0) {
-          // Escalates the payoff dynamically: 7 days = 1000cr, 14 days = 2000cr, 21 days = 3000cr...
           const dynamicMilestonePayoff = (currentCount / 7) * 1000;
           scoreBonus += dynamicMilestonePayoff;
           
-          // Trigger a dedicated surprise alert overlay modal dynamically on-screen
           setTimeout(() => {
             setSurpriseLoot({
               active: true,
@@ -617,8 +571,8 @@ function ApexMission() {
           }, 300);
         }
 
-          setTimeout(() => setShowMilestoneCelebration(currentCount), 300);
-        }
+        setTimeout(() => setShowMilestoneCelebration(currentCount), 300);
+      }
 
       return {
         ...s,
@@ -628,18 +582,16 @@ function ApexMission() {
       };
     });
 
-    // 🔊 ✅ INSTALLED: HIGH-RETENTION MASTER FOCUS COMPLETION CHORD EFFECT
     if (nextDone && typeof window !== "undefined") {
       try {
         const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
         if (AudioCtxClass) {
           const audioCtx = new AudioCtxClass();
           
-          // Harmonic Base Tone
           const osc1 = audioCtx.createOscillator();
           const gain1 = audioCtx.createGain();
           osc1.type = "sine";
-          osc1.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+          osc1.frequency.setValueAtTime(523.25, audioCtx.currentTime);
           gain1.gain.setValueAtTime(0.06, audioCtx.currentTime);
           gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
           osc1.connect(gain1);
@@ -647,12 +599,11 @@ function ApexMission() {
           osc1.start();
           osc1.stop(audioCtx.currentTime + 0.2);
 
-          // Major Triad Resolution Escalation
           setTimeout(() => {
             const osc2 = audioCtx.createOscillator();
             const gain2 = audioCtx.createGain();
             osc2.type = "sine";
-            osc2.frequency.setValueAtTime(659.25, audioCtx.currentTime); // E5
+            osc2.frequency.setValueAtTime(659.25, audioCtx.currentTime);
             gain2.gain.setValueAtTime(0.06, audioCtx.currentTime);
             gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
             osc2.connect(gain2);
@@ -665,7 +616,7 @@ function ApexMission() {
             const osc3 = audioCtx.createOscillator();
             const gain3 = audioCtx.createGain();
             osc3.type = "sine";
-            osc3.frequency.setValueAtTime(783.99, audioCtx.currentTime); // G5 High Sparkle
+            osc3.frequency.setValueAtTime(783.99, audioCtx.currentTime);
             gain3.gain.setValueAtTime(0.07, audioCtx.currentTime);
             gain3.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
             osc3.connect(gain3);
@@ -686,100 +637,156 @@ function ApexMission() {
   }
 
   return (
-    <div className={`min-h-screen transition-all duration-500 ease-in-out ${themeClasses.bg} text-zinc-100 relative overflow-hidden animate-scan-line`}>
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-8 sm:py-8 relative z-10">
-
-        {/* ⚡ FLOATING EMERALD ARCHITECTURE MAP SUCCESS NOTIFICATION BANNER */}
-        {showPlanSuccessAlert && (
-          <div className="fixed top-6 right-6 z-50 rounded-xl border border-emerald-500/30 bg-[#0E1612]/95 px-5 py-4 flex items-center gap-3 shadow-[0_0_30px_rgba(16,185,129,0.15)] backdrop-blur-md animate-fade-in">
-            <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-emerald-500 text-black">
-              <Check className="size-4 stroke-[3]" />
+    <div className={`min-h-screen transition-all duration-500 ease-in-out ${themeClasses.bg} text-zinc-100 flex overflow-hidden animate-scan-line`}>
+      
+      {/* 🧭 LEFT SIDEBAR NAVIGATION BAR */}
+      <aside className="w-64 border-r border-emerald-500/10 bg-[#07070A] flex flex-col justify-between p-4 shrink-0 z-20">
+        <div className="flex flex-col gap-6">
+          {/* Brand Logo Header */}
+          <div className="flex items-center gap-3 px-2 py-2">
+            <div className="flex size-9 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-950/30 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
+              <Target className="size-5 animate-pulse" />
             </div>
             <div className="text-left">
-              <h4 className="text-xs font-black uppercase tracking-wider text-white">Blueprint Initialized</h4>
-              <p className="text-[11px] text-zinc-400 mt-0.5 font-medium">Mission parameter metrics, tasks, and daily actions extracted perfectly.</p>
-            </div>
-          </div>
-        )}
-        
-        {/* Navbar Header */}
-        <header className="flex flex-col gap-4 pb-4 sm:flex-row sm:items-center sm:justify-between bg-emerald-950/5 border border-emerald-500/10 p-4 rounded-xl backdrop-blur-xl shadow-[0_8px_32px_0_rgba(0,0,0,0.4)]">
-          <div className="flex items-center gap-3">
-            <div className="flex size-9 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-950/20 text-emerald-400">
-              <Target className="size-4.5 animate-pulse" />
-            </div>
-            <div className="text-left">
-              <span className="font-black text-xs font-display tracking-[0.25em] text-white uppercase block">ApexMission</span>
-              <span className="text-[10px] font-bold text-emerald-500/50 uppercase tracking-wider block mt-0.5">Command Terminal · {userName}</span>
+              <span className="font-black text-sm font-display tracking-[0.2em] text-white uppercase block">ApexMission</span>
+              <span className="text-[10px] font-bold text-emerald-500/60 uppercase tracking-wider block mt-0.5">Command Terminal</span>
             </div>
           </div>
 
-          {/* Clean Segment Navigation Controls */}
-          <div className="flex items-center gap-1 rounded-lg bg-black/60 border border-zinc-800/60 p-1 font-mono text-[10px] font-black uppercase tracking-wider">
-            <button type="button" onClick={() => setActiveTab("workspace")} className={`rounded-md px-3.5 py-1.5 transition-all duration-300 ${activeTab === "workspace" ? "bg-emerald-500 text-black font-black shadow-[0_0_15px_rgba(16,185,129,0.3)]" : "text-zinc-400 hover:text-zinc-200"}`}>Workspace</button>
-            <button type="button" onClick={() => setActiveTab("leaderboard")} className={`rounded-md px-3.5 py-1.5 transition-all duration-300 ${activeTab === "leaderboard" ? "bg-emerald-500 text-black font-black shadow-[0_0_15px_rgba(16,185,129,0.3)]" : "text-zinc-400 hover:text-zinc-200"}`}>Ranks</button>
-            <button type="button" onClick={() => setActiveTab("hardware")} className={`rounded-md px-3.5 py-1.5 transition-all duration-300 ${activeTab === "hardware" ? "bg-emerald-500 text-black font-black shadow-[0_0_15px_rgba(16,185,129,0.3)]" : "text-zinc-400 hover:text-zinc-200"}`}>Hardware</button>
+          {/* Navigation Links List */}
+          <nav className="flex flex-col gap-1.5 font-mono text-xs font-black uppercase tracking-wider">
             <button
               type="button"
-              onClick={() => setShowSupport(true)}
-              className="rounded-md px-3 py-1.5 transition-all text-zinc-500 hover:text-zinc-300"
+              onClick={() => setActiveTab("workspace")}
+              className={`flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-300 ${
+                activeTab === "workspace"
+                  ? "bg-emerald-500 text-black shadow-[0_0_20px_rgba(16,185,129,0.3)] font-black"
+                  : "text-zinc-400 hover:bg-zinc-900/60 hover:text-zinc-200"
+              }`}
             >
-              Support
+              <LayoutDashboard className="size-4" />
+              <span>Workspace</span>
             </button>
-          </div>
 
-          {/* Retention Metrics & Accessible Action Buttons */}
-          <div className="flex items-center gap-2 justify-end font-mono">
-            <div className="text-[10px] font-black bg-black/40 border border-emerald-500/20 px-3 py-2 rounded-lg flex items-center gap-1.5 text-emerald-400 shadow-[inset_0_1px_2px_rgba(52,211,153,0.1)]">
-              <Shield className="size-3.5 text-emerald-400 fill-emerald-400/10" />
-              <span>{state?.points || 0} Credits</span>
+            <button
+              type="button"
+              onClick={() => setActiveTab("leaderboard")}
+              className={`flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-300 ${
+                activeTab === "leaderboard"
+                  ? "bg-emerald-500 text-black shadow-[0_0_20px_rgba(16,185,129,0.3)] font-black"
+                  : "text-zinc-400 hover:bg-zinc-900/60 hover:text-zinc-200"
+              }`}
+            >
+              <Award className="size-4" />
+              <span>Ranks</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab("hardware")}
+              className={`flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-300 ${
+                activeTab === "hardware"
+                  ? "bg-emerald-500 text-black shadow-[0_0_20px_rgba(16,185,129,0.3)] font-black"
+                  : "text-zinc-400 hover:bg-zinc-900/60 hover:text-zinc-200"
+              }`}
+            >
+              <HardDrive className="size-4" />
+              <span>Hardware</span>
+            </button>
+          </nav>
+        </div>
+
+        {/* Support Option Footer Button */}
+        <div className="border-t border-zinc-900 pt-4">
+          <button
+            type="button"
+            onClick={() => setShowSupport(true)}
+            className="flex w-full items-center gap-3 rounded-xl border border-zinc-800 bg-black/40 px-4 py-3 text-xs font-bold text-zinc-400 transition-all hover:border-zinc-700 hover:text-zinc-200 font-mono uppercase tracking-wider"
+          >
+            <HelpCircle className="size-4 text-emerald-500" />
+            <span>Support</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* 🚀 MAIN CONTENT AREA */}
+      <main className="flex-1 overflow-y-auto relative z-10 px-6 py-6 sm:px-10">
+        <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+
+          {/* ⚡ FLOATING EMERALD NOTIFICATION BANNER */}
+          {showPlanSuccessAlert && (
+            <div className="fixed top-6 right-6 z-50 rounded-xl border border-emerald-500/30 bg-[#0E1612]/95 px-5 py-4 flex items-center gap-3 shadow-[0_0_30px_rgba(16,185,129,0.15)] backdrop-blur-md animate-fade-in">
+              <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-emerald-500 text-black">
+                <Check className="size-4 stroke-[3]" />
+              </div>
+              <div className="text-left">
+                <h4 className="text-xs font-black uppercase tracking-wider text-white">Blueprint Initialized</h4>
+                <p className="text-[11px] text-zinc-400 mt-0.5 font-medium">Mission parameter metrics, tasks, and daily actions extracted perfectly.</p>
+              </div>
+            </div>
+          )}
+
+          {/* 🖥️ TOP DASHBOARD HEADER */}
+          <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-emerald-950/5 border border-emerald-500/10 p-4 rounded-xl backdrop-blur-xl shadow-[0_8px_32px_0_rgba(0,0,0,0.4)]">
+            
+            {/* Operator Node Badge + Restored Today Date Ticker */}
+            <div className="flex items-center gap-3">
+              <div className="text-left">
+                <span className="text-xs font-black text-white uppercase block">Operator: {userName}</span>
+                <span className="text-[10px] font-bold text-emerald-400/80 uppercase tracking-wider block mt-0.5 font-mono">
+                  📅 {formattedDate}
+                </span>
+              </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setShowAnalyticsModal(true)}
-              className="rounded-lg border border-emerald-500/20 bg-emerald-950/30 px-3 py-2 text-[10px] font-mono font-black uppercase tracking-wider text-emerald-400 hover:border-emerald-500/50 hover:bg-emerald-500 hover:text-black transition-all duration-300"
-            >
-              📈 Metrics
-            </button>
+            {/* Right System Controls & Metrics */}
+            <div className="flex items-center gap-2 justify-end font-mono">
+              <div className="text-[10px] font-black bg-black/40 border border-emerald-500/20 px-3 py-2 rounded-lg flex items-center gap-1.5 text-emerald-400 shadow-[inset_0_1px_2px_rgba(52,211,153,0.1)]">
+                <Shield className="size-3.5 text-emerald-400 fill-emerald-400/10" />
+                <span>{state?.points || 0} Credits</span>
+              </div>
 
-            {/* 🔌 Disconnect Node Button */}
-            <button
-              type="button"
-              onClick={async () => {
-                await supabase.auth.signOut();
-                localStorage.removeItem("apex-tutorial-completed");
-                navigate({ to: "/auth" });
-              }}
-              title="Disconnect Node"
-              className="rounded-lg border border-rose-500/20 bg-rose-950/30 px-3 py-2 text-[10px] font-mono font-black uppercase tracking-wider text-rose-400 hover:border-rose-500/50 hover:bg-rose-500 hover:text-black transition-all duration-300"
-            >
-              🔌 Disconnect
-            </button>
+              <button
+                type="button"
+                onClick={() => setShowAnalyticsModal(true)}
+                className="rounded-lg border border-emerald-500/20 bg-emerald-950/30 px-3 py-2 text-[10px] font-mono font-black uppercase tracking-wider text-emerald-400 hover:border-emerald-500/50 hover:bg-emerald-500 hover:text-black transition-all duration-300"
+              >
+                📈 Metrics
+              </button>
 
-            {/* 🧹 Flush Cache Matrix Button */}
-            <button
-              type="button"
-              onClick={() => {
-                if (window.confirm("⚠️ SYSTEM FLASH RESET: Wipe active local operational data?")) {
-                  localStorage.clear();
-                  window.location.reload();
-                }
-              }}
-              title="Flush Cache Matrix"
-              className="rounded-lg border border-amber-500/20 bg-amber-950/30 px-3 py-2 text-[10px] font-mono font-black uppercase tracking-wider text-amber-400 hover:border-amber-500/50 hover:bg-amber-500 hover:text-black transition-all duration-300"
-            >
-              🧹 Flush Cache
-            </button>
-          </div>
-        </header>
+              <button
+                type="button"
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  localStorage.removeItem("apex-tutorial-completed");
+                  navigate({ to: "/auth" });
+                }}
+                title="Disconnect Node"
+                className="rounded-lg border border-rose-500/20 bg-rose-950/30 px-3 py-2 text-[10px] font-mono font-black uppercase tracking-wider text-rose-400 hover:border-rose-500/50 hover:bg-rose-500 hover:text-black transition-all duration-300"
+              >
+                🔌 Disconnect
+              </button>
 
-        {/* --- CORE WORKSPACE FOCUS GRID PANELS --- */}
-        <div className="flex flex-col gap-6 animate-fade-in">
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm("⚠️ SYSTEM FLASH RESET: Wipe active local operational data?")) {
+                    localStorage.clear();
+                    window.location.reload();
+                  }
+                }}
+                title="Flush Cache Matrix"
+                className="rounded-lg border border-amber-500/20 bg-amber-950/30 px-3 py-2 text-[10px] font-mono font-black uppercase tracking-wider text-amber-400 hover:border-amber-500/50 hover:bg-amber-500 hover:text-black transition-all duration-300"
+              >
+                🧹 Flush Cache
+              </button>
+            </div>
+          </header>
+
+          {/* WORKSPACE TAB */}
           {activeTab === "workspace" && (
             <div className="flex flex-col gap-6 animate-fade-in">
-          
-              {/* 🏢 1. THE MISSION CARD CONTAINER */}
+              {/* Vision Card */}
               <section className="relative overflow-hidden rounded-2xl border p-6 sm:p-8 emerald-glass-core">
                 <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent" />
                 <label htmlFor="mission" className="text-[10px] font-black tracking-widest text-zinc-500 uppercase block">
@@ -830,7 +837,7 @@ function ApexMission() {
                 </div>
               </section>
 
-              {/* 🎛️ AUDIENCE CONTEXT TASK TEMPLATE MATRIX INJECTOR */}
+              {/* Profile Selector */}
               <div className="flex items-center gap-3 bg-[#0D0D11]/90 border border-zinc-800 rounded-xl p-3 text-left emerald-glass-panel">
                 <span className="text-[10px] font-black uppercase tracking-wider text-zinc-500 whitespace-nowrap pl-1">Audience Profile Track:</span>
                 <select 
@@ -839,12 +846,10 @@ function ApexMission() {
                     const selectedTrack = e.target.value as keyof typeof AUDIENCE_PROFILES;
                     const profileDefaults = AUDIENCE_PROFILES[selectedTrack];
                     
-                    // Trigger a professional confirmation dialog before wiping existing tasks
                     if (window.confirm(`⚡ SYNCHRONIZE TRACK PROFILE: Clear current workspace grids and auto-load baseline execution rows for the ${e.target.options[e.target.selectedIndex].text} matrix?`)) {
                       setState((s) => ({
                         ...s,
                         tasks: {
-                          // ✅ FIXED: Injects individual, beautifully isolated default task strings matching your exact tracking configurations
                           high: [{ id: `t-${Date.now()}-h`, text: profileDefaults.high, done: false }],
                           medium: [{ id: `t-${Date.now()}-m`, text: profileDefaults.medium, done: false }],
                           low: [{ id: `t-${Date.now()}-l`, text: profileDefaults.low, done: false }]
@@ -863,61 +868,58 @@ function ApexMission() {
                 </select>
               </div>
 
-            {/* 📊 2. THE PRIORITY MATRIX SPLIT COLUMNS */}
-            <section className="grid flex-1 grid-cols-1 gap-4 md:grid-cols-3">
-              {TIERS.map((tier) => (
-                <div key={tier.key} className="flex flex-col rounded-2xl p-5 emerald-glass-panel">
-                  
-                  {/* Column Header Metadata Block */}
-                  <div className="flex flex-col gap-2 border-b border-zinc-900/60 pb-3 mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className={`size-2 rounded-full ${tier.accentClass}`} />
-                      <h2 className={`text-[10px] font-black tracking-widest uppercase ${tier.textClass}`}>
-                        {tier.label}
-                      </h2>
-                      <span className="ml-auto font-mono text-[10px] font-bold bg-black border border-zinc-900 px-2 py-0.5 rounded text-zinc-400 tabular-nums">
-                        {(state.tasks[tier.key] || []).filter((t) => t.done).length}/{(state.tasks[tier.key] || []).length}
-                      </span>
+              {/* Task Columns */}
+              <section className="grid flex-1 grid-cols-1 gap-4 md:grid-cols-3">
+                {TIERS.map((tier) => (
+                  <div key={tier.key} className="flex flex-col rounded-2xl p-5 emerald-glass-panel">
+                    <div className="flex flex-col gap-2 border-b border-zinc-900/60 pb-3 mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className={`size-2 rounded-full ${tier.accentClass}`} />
+                        <h2 className={`text-[10px] font-black tracking-widest uppercase ${tier.textClass}`}>
+                          {tier.label}
+                        </h2>
+                        <span className="ml-auto font-mono text-[10px] font-bold bg-black border border-zinc-900 px-2 py-0.5 rounded text-zinc-400 tabular-nums">
+                          {(state.tasks[tier.key] || []).filter((t) => t.done).length}/{(state.tasks[tier.key] || []).length}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between font-mono text-[9px] text-zinc-600 uppercase mt-0.5">
+                        <span>Cutoff Vector Window:</span>
+                        <span className="text-zinc-400 font-bold tracking-wider tabular-nums animate-pulse">
+                          {resetMs === null ? "00:00:00" : formatCountdown(resetMs)}
+                        </span>
+                      </div>
                     </div>
 
-                    {/* ⏱️ INDIVIDUAL TIER INTERVAL COUNTDOWN INDICATOR SUB-TICKER */}
-                    <div className="flex items-center justify-between font-mono text-[9px] text-zinc-600 uppercase mt-0.5">
-                      <span>Cutoff Vector Window:</span>
-                      <span className="text-zinc-400 font-bold tracking-wider tabular-nums animate-pulse">
-                        {resetMs === null ? "00:00:00" : formatCountdown(resetMs)}
-                      </span>
-                    </div>
-                  </div>
+                    <ul className="flex flex-1 flex-col gap-1.5 overflow-y-auto max-h-[260px] pr-1">
+                      {(state.tasks[tier.key] || []).map((task) => (
+                        <TaskRow 
+                          key={task.id} 
+                          task={task} 
+                          onToggle={() => toggleTask(tier.key, task.id)} 
+                          onRemove={() => removeTask(tier.key, task.id)} 
+                        />
+                      ))}
+                      {(state.tasks[tier.key] || []).length === 0 && (
+                        <li className="px-1 py-3 text-xs text-zinc-600 font-medium italic">No execution objects mapped.</li>
+                      )}
+                    </ul>
 
-                  <ul className="flex flex-1 flex-col gap-1.5 overflow-y-auto max-h-[260px] pr-1">
-                    {(state.tasks[tier.key] || []).map((task) => (
-                      <TaskRow 
-                        key={task.id} 
-                        task={task} 
-                        onToggle={() => toggleTask(tier.key, task.id)} 
-                        onRemove={() => removeTask(tier.key, task.id)} 
+                    <div className="mt-3 flex items-center gap-2 rounded-xl px-3 glass-input-node">
+                      <Plus className="size-3.5 shrink-0 text-zinc-600" />
+                      <input
+                        value={drafts[tier.key]}
+                        onChange={(e) => setDrafts((d) => ({ ...d, [tier.key]: e.target.value }))}
+                        onKeyDown={(e) => e.key === "Enter" && addTask(tier.key)}
+                        placeholder={tier.placeholder}
+                        className="h-10 w-full bg-transparent text-sm text-white placeholder-zinc-700 outline-none"
                       />
-                    ))}
-                    {(state.tasks[tier.key] || []).length === 0 && (
-                      <li className="px-1 py-3 text-xs text-zinc-600 font-medium italic">No execution objects mapped.</li>
-                    )}
-                  </ul>
-
-                  <div className="mt-3 flex items-center gap-2 rounded-xl px-3 glass-input-node">
-                    <Plus className="size-3.5 shrink-0 text-zinc-600" />
-                    <input
-                      value={drafts[tier.key]}
-                      onChange={(e) => setDrafts((d) => ({ ...d, [tier.key]: e.target.value }))}
-                      onKeyDown={(e) => e.key === "Enter" && addTask(tier.key)}
-                      placeholder={tier.placeholder}
-                      className="h-10 w-full bg-transparent text-sm text-white placeholder-zinc-700 outline-none"
-                    />
                     </div>
                   </div>
                 ))}
               </section>
 
-              {/* ⚡ 3. THE DAILY HIGH-URGENCY ACTION STEP CARD */}
+              {/* Daily Action */}
               <section className={`rounded-2xl border p-6 sm:p-8 transition-all duration-500 shadow-xl ${themeClasses.card} ${state.daily.done ? "border-emerald-500/30 bg-[#0E1612]/20" : ""}`}>
                 <label htmlFor="daily-action" className="text-[10px] font-black tracking-widest text-zinc-500 uppercase block">
                   Today's Master Focus Action
@@ -956,8 +958,7 @@ function ApexMission() {
                   />
                 </div>
 
-                 {/* Night Reflection Portal Anchor */}
-                 {isEvening && (
+                {isEvening && (
                   <div className="w-full max-w-md mx-auto mb-6 p-1">
                     <button
                       onClick={handleGoToNightReflection}
@@ -981,7 +982,6 @@ function ApexMission() {
                   </div>
                 )}
 
-                {/* ⏱️ Streak counter + reset timer metrics */}
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <div className={`flex size-10 items-center justify-center rounded-xl border border-zinc-800 bg-black ${state.streak.count > 0 ? "border-orange-500/20 bg-orange-950/10 text-orange-400" : "text-zinc-600"}`}>
@@ -1009,357 +1009,332 @@ function ApexMission() {
                 </div>
               </section>
             </div>
-          )}  
-        </div>
+          )}
 
-        {/* Dynamic Variable Reward Notification Banner */}
-        {surpriseLoot && (
-          <div className="w-full rounded-xl border border-emerald-500/20 bg-[#0E1612]/90 p-4 text-left flex items-center gap-3 text-xs font-bold text-emerald-400 border-l-4 border-l-emerald-500 animate-fade-in">
-            <Sparkles className="size-4 animate-spin shrink-0" />
-            <span>{surpriseLoot.msg}</span>
-          </div>
-        )}
-
-        {/* 🏆 Tab 2: Accountability Leaderboard (100% Real Live Database Stream) */}
-        {activeTab === "leaderboard" && (
-          <section className={`rounded-2xl border p-6 text-left transform transition-all duration-500 translate-y-2 animate-fade-in ${themeClasses.card} emerald-glass-panel`}>  
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-900 pb-4 mb-4">
-              <div>
-                <h2 className="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2">
-                  <Trophy className="size-4 text-amber-400" /> Real-Time Network Operator Standings
-                </h2>
-                <p className="text-xs text-zinc-500 mt-1">Cross-examine absolute consistency vectors. Only real authenticated system operators currently mapped to this network cluster are displayed.</p>
-              </div>
-              
-              <button
-                type="button"
-                disabled={loadingRoster}
-                onClick={fetchLiveAccountabilityRoster}
-                className="flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-black/40 px-3 py-1.5 font-mono text-[10px] font-black uppercase text-zinc-400 hover:text-white transition-colors"
-              >
-                {loadingRoster ? <Loader2 className="size-3 animate-spin text-emerald-400" /> : "🔄 Resync Ledger"}
-              </button>
-            </div>
-            
-            <div className="overflow-hidden rounded-xl border border-zinc-900 bg-black/20 font-mono text-xs">
-              {/* Clean Multi-Column Header Index */}
-              <div className="grid grid-cols-6 bg-zinc-950/80 px-4 py-3 text-[9px] font-black uppercase tracking-wider text-zinc-500 border-b border-zinc-900 text-center sm:text-left">
-                <span>Rank</span>
-                <span className="text-left">Operator Node</span>
-                <span className="text-center">Current</span>
-                <span className="text-center">Max Peak</span>
-                <span className="text-center">Failures / HUD</span>
-                <span className="text-right">Credit Balance</span>
-              </div>
-
-              <div className="divide-y divide-zinc-900/60">
-                {leaderboardOperators.map((operator, index) => {
-                  const isCurrentClientNode = operator.id === (supabase.auth.getUser() as any)?.data?.user?.id;
-                  
-                  // Dynamically resolve point attributes from real database variables
-                  const activeDisplayCredits = isCurrentClientNode 
-                    ? ((state as any).points !== undefined ? (state as any).points : 1000) 
-                    : (operator.points || operator.beta_points || 0);
-
-                  // 💎 DYNAMIC ALPHA FOUNDER INSIGNIA INJECTION LOOKUP
-                  const hasFounderBadge = isCurrentClientNode 
-                    ? localStorage.getItem("apexmission-unlocked-badge-alpha-founder") === "true"
-                    : operator.unlocked_layouts?.includes("badge-alpha-founder");
-
-                  return (
-                    <div 
-                      key={operator.id} 
-                      className={`grid grid-cols-6 px-4 py-4 items-center text-center sm:text-left text-zinc-300 transition-colors duration-200 hover:bg-zinc-900/10 ${
-                        isCurrentClientNode ? "bg-emerald-950/10 text-emerald-400 font-bold border-y border-emerald-500/20" : ""
-                      }`}
-                    >
-                      <span className="font-bold text-zinc-500">
-                        {index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${String(index + 1).padStart(2, "0")}`}
-                      </span>
-                      
-                      <span className="truncate font-semibold text-white text-left flex items-center gap-2 min-w-0">
-                        <span className="truncate">{operator.full_name || "Anonymous Operator"}</span>
-                        
-                        {/* ✅ NEON ALPHA INSIGNIA INJECTED DIRECTLY NEXT TO THE MONIKER NAME ROW */}
-                        {hasFounderBadge && (
-                          <span className="shrink-0 text-[8px] font-black tracking-widest text-amber-400 bg-amber-950/60 border border-amber-500/30 px-1.5 py-0.5 rounded shadow-[0_0_8px_rgba(245,158,11,0.3)] animate-pulse">
-                            ⚡ FOUNDER
-                          </span>
-                        )}
-
-                        {isCurrentClientNode && <span className="shrink-0 text-[8px] tracking-widest uppercase bg-emerald-950 border border-emerald-500/30 text-emerald-400 px-1 rounded">YOU</span>}
-                      </span>
-                      
-                      <span className="text-center text-orange-400 font-bold tabular-nums">{operator.current_streak}d</span>
-                      <span className="text-center text-amber-500 font-bold tabular-nums">{operator.max_streak}d</span>
-                      
-                      {/* Operational Deficit Mapping Vector */}
-                      <span className="text-center flex flex-col sm:flex-row items-center justify-center gap-1">
-                        <span className="text-rose-400 font-semibold tabular-nums bg-rose-950/20 px-1.5 py-0.5 rounded border border-rose-500/10">{operator.failure_count}</span>
-                        <span className={`text-[8px] font-black uppercase px-1 rounded tracking-wide border ${
-                          operator.operational_status === "Operational" 
-                            ? "bg-emerald-950/30 text-emerald-500 border-emerald-500/20" 
-                            : "bg-rose-950/30 text-rose-500 border-rose-500/20 animate-pulse"
-                        }`}>
-                          {operator.operational_status}
-                        </span>
-                      </span>
-                      
-                      {/* ✅ SHIFTED ENTIRELY FROM BETA_POINTS TO DYNAMIC REAL CREDITS VALUES */}
-                      <span className="text-right text-emerald-400 font-bold font-mono tabular-nums">{activeDisplayCredits} cr</span>
-                    </div>
-                  );
-                })}
-
-                {leaderboardOperators.length === 0 && (
-                  <div className="p-8 text-center text-zinc-600 italic">
-                    {loadingRoster ? "Establishing network stream channels..." : "No active profiles discovered inside network cluster parameters."}
-                  </div>
-                )}
-              </div>
-            </div>
-          </section>
-        )}
-
-
-        {/* 🛠️ Tab 3: Hardware Market */}
-        {activeTab === "hardware" && (
-          <section className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-fade-in text-left">
-            {HARDWARE_STORE_INVENTORY.map((item) => (
-              <div key={item.id} className={`flex flex-col justify-between rounded-2xl border p-5 ${themeClasses.card} bg-zinc-950/20`}>
+          {/* RANKS LEADERBOARD TAB */}
+          {activeTab === "leaderboard" && (
+            <section className={`rounded-2xl border p-6 text-left transform transition-all duration-500 translate-y-2 animate-fade-in ${themeClasses.card} emerald-glass-panel`}>  
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-900 pb-4 mb-4">
                 <div>
-                  <span className="rounded-md bg-zinc-900 border border-zinc-800 px-2 py-0.5 text-[9px] font-black uppercase text-zinc-500 tracking-wider w-max block">{item.type}</span>
-                  <h4 className="text-sm font-black text-white mt-3">{item.name}</h4>
-                  <p className="text-[11px] text-zinc-500 mt-1">{item.desc}</p>
+                  <h2 className="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2">
+                    <Trophy className="size-4 text-amber-400" /> Real-Time Network Operator Standings
+                  </h2>
+                  <p className="text-xs text-zinc-500 mt-1">Cross-examine absolute consistency vectors. Only real authenticated system operators currently mapped to this network cluster are displayed.</p>
                 </div>
-                <div className="mt-6 flex items-center justify-between">
-                  <span className="font-mono text-xs font-black text-emerald-400">{item.cost} credits</span>
-                  <button 
-                    type="button" 
-                    onClick={() => {
-                      if (((state as any).points || 0) < item.cost) return alert("❌ INSUFFICIENT OPERATIONAL CREDITS.");
-                      
-                      setState(s => ({ ...s, points: ((s as any).points || 0) - item.cost }));
-                      
-                      if (item.id.startsWith("theme-")) { 
-                        localStorage.setItem("apexmission-active-theme", item.id); 
-                        window.location.reload(); 
-                      } else if (item.id.startsWith("badge-")) {
-                        // Securely register the badge asset parameters directly onto the user node state
-                        localStorage.setItem(`apexmission-unlocked-${item.id}`, "true");
-                        alert(`💎 ALPHA COGNITIVE EMBLEM EQUIPPED: ${item.name} is now locked onto your identity matrix rows!`);
-                        window.location.reload();
-                      }
-                    }} 
-                    className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-black hover:bg-emerald-400 font-mono shadow-md shadow-emerald-500/10 transition-all active:scale-95"
-                  >
-                    Equip
-                  </button>
-                </div>
-              </div>
-            ))}
-          </section>
-        )}
-
-        <PaywallModal
-          open={paywall !== null}
-          reason={paywall ?? ""}
-          onClose={() => setPaywall(null)}
-          onUpgrade={handleUpgrade}
-        />
-        
-        {/* 🏆 MILESTONE CELEBRATION EMBEDDED POPUP MODAL */}
-        {showMilestoneCelebration !== null && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 px-4 backdrop-blur-md animate-fade-in">
-            <div className="w-full max-w-sm rounded-2xl border border-emerald-500/30 bg-[#0E1612]/90 p-8 text-center shadow-[0_0_50px_rgba(16,185,129,0.15)] relative overflow-hidden">
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400 to-transparent" />
-              
-              <div id="apex-progress-card" className="bg-[#0A0F0C] border border-emerald-500/10 rounded-xl p-6 mb-6 text-center">
-                <div className="mx-auto flex size-12 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-950/40 text-emerald-400 mb-4">
-                  <Flame className="size-6 fill-emerald-400" />
-                </div>
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-400 mb-1">
-                  ApexMission Verified
-                </p>
-                <h2 className="text-3xl font-black tracking-tight text-white">
-                  {showMilestoneCelebration} Day Streak!
-                </h2>
-                <div className="mt-4 flex items-center justify-center gap-1.5 text-xs font-bold text-zinc-400">
-                  <span>Rank Multiplier:</span>
-                  <span className="text-emerald-400 font-mono">+{state.streak?.count * 10} pts</span>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-3">
+                
                 <button
                   type="button"
-                  onClick={() => {
-                    const cardText = `🔥 Just locked in an elite ${showMilestoneCelebration}-Day Execution Streak on ApexMission! Win your morning, win your day, win your night. join the console loop here: ${window.location.origin}`;
-                    navigator.clipboard.writeText(cardText).then(() => {
-                      alert("🚀 Core marketing deployment copy copied to clipboard! Share it across your social grids.");
-                    });
-                  }}
-                  className="w-full rounded-xl bg-emerald-500 py-3.5 text-sm font-bold text-black transition-all duration-300 hover:bg-emerald-400 hover:shadow-[0_0_20px_rgba(52,211,153,0.3)] active:scale-98"
+                  disabled={loadingRoster}
+                  onClick={fetchLiveAccountabilityRoster}
+                  className="flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-black/40 px-3 py-1.5 font-mono text-[10px] font-black uppercase text-zinc-400 hover:text-white transition-colors"
                 >
-                  📢 Share Progress Card
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setShowMilestoneCelebration(null)}
-                  className="w-full rounded-xl border border-zinc-800 bg-transparent py-3.5 text-sm font-bold text-zinc-400 transition-all duration-300 hover:border-zinc-700 hover:text-white active:scale-98"
-                >
-                  Continue Mission Execution
+                  {loadingRoster ? <Loader2 className="size-3 animate-spin text-emerald-400" /> : "🔄 Resync Ledger"}
                 </button>
               </div>
-            </div>
-          </div>
-        )}
-
-        <MissionCoach
-          premium={premium}
-          state={state}
-          userName={userName}
-          userRank={userRankText}
-          onLockedHistory={() => setPaywall("Your full coach history is a premium feature...")}
-          onActionPlanGenerated={(plan) => {
-            setState((s) => ({
-              ...s,
-              userName: userName,
-              mission: plan.mission || s.mission,
-              tasks: {
-                high: (plan.high || []).map((text: string) => ({ id: nextId(), text, done: false })),
-                medium: (plan.medium || []).map((text: string) => ({ id: nextId(), text, done: false })),
-                low: (plan.low || []).map((text: string) => ({ id: nextId(), text, done: false })),
-              },
-              daily: { text: plan.dailyAction || "", done: false, date: todayKey() },
-            }));
-            setDailyDraft(plan.dailyAction || "");
-            setShowPlanSuccessAlert(true);
-            setTimeout(() => setShowPlanSuccessAlert(false), 4000);
-          }}
-        />
-
-        {/* Floating Support Button */}
-        <button
-          onClick={() => setShowSupport(true)}
-          className="group fixed bottom-24 right-6 z-40 flex items-center gap-0 rounded-full border border-zinc-700 bg-[#0D0D11] px-3.5 py-2.5 text-xs font-bold text-zinc-300 shadow-lg transition-all duration-300 hover:gap-2 hover:border-emerald-500/50 hover:px-4 hover:text-emerald-400 hover:shadow-[0_0_20px_rgba(16,185,129,0.15)]"
-        >
-          <span className="text-sm">💬</span>
-          <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 group-hover:max-w-[80px] group-hover:opacity-100">
-            Support
-          </span>
-        </button>
-
-        {/* Support Modal */}
-        {showSupport && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 backdrop-blur-sm">
-            <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-[#0D0D11] p-6 text-left shadow-xl">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-black uppercase tracking-wider text-white">
-                  Support & Feedback
-                </h3>
-                <button
-                  onClick={() => setShowSupport(false)}
-                  className="text-zinc-500 hover:text-white text-lg leading-none"
-                >
-                  ×
-                </button>
-              </div>
-
-              <p className="text-sm text-zinc-400 leading-relaxed mb-4">
-                Found a bug, have a suggestion, or need help?  
-                Send me an email and I’ll get back to you.
-              </p>
-
-              <div className="rounded-xl border border-zinc-800 bg-black/40 px-4 py-3 mb-5">
-                <p className="text-xs text-zinc-500">
-                  I reply to all messages within{" "}
-                  <span className="text-emerald-400 font-semibold">1–4 business days</span>.
-                </p>
-              </div>
-
-              <a
-                href="mailto:support@apexmissions.app?subject=ApexMission Support / Feedback"
-                className="flex w-full items-center justify-center rounded-xl bg-white py-3 text-sm font-bold text-black transition-all hover:bg-emerald-400"
-                onClick={() => setShowSupport(false)}
-              >
-                Email support@apexmissions.app →
-              </a>
-            </div>
-          </div>
-        )}
-
-        {/* 📈 INDUSTRIAL PERFORMANCE GRID ANALYTICS VISUALIZER MODAL */}
-        {showAnalyticsModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 backdrop-blur-md animate-fade-in text-left font-mono">
-            <div className="w-full max-w-lg rounded-2xl border border-zinc-800 bg-[#0A0A0F] p-6 sm:p-8 shadow-[0_0_50px_rgba(0,0,0,0.8)] relative overflow-hidden">
-              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent" />
               
-              <div className="flex items-center justify-between border-b border-zinc-900 pb-4 mb-6">
-                <div>
-                  <h3 className="text-sm font-black uppercase tracking-wider text-white">📈 Velocity Consistency Index</h3>
-                  <p className="text-[10px] text-zinc-500 mt-0.5 uppercase tracking-wide">7-Cycle Historical Metric Telemetry</p>
+              <div className="overflow-hidden rounded-xl border border-zinc-900 bg-black/20 font-mono text-xs">
+                <div className="grid grid-cols-6 bg-zinc-950/80 px-4 py-3 text-[9px] font-black uppercase tracking-wider text-zinc-500 border-b border-zinc-900 text-center sm:text-left">
+                  <span>Rank</span>
+                  <span className="text-left">Operator Node</span>
+                  <span className="text-center">Current</span>
+                  <span className="text-center">Max Peak</span>
+                  <span className="text-center">Failures / HUD</span>
+                  <span className="text-right">Credit Balance</span>
                 </div>
-                <button 
-                  type="button" 
-                  onClick={() => setShowAnalyticsModal(false)}
-                  className="size-7 rounded-lg border border-zinc-900 bg-black text-zinc-500 hover:text-white flex items-center justify-center font-bold text-xs"
-                >
-                  ×
-                </button>
-              </div>
 
-              {/* Native Graphical Chart Render Frame */}
-              <div className="space-y-5">
-                <div className="h-44 w-full bg-black/40 rounded-xl border border-zinc-900/60 p-4 flex items-end justify-between gap-2.5 relative">
-                  {/* Grid Horizon Guide Mark Lines */}
-                  <div className="absolute left-0 right-0 top-1/4 h-px border-t border-zinc-900/30 border-dashed" />
-                  <div className="absolute left-0 right-0 top-2/4 h-px border-t border-zinc-900/30 border-dashed" />
-                  <div className="absolute left-0 right-0 top-3/4 h-px border-t border-zinc-900/30 border-dashed" />
+                <div className="divide-y divide-zinc-900/60">
+                  {leaderboardOperators.map((operator, index) => {
+                    const isCurrentClientNode = operator.id === (supabase.auth.getUser() as any)?.data?.user?.id;
+                    const activeDisplayCredits = isCurrentClientNode 
+                      ? ((state as any).points !== undefined ? (state as any).points : 1000) 
+                      : (operator.points || operator.beta_points || 0);
 
-                  {/* Individual Day Bar Graphs Logs Matrices */}
-                  {[
-                    { day: "Mon", val: 40, color: "bg-emerald-950/40 border-emerald-500/20 text-emerald-400" },
-                    { day: "Tue", val: 65, color: "bg-emerald-900/40 border-emerald-400/20 text-emerald-400" },
-                    { day: "Wed", val: 20, color: "bg-rose-950/40 border-rose-500/30 text-rose-400 animate-pulse" }, // Accountability deficit highlight
-                    { day: "Thu", val: 85, color: "bg-emerald-800/40 border-emerald-400/30 text-emerald-300" },
-                    { day: "Fri", val: 100, color: "bg-gradient-to-t from-emerald-600 to-emerald-400 border-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.3)] text-white" },
-                    { day: "Sat", val: 50, color: "bg-emerald-900/30 border-emerald-600/10 text-emerald-500" },
-                    { day: "Sun", val: progress, color: "bg-gradient-to-t from-teal-600 to-teal-400 border-teal-300 shadow-[0_0_15px_rgba(45,212,191,0.2)] text-white" },
-                  ].map((bar, i) => (
-                    <div key={i} className="flex-1 flex flex-col items-center gap-2 h-full justify-end relative z-10">
-                      <span className="text-[9px] font-mono font-black tabular-nums text-emerald-400/90">{bar.val}%</span>
+                    const hasFounderBadge = isCurrentClientNode 
+                      ? localStorage.getItem("apexmission-unlocked-badge-alpha-founder") === "true"
+                      : operator.unlocked_layouts?.includes("badge-alpha-founder");
+
+                    return (
                       <div 
-                        className={`w-full rounded-t-md transition-all duration-1000 border-t ${bar.color}`}
-                        style={{ height: `${Math.max(8, bar.val * 0.72)}%` }}
-                      />
-                      <span className="text-[9px] font-black uppercase text-zinc-500 tracking-wider mt-1">{bar.day}</span>
-                    </div>
-                  ))}
-                </div>
+                        key={operator.id} 
+                        className={`grid grid-cols-6 px-4 py-4 items-center text-center sm:text-left text-zinc-300 transition-colors duration-200 hover:bg-zinc-900/10 ${
+                          isCurrentClientNode ? "bg-emerald-950/10 text-emerald-400 font-bold border-y border-emerald-500/20" : ""
+                        }`}
+                      >
+                        <span className="font-bold text-zinc-500">
+                          {index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${String(index + 1).padStart(2, "0")}`}
+                        </span>
+                        
+                        <span className="truncate font-semibold text-white text-left flex items-center gap-2 min-w-0">
+                          <span className="truncate">{operator.full_name || "Anonymous Operator"}</span>
+                          
+                          {hasFounderBadge && (
+                            <span className="shrink-0 text-[8px] font-black tracking-widest text-amber-400 bg-amber-950/60 border border-amber-500/30 px-1.5 py-0.5 rounded shadow-[0_0_8px_rgba(245,158,11,0.3)] animate-pulse">
+                              ⚡ FOUNDER
+                            </span>
+                          )}
 
-                {/* Analytical Metadata Descriptions */}
-                <div className="rounded-xl border border-zinc-900 bg-black/20 p-3.5 space-y-2 text-[11px] text-zinc-400 leading-relaxed">
-                  <p className="flex items-center justify-between"><span className="text-zinc-600 uppercase font-bold text-[9px]">Calculated Output Vector:</span> <span className="text-zinc-200 font-bold">Stable Momentum</span></p>
-                  <p className="flex items-center justify-between"><span className="text-zinc-600 uppercase font-bold text-[9px]">Current Cycle Progress:</span> <span className="text-emerald-400 font-bold tabular-nums">+{progress}% Velocity</span></p>
-                  <p className="text-zinc-500 border-t border-zinc-900/60 pt-2 mt-2 italic text-[10px]">
-                    💡 STRATEGIC ADVISORY: Wednesday parameters registered an unexecuted bottleneck fault deviation loop. Maintain your Friday and Sunday momentum paths to absorb further credit degradation values.
-                  </p>
+                          {isCurrentClientNode && <span className="shrink-0 text-[8px] tracking-widest uppercase bg-emerald-950 border border-emerald-500/30 text-emerald-400 px-1 rounded">YOU</span>}
+                        </span>
+                        
+                        <span className="text-center text-orange-400 font-bold tabular-nums">{operator.current_streak}d</span>
+                        <span className="text-center text-amber-500 font-bold tabular-nums">{operator.max_streak}d</span>
+                        
+                        <span className="text-center flex flex-col sm:flex-row items-center justify-center gap-1">
+                          <span className="text-rose-400 font-semibold tabular-nums bg-rose-950/20 px-1.5 py-0.5 rounded border border-rose-500/10">{operator.failure_count}</span>
+                          <span className={`text-[8px] font-black uppercase px-1 rounded tracking-wide border ${
+                            operator.operational_status === "Operational" 
+                              ? "bg-emerald-950/30 text-emerald-500 border-emerald-500/20" 
+                              : "bg-rose-950/30 text-rose-500 border-rose-500/20 animate-pulse"
+                          }`}>
+                            {operator.operational_status}
+                          </span>
+                        </span>
+                        
+                        <span className="text-right text-emerald-400 font-bold font-mono tabular-nums">{activeDisplayCredits} cr</span>
+                      </div>
+                    );
+                  })}
+
+                  {leaderboardOperators.length === 0 && (
+                    <div className="p-8 text-center text-zinc-600 italic">
+                      {loadingRoster ? "Establishing network stream channels..." : "No active profiles discovered inside network cluster parameters."}
+                    </div>
+                  )}
                 </div>
               </div>
+            </section>
+          )}
+
+          {/* HARDWARE MARKET TAB */}
+          {activeTab === "hardware" && (
+            <section className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-fade-in text-left">
+              {HARDWARE_STORE_INVENTORY.map((item) => (
+                <div key={item.id} className={`flex flex-col justify-between rounded-2xl border p-5 ${themeClasses.card} bg-zinc-950/20`}>
+                  <div>
+                    <span className="rounded-md bg-zinc-900 border border-zinc-800 px-2 py-0.5 text-[9px] font-black uppercase text-zinc-500 tracking-wider w-max block">{item.type}</span>
+                    <h4 className="text-sm font-black text-white mt-3">{item.name}</h4>
+                    <p className="text-[11px] text-zinc-500 mt-1">{item.desc}</p>
+                  </div>
+                  <div className="mt-6 flex items-center justify-between">
+                    <span className="font-mono text-xs font-black text-emerald-400">{item.cost} credits</span>
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        if (((state as any).points || 0) < item.cost) return alert("❌ INSUFFICIENT OPERATIONAL CREDITS.");
+                        
+                        setState(s => ({ ...s, points: ((s as any).points || 0) - item.cost }));
+                        
+                        if (item.id.startsWith("theme-")) { 
+                          localStorage.setItem("apexmission-active-theme", item.id); 
+                          window.location.reload(); 
+                        } else if (item.id.startsWith("badge-")) {
+                          localStorage.setItem(`apexmission-unlocked-${item.id}`, "true");
+                          alert(`💎 ALPHA COGNITIVE EMBLEM EQUIPPED: ${item.name} is now locked onto your identity matrix rows!`);
+                          window.location.reload();
+                        }
+                      }} 
+                      className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-black hover:bg-emerald-400 font-mono shadow-md shadow-emerald-500/10 transition-all active:scale-95"
+                    >
+                      Equip
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </section>
+          )}
+
+        </div>
+      </main>
+
+      {/* OVERLAY MODALS & COMPONENTS */}
+      {surpriseLoot && (
+        <div className="fixed bottom-6 left-72 z-40 rounded-xl border border-emerald-500/20 bg-[#0E1612]/90 p-4 text-left flex items-center gap-3 text-xs font-bold text-emerald-400 border-l-4 border-l-emerald-500 animate-fade-in shadow-2xl">
+          <Sparkles className="size-4 animate-spin shrink-0" />
+          <span>{surpriseLoot.msg}</span>
+        </div>
+      )}
+
+      <PaywallModal
+        open={paywall !== null}
+        reason={paywall ?? ""}
+        onClose={() => setPaywall(null)}
+        onUpgrade={handleUpgrade}
+      />
+
+      {showMilestoneCelebration !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 px-4 backdrop-blur-md animate-fade-in">
+          <div className="w-full max-w-sm rounded-2xl border border-emerald-500/30 bg-[#0E1612]/90 p-8 text-center shadow-[0_0_50px_rgba(16,185,129,0.15)] relative overflow-hidden">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400 to-transparent" />
+            
+            <div id="apex-progress-card" className="bg-[#0A0F0C] border border-emerald-500/10 rounded-xl p-6 mb-6 text-center">
+              <div className="mx-auto flex size-12 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-950/40 text-emerald-400 mb-4">
+                <Flame className="size-6 fill-emerald-400" />
+              </div>
+              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-400 mb-1">
+                ApexMission Verified
+              </p>
+              <h2 className="text-3xl font-black tracking-tight text-white">
+                {showMilestoneCelebration} Day Streak!
+              </h2>
+              <div className="mt-4 flex items-center justify-center gap-1.5 text-xs font-bold text-zinc-400">
+                <span>Rank Multiplier:</span>
+                <span className="text-emerald-400 font-mono">+{state.streak?.count * 10} pts</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  const cardText = `🔥 Just locked in an elite ${showMilestoneCelebration}-Day Execution Streak on ApexMission! Win your morning, win your day, win your night. join the console loop here: ${window.location.origin}`;
+                  navigator.clipboard.writeText(cardText).then(() => {
+                    alert("🚀 Core marketing deployment copy copied to clipboard! Share it across your social grids.");
+                  });
+                }}
+                className="w-full rounded-xl bg-emerald-500 py-3.5 text-sm font-bold text-black transition-all duration-300 hover:bg-emerald-400 hover:shadow-[0_0_20px_rgba(52,211,153,0.3)] active:scale-98"
+              >
+                📢 Share Progress Card
+              </button>
 
               <button
                 type="button"
-                onClick={() => setShowAnalyticsModal(false)}
-                className="w-full h-11 rounded-xl bg-emerald-500 text-xs font-black uppercase tracking-wider text-black transition-all duration-300 hover:bg-emerald-400 hover:shadow-[0_0_25px_rgba(52,211,153,0.35)] font-mono"
+                onClick={() => setShowMilestoneCelebration(null)}
+                className="w-full rounded-xl border border-zinc-800 bg-transparent py-3.5 text-sm font-bold text-zinc-400 transition-all duration-300 hover:border-zinc-700 hover:text-white active:scale-98"
               >
-                Close Metrics Overview
+                Continue Mission Execution
               </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* MISSION COACH COMPONENT */}
+      <MissionCoach
+        premium={premium}
+        state={state}
+        userName={userName}
+        userRank={userRankText}
+        onLockedHistory={() => setPaywall("Your full coach history is a premium feature...")}
+        onActionPlanGenerated={(plan) => {
+          setState((s) => ({
+            ...s,
+            userName: userName,
+            mission: plan.mission || s.mission,
+            tasks: {
+              high: (plan.high || []).map((text: string) => ({ id: nextId(), text, done: false })),
+              medium: (plan.medium || []).map((text: string) => ({ id: nextId(), text, done: false })),
+              low: (plan.low || []).map((text: string) => ({ id: nextId(), text, done: false })),
+            },
+            daily: { text: plan.dailyAction || "", done: false, date: todayKey() },
+          }));
+          setDailyDraft(plan.dailyAction || "");
+          setShowPlanSuccessAlert(true);
+          setTimeout(() => setShowPlanSuccessAlert(false), 4000);
+        }}
+      />
+
+      {/* SUPPORT MODAL */}
+      {showSupport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-[#0D0D11] p-6 text-left shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-black uppercase tracking-wider text-white">
+                Support & Feedback
+              </h3>
+              <button
+                onClick={() => setShowSupport(false)}
+                className="text-zinc-500 hover:text-white text-lg leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            <p className="text-sm text-zinc-400 leading-relaxed mb-4">
+              Found a bug, have a suggestion, or need help? Send an email to support.
+            </p>
+
+            <div className="rounded-xl border border-zinc-800 bg-black/40 px-4 py-3 mb-5">
+              <p className="text-xs text-zinc-500">
+                Replies are sent within <span className="text-emerald-400 font-semibold">1–4 business days</span>.
+              </p>
+            </div>
+
+            <a
+              href="mailto:support@apexmissions.app?subject=ApexMission Support / Feedback"
+              className="flex w-full items-center justify-center rounded-xl bg-white py-3 text-sm font-bold text-black transition-all hover:bg-emerald-400"
+              onClick={() => setShowSupport(false)}
+            >
+              Email support@apexmissions.app →
+            </a>
+          </div>
+        </div>
+      )}
+
+      {/* METRICS VISUALIZER MODAL */}
+      {showAnalyticsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 backdrop-blur-md animate-fade-in text-left font-mono">
+          <div className="w-full max-w-lg rounded-2xl border border-zinc-800 bg-[#0A0A0F] p-6 sm:p-8 shadow-[0_0_50px_rgba(0,0,0,0.8)] relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent" />
+            
+            <div className="flex items-center justify-between border-b border-zinc-900 pb-4 mb-6">
+              <div>
+                <h3 className="text-sm font-black uppercase tracking-wider text-white">📈 Velocity Consistency Index</h3>
+                <p className="text-[10px] text-zinc-500 mt-0.5 uppercase tracking-wide">7-Cycle Historical Metric Telemetry</p>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setShowAnalyticsModal(false)}
+                className="size-7 rounded-lg border border-zinc-900 bg-black text-zinc-500 hover:text-white flex items-center justify-center font-bold text-xs"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-5">
+              <div className="h-44 w-full bg-black/40 rounded-xl border border-zinc-900/60 p-4 flex items-end justify-between gap-2.5 relative">
+                <div className="absolute left-0 right-0 top-1/4 h-px border-t border-zinc-900/30 border-dashed" />
+                <div className="absolute left-0 right-0 top-2/4 h-px border-t border-zinc-900/30 border-dashed" />
+                <div className="absolute left-0 right-0 top-3/4 h-px border-t border-zinc-900/30 border-dashed" />
+
+                {[
+                  { day: "Mon", val: 40, color: "bg-emerald-950/40 border-emerald-500/20 text-emerald-400" },
+                  { day: "Tue", val: 65, color: "bg-emerald-900/40 border-emerald-400/20 text-emerald-400" },
+                  { day: "Wed", val: 20, color: "bg-rose-950/40 border-rose-500/30 text-rose-400 animate-pulse" },
+                  { day: "Thu", val: 85, color: "bg-emerald-800/40 border-emerald-400/30 text-emerald-300" },
+                  { day: "Fri", val: 100, color: "bg-gradient-to-t from-emerald-600 to-emerald-400 border-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.3)] text-white" },
+                  { day: "Sat", val: 50, color: "bg-emerald-900/30 border-emerald-600/10 text-emerald-500" },
+                  { day: "Sun", val: progress, color: "bg-gradient-to-t from-teal-600 to-teal-400 border-teal-300 shadow-[0_0_15px_rgba(45,212,191,0.2)] text-white" },
+                ].map((bar, i) => (
+                  <div key={i} className="flex-1 flex flex-col items-center gap-2 h-full justify-end relative z-10">
+                    <span className="text-[9px] font-mono font-black tabular-nums text-emerald-400/90">{bar.val}%</span>
+                    <div 
+                      className={`w-full rounded-t-md transition-all duration-1000 border-t ${bar.color}`}
+                      style={{ height: `${Math.max(8, bar.val * 0.72)}%` }}
+                    />
+                    <span className="text-[9px] font-black uppercase text-zinc-500 tracking-wider mt-1">{bar.day}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="rounded-xl border border-zinc-900 bg-black/20 p-3.5 space-y-2 text-[11px] text-zinc-400 leading-relaxed">
+                <p className="flex items-center justify-between"><span className="text-zinc-600 uppercase font-bold text-[9px]">Calculated Output Vector:</span> <span className="text-zinc-200 font-bold">Stable Momentum</span></p>
+                <p className="flex items-center justify-between"><span className="text-zinc-600 uppercase font-bold text-[9px]">Current Cycle Progress:</span> <span className="text-emerald-400 font-bold tabular-nums">+{progress}% Velocity</span></p>
+                <p className="text-zinc-500 border-t border-zinc-900/60 pt-2 mt-2 italic text-[10px]">
+                  💡 STRATEGIC ADVISORY: Wednesday parameters registered an unexecuted bottleneck fault deviation loop. Maintain your Friday and Sunday momentum paths to absorb further credit degradation values.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowAnalyticsModal(false)}
+              className="w-full h-11 rounded-xl bg-emerald-500 text-xs font-black uppercase tracking-wider text-black transition-all duration-300 hover:bg-emerald-400 hover:shadow-[0_0_25px_rgba(52,211,153,0.35)] font-mono mt-6"
+            >
+              Close Metrics Overview
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1434,7 +1409,6 @@ const TIERS: Array<{
   { key: "medium", label: "Medium Impact", accentClass: "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]", borderClass: "focus-within:border-amber-500/30", textClass: "text-amber-400 font-bold", placeholder: "Add secondary sub-task…" },
   { key: "low", label: "Low Impact", accentClass: "bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.4)]", borderClass: "focus-within:border-sky-500/30", textClass: "text-sky-400 font-bold", placeholder: "Add maintenance item…" }
 ];
-
 
 function formatCountdown(ms: number): string {
   const totalSec = Math.max(0, Math.floor(ms / 1000));
