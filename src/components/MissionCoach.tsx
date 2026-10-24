@@ -251,6 +251,9 @@ function CoachPanel({
     const activeSessionKey = "apex-session-briefing-triggered";
     const sessionAlreadyTriggered = sessionStorage.getItem(activeSessionKey);
 
+    // Wait until userName is loaded (not "User") or userRank is synchronized
+    const isUserLoaded = userName && userName !== "User";
+
     // If this session has NOT been briefed yet:
     if (!sessionAlreadyTriggered && !hasTriggeredThisSession.current) {
       hasTriggeredThisSession.current = true;
@@ -262,11 +265,11 @@ function CoachPanel({
       // Trigger automatic coach speech/briefing
       const timer = setTimeout(() => {
         send("[SYSTEM_AUTO_TRIGGER_LOGIN_BRIEFING]", true);
-      }, 600);
+      }, 500);
 
       return () => clearTimeout(timer);
     }
-  }, [setOpen]);
+  }, [userName, userRank, setOpen]);
 
   useEffect(() => {
     try {
@@ -283,6 +286,10 @@ function CoachPanel({
   function send(text: string, isSystemTrigger = false) {
     const trimmed = text.trim(); 
     if (!trimmed) return;
+
+    // Read latest values from refs
+    const currentName = userNameRef.current || userName || "User";
+    const currentRank = userRankRef.current || userRank || "Synchronizing node cluster standing...";
     
     // 📡 DYNAMIC RE-ROUTING GATE: Handle fresh signups vs standard recurring briefings
     let humanInputString = trimmed;
@@ -295,15 +302,17 @@ function CoachPanel({
           [CRITICAL COMMAND OVERRIDE: BRAND NEW SIGNUP OPERATOR ONBOARDING INITIALIZATION]
           The operator has JUST CREATED THEIR ACCOUNT. They have skipped the old boring text box guide completely. 
           You must act as a magnificent, immersive, highly engaging elite mission commander giving them a live vocal-style briefing about how to operate their dashboard. Talk directly to them in an unyielding, high-retention, cinematic style.
+          Address the operator by their exact name "${currentName}" immediately in your greeting.
+          State their rank standing "${currentRank}" directly to them.
           
           YOU MUST THOROUGHLY BREAK DOWN EACH OF THESE MODULES IN ORDER:
           1. ☀️ THE MORNING CHECK-IN NODE: Explain how they must open this app between 5:00 AM and 11:59 AM daily to seal their routine (hydration, focus, workout) or face instant 404 path locks.
-          2. 🏢 THE WORKSPACE GRID TIERS: Explain the leverage matrix. High Impact columns drain credits rapidly if left empty (loss aversion). Medium and Low handle tactical subtasks and daily maintenance rows.
-          3. ☀️ TODAY'S MASTER FOCUS ACTION: Explain that they must execute their single highest-impact target before the midnight cutoff. Completing it sounds a harmonic chord and progresses their day. Missing it shatters their streak.
+          2. 🏢 THE WORKSPACE GRID TIERS: Explain the leverage matrix, the High Impact columns and how it drain credits rapidly if left empty (loss aversion), the Medium and Low handle tactical subtasks, and daily maintenance rows.
+          3. ☀️ TODAY'S MASTER FOCUS ACTION: Explain that they must execute their single highest-impact target before the midnight cutoff. Completing it progresses their day. Missing it shatters their streak.
           4. 🌙 THE NIGHT REFLECTION PORTAL: Explain that when evening strikes (6:00 PM), they must close out their parameters and log their learned intel to prep for tomorrow.
           5. 🛡️ CREDITS, THE HARDWARE STORE & RANKS: Explain that they start with 1,000 Credits. Completing goals awards points. Slacking off or procrastinating triggers an automatic AI deduction audit! Real credits are ranked live on the multi-column real-time Ranks Leaderboard table. They can burn credits in the Hardware Market to unlock aesthetic overrides, custom layouts, or premium alpha founder insignia badges!
           
-          CONCLUDE BY SAYING: "Console systems synchronized. I have initialized your data matrices with 1,000 starting credits. Your priority columns are open. I am officially tracking your focus patterns. Go lock down your macro vision statement card right now and begin your countdown."
+          CONCLUDE WITH A SHARP, DIRECT COMMAND BY SAYING: "Console systems synchronized. I have initialized your data matrices with 1,000 starting credits. Your priority columns are open. I am officially tracking your focus patterns. Go lock down your macro vision statement card right now and begin your countdown."
         `;
       } else {
         humanInputString = "Initialize my core operational session briefing and analyze my dashboard data matrix nodes immediately.";
@@ -391,12 +400,12 @@ function CoachPanel({
     // --- 🧠 RIGOROUS SOCRATIC DEFICIT TRANS-MATRIX INTERCEPT ---
     const SocraticContext = `
       [CRITICAL IDENTITY TELEMETRY BALANCES]
-      OPERATOR NAME: ${userName}
+      OPERATOR NAME: ${currentName}
       CURRENT OPERATOR STREAK: ${currentStreakCount} Days.
-      NET CREDIT ACCOUNT BALANCE: ${userCredits} Credits.
+      NET CREDIT ACCOUNT BALANCE: ${state?.points || 1000} Credits.
       OPERATIONAL HUD RECON STATUS: "${currentStatus}"
       RECORDED DEADLINE BREAK FAULTS: ${failureTally} Failures.
-      GLOBAL NETWORK LEADERBOARD PLACEMENT: ${calculatedRankDisplay}
+      GLOBAL NETWORK LEADERBOARD PLACEMENT: ${currentRank}
       
       [CORE MATRIX FOCUS DATA TIERS]
       MASTER STRATEGIC VISION STATEMENT: "${state?.mission || "No overall mission statement declared inside dashboard card."}"
@@ -506,7 +515,7 @@ function CoachPanel({
           <ConversationContent className="gap-4 p-5">
             {messages.length === 0 && (
               <div className="rounded-xl border border-zinc-900 bg-zinc-950/30 p-5 text-left text-xs font-medium text-zinc-500 leading-relaxed max-w-sm mx-auto mt-4">
-                👋 Ask your coach anything — cross-examine a complex assignment script, optimize your focus blocks, or isolate exactly why procrastination is getting in your path.
+                👋 Initializing mission briefing... Your coach is analyzing your dashboard matrices.
               </div>
             )}
             
