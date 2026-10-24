@@ -709,8 +709,8 @@ function ApexMission() {
               <Target className="size-4.5 animate-pulse" />
             </div>
             <div className="text-left">
-            <span className="font-black text-xs font-display tracking-[0.25em] text-white uppercase block">ApexMission</span>
-            <span className="text-[10px] font-bold text-emerald-500/50 uppercase tracking-wider block mt-0.5">Command Terminal · {userName}</span>
+              <span className="font-black text-xs font-display tracking-[0.25em] text-white uppercase block">ApexMission</span>
+              <span className="text-[10px] font-bold text-emerald-500/50 uppercase tracking-wider block mt-0.5">Command Terminal · {userName}</span>
             </div>
           </div>
 
@@ -728,37 +728,58 @@ function ApexMission() {
             </button>
           </div>
 
-           {/* Retention Metrics Display Group */}
-           <div className="flex items-center gap-3 justify-end font-mono">
+          {/* Retention Metrics & Compact Controls */}
+          <div className="flex items-center gap-2 justify-end font-mono">
             <div className="text-[10px] font-black bg-black/40 border border-emerald-500/20 px-3 py-2 rounded-lg flex items-center gap-1.5 text-emerald-400 shadow-[inset_0_1px_2px_rgba(52,211,153,0.1)]">
               <Shield className="size-3.5 text-emerald-400 fill-emerald-400/10" />
               <span>{state?.points || 0} Credits</span>
             </div>
-          </div>
 
-           {/* 📊 REAL-TIME CORE ANALYTICS GRAPH MODAL LAUNCHER */}
-           <button
-            type="button"
-            onClick={() => setShowAnalyticsModal(true)}
-            className="rounded-lg border border-emerald-500/20 bg-emerald-950/30 px-3 py-2 text-[10px] font-mono font-black uppercase tracking-wider text-emerald-400 hover:border-emerald-500/50 hover:bg-emerald-500 hover:text-black transition-all duration-300 shadow-[0_0_15px_rgba(16,185,129,0.05)]"
-          >
-            📈 Review Velocity Index
-          </button>
-
-          {/* Sliding Control Tabs Bar Block - Hidden from view layout for testing focus */}
-          <div className="hidden items-center gap-1.5 rounded-xl bg-[#0D0D11] border border-zinc-800 p-1 mx-auto sm:mx-0">
             <button
               type="button"
-              onClick={() => navigate({ to: "/app" })}
-              className="rounded-lg px-4 py-2 text-xs font-bold uppercase tracking-wider bg-white text-black shadow-md"
+              onClick={() => setShowAnalyticsModal(true)}
+              className="rounded-lg border border-emerald-500/20 bg-emerald-950/30 px-3 py-2 text-[10px] font-mono font-black uppercase tracking-wider text-emerald-400 hover:border-emerald-500/50 hover:bg-emerald-500 hover:text-black transition-all duration-300"
             >
-              Workspace Grid
+              📈 Metrics
             </button>
-          </div>
-          <div className="flex items-center gap-3 mx-auto sm:mx-0">
-            <span className="font-mono text-xs font-bold text-emerald-400 uppercase tracking-widest bg-emerald-950/20 border border-emerald-500/10 px-3 py-1.5 rounded-lg text-center hidden sm:inline-block">
-              {greetingText}
-            </span>
+
+            {/* ⚙️ Sleek System Settings Dropdown / Popover Menu */}
+            <div className="relative group">
+              <button
+                type="button"
+                className="rounded-lg border border-zinc-800 bg-black/40 px-3 py-2 text-[10px] font-mono font-black uppercase tracking-wider text-zinc-400 hover:border-zinc-700 hover:text-white transition-all flex items-center gap-1.5"
+              >
+                <span>⚙️ System</span>
+              </button>
+
+              {/* Dropdown Menu (Appears on Hover) */}
+              <div className="absolute right-0 mt-2 w-48 rounded-xl border border-zinc-800 bg-[#0D0D11] p-1.5 shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 text-left">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await supabase.auth.signOut();
+                    localStorage.removeItem("apex-tutorial-completed");
+                    navigate({ to: "/auth" });
+                  }}
+                  className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-[10px] font-mono font-bold text-rose-400 hover:bg-rose-950/30 transition-colors uppercase"
+                >
+                  <span>🔌 Disconnect Node</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm("⚠️ SYSTEM FLASH RESET: Wipe active local operational data?")) {
+                      localStorage.clear();
+                      window.location.reload();
+                    }
+                  }}
+                  className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-[10px] font-mono font-bold text-amber-400 hover:bg-amber-950/30 transition-colors uppercase mt-1"
+                >
+                  <span>🧹 Flush Cache Matrix</span>
+                </button>
+              </div>
+            </div>
           </div>
         </header>
 
