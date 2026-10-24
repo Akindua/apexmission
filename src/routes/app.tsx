@@ -56,33 +56,50 @@ function ApexMission() {
   const userRankText = userRankIndex !== -1 ? `#${userRankIndex + 1} of ${leaderboardOperators.length} Operators` : "Synchronizing node cluster standing...";
 
   // Live real-time database query pipeline selector function
+  const fetchLiveAccountabilityRoster = async () => {
+    if (loadingRoster) return;
+    setLoadingRoster(true);
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name, current_streak, max_streak, failure_count, operational_status, credits")
+        .order("credits", { ascending: false });
+
+      if (error) throw error;
+      if (data) {
+        // Map database credits to points for local UI compatibility
+        const normalizedData = data.map(op => ({ ...op, points: op.credits || 0 }));
+        setLeaderboardOperators(normalizedData);
+        localStorage.setItem("apexmission-leaderboard-cache", JSON.stringify(normalizedData));
+      }
+    } catch (err) {
+      console.error("Failed to map dynamic roster profiles ledger:", err);
+    } finally {
+      setLoadingRoster(false);
+    }
+  };
+
   useEffect(() => {
-    const initializeUserDataAndRoster = async () => {
-      // 1. Fetch User Profile
+    const fetchUserProfileAndCredits = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setCurrentUserId(user.id);
         const displayName = user.user_metadata?.full_name || user.email?.split('@')[0] || "User";
         setUserName(displayName.charAt(0).toUpperCase() + displayName.slice(1));
-      }
 
-      // 2. Fetch Leaderboard Roster so rank is ready immediately
-      try {
-        const { data, error } = await supabase
+        // Fetch user's live credits from Supabase profiles table
+        const { data: profileData } = await supabase
           .from("profiles")
-          .select("id, full_name, current_streak, max_streak, failure_count, operational_status, points")
-          .order("points", { ascending: false });
+          .select("credits")
+          .eq("id", user.id)
+          .single();
 
-        if (!error && data) {
-          setLeaderboardOperators(data);
-          localStorage.setItem("apexmission-leaderboard-cache", JSON.stringify(data));
+        if (profileData && profileData.credits !== undefined) {
+          setState(s => ({ ...s, points: profileData.credits }));
         }
-      } catch (err) {
-        console.error("Failed to map dynamic roster profiles ledger:", err);
       }
     };
-
-    initializeUserDataAndRoster();
+    fetchUserProfileAndCredits();
   }, []);
 
   // Re-trigger network data sync hooks whenever the Ranks tab becomes active
@@ -278,7 +295,7 @@ function ApexMission() {
       }, 500);
     }
   }, [hydrated, state, hasTriggeredAutoBrief, currentUserId, leaderboardOperators]);
-  
+
   function handleGoToNightReflection() {
     navigate({ to: "/night-reflection" });
   }
@@ -436,6 +453,16 @@ function ApexMission() {
   }
 
   function toggleTask(tier: ImpactTier, id: string) {
+    const syncCreditsToSupabase = async (updatedPoints: number) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from("profiles")
+          .update({ credits: updatedPoints })
+          .eq("id", user.id);
+      }
+    };
+    
     setState((s) => {
       const currentTasks = s.tasks[tier] || [];
       const targetTask = currentTasks.find(t => t.id === id);
@@ -536,6 +563,16 @@ function ApexMission() {
     
     const wasDone = state.daily.done;
     const nextDone = !wasDone;
+
+    const syncCreditsToSupabase = async (updatedPoints: number) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from("profiles")
+          .update({ credits: updatedPoints })
+          .eq("id", user.id);
+      }
+    };
     
     setState((s) => {
       const updatedStreak = nextDone ? completeDailyToday(s.streak) : s.streak;
