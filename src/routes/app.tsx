@@ -52,12 +52,16 @@ function ApexMission() {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, full_name, current_streak, max_streak, failure_count, operational_status, beta_points")
-        .order("beta_points", { ascending: false });
+        // ✅ FIXED: Changed selection fields entirely from beta_points to the active points token parameter
+        .select("id, full_name, current_streak, max_streak, failure_count, operational_status, points")
+        .order("points", { ascending: false });
 
       if (error) throw error;
-      if (data) setLeaderboardOperators(data);
-      localStorage.setItem("apexmission-leaderboard-cache", JSON.stringify(data));
+      if (data) {
+        setLeaderboardOperators(data);
+        // Sync the unified properties map straight to your coach local memory cache lines
+        localStorage.setItem("apexmission-leaderboard-cache", JSON.stringify(data));
+      }
     } catch (err) {
       console.error("Failed to map dynamic roster profiles ledger:", err);
     } finally {
@@ -1142,6 +1146,7 @@ function ApexMission() {
           onActionPlanGenerated={(plan) => {
             setState((s) => ({
               ...s,
+              userName: userName,
               mission: plan.mission || s.mission,
               tasks: {
                 high: (plan.high || []).map((text: string) => ({ id: nextId(), text, done: false })),
