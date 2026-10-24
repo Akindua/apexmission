@@ -241,21 +241,28 @@ function CoachPanel({
     onError: (e) => setError(e.message || "The coach could not respond. Try again."),
   });
 
-  // 🚀 ROBUST AUTO-OPEN & WELCOME BRIEFING ON SESSION START
+  // 🚀 GUARANTEED AUTO-OPEN & WELCOME BRIEFING ON LOGIN
   useEffect(() => {
-    if (messages.length === 0 && !open) {
-      const welcomeKey = `apexmission-welcomed-${new Date().toDateString()}`;
-      if (!localStorage.getItem(welcomeKey)) {
-        localStorage.setItem(welcomeKey, "true");
-        setOpen(true);
-        const isFreshSignup = localStorage.getItem("apex-tutorial-completed") !== "true";
-        const promptText = isFreshSignup 
-          ? "Initiate my operational onboarding command briefing. Break down how to get started on ApexMission."
-          : "Initialize my core operational session briefing and analyze my dashboard data matrix nodes immediately.";
+    const welcomeKey = `apexmission-welcomed-${new Date().toDateString()}`;
+    const hasBeenWelcomedToday = localStorage.getItem(welcomeKey);
+
+    if (!hasBeenWelcomedToday) {
+      localStorage.setItem(welcomeKey, "true");
+      setOpen(true); // Forces sidebar sheet open immediately on sign-in
+
+      const isFreshSignup = localStorage.getItem("apex-tutorial-completed") !== "true";
+      const promptText = isFreshSignup
+        ? "[SYSTEM_AUTO_TRIGGER_SIGNUP_ONBOARDING_GUIDE]"
+        : "[SYSTEM_AUTO_TRIGGER_LOGIN_BRIEFING]";
+
+      // Delay briefly (400ms) to ensure chat transport stream is initialized
+      const timer = setTimeout(() => {
         send(promptText, true);
-      }
+      }, 400);
+
+      return () => clearTimeout(timer);
     }
-  }, [messages.length, open]);
+  }, []);
 
   useEffect(() => {
     try {
