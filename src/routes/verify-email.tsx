@@ -16,9 +16,8 @@ function VerifyEmailPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // Core authentication status validator engine
+  // Core authentication status validator engine with strict identity verification check
   const checkEmailVerificationStatus = async (isManualClick = false) => {
-    // ✅ Guard: Block background execution triggers immediately
     if (!isManualClick) return;
     
     setChecking(true);
@@ -29,17 +28,26 @@ function VerifyEmailPage() {
       const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
       if (refreshError) throw refreshError;
   
-      // 2. Retrieve user context configuration properties securely
+      // 2. Retrieve user context configuration properties securely[cite: 25]
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError) throw userError;
   
-      if (user && user.email_confirmed_at) {
+      // Find the email provider identity to check if the email has actually been verified
+      const emailIdentity = user?.identities?.find((id: any) => id.provider === "email");
+      
+      // Strict verification check: ensures email_confirmed_at exists and email_verified is true
+      const isVerified = Boolean(
+        user?.email_confirmed_at && 
+        (emailIdentity ? emailIdentity.identity_data?.email_verified !== false : true)
+      );
+
+      if (user && isVerified) {
         setIsSuccess(true);
         setTimeout(() => {
           navigate({ to: "/plans" });
         }, 1500);
       } else {
-        // If they click manually but haven't authorized the inbox packet link, show a defensive alert
+        // If they click manually but haven't authorized the inbox packet link, show a defensive alert[cite: 25]
         setErrorMessage("Verification link not yet confirmed. Please check your email inbox and click the secure confirmation link before proceeding.");
       }
     } catch (err: any) {
@@ -50,10 +58,8 @@ function VerifyEmailPage() {
     }
   };  
   
-  // 🔄 FIXED: Automated background polling matrix removed to prevent involuntary automatic entry.
   useEffect(() => {
     console.log("🔒 Identity verification lock initialized. Manual confirmation required.");
-    // The background interval loop is completely gone. System stays locked until button press.
   }, []);
   
 
@@ -81,15 +87,12 @@ function VerifyEmailPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#040406] px-6 py-12 text-zinc-100 relative overflow-hidden animate-scan-line">
-      {/* Immersive Industrial Graphical Grid Background */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f293708_1px,transparent_1px),linear-gradient(to_bottom,#1f293708_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-[500px] bg-emerald-500/[0.02] rounded-full blur-3xl pointer-events-none" />
       
-      {/* Core Cockpit Card Terminal Shell */}
       <div className="w-full max-w-md rounded-2xl border border-zinc-800/80 bg-[#0A0A0F]/90 p-8 text-center shadow-[0_0_50px_rgba(0,0,0,0.8)] relative overflow-hidden backdrop-blur-xl transition-all duration-500 hover:border-zinc-700/50">
         <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />
         
-        {/* Animated Listening Radar Beacon */}
         <div className={`mx-auto flex size-14 items-center justify-center rounded-xl border mb-6 transition-all duration-500 ${
           isSuccess 
             ? "border-emerald-500/30 bg-emerald-950/40 text-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.2)]" 
@@ -122,7 +125,6 @@ function VerifyEmailPage() {
         )}
 
         <div className="flex flex-col gap-3">
-          {/* ⚡ ACTIVE SECURE MANUAL VERIFICATION TRIGGER CAPSULE */}
           <button
             type="button"
             disabled={checking || isSuccess}
