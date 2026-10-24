@@ -1250,7 +1250,7 @@ function ApexMission() {
             </div>
 
             <p className="text-sm text-zinc-400 leading-relaxed mb-4">
-              Found a bug, have a suggestion, or need help? Send an email to support.
+              Found a bug, have a suggestion, or need help? Send an email for support.
             </p>
 
             <div className="rounded-xl border border-zinc-800 bg-black/40 px-4 py-3 mb-5">
