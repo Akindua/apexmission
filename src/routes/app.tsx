@@ -56,28 +56,34 @@ function ApexMission() {
   const userRankText = userRankIndex !== -1 ? `#${userRankIndex + 1} of ${leaderboardOperators.length} Operators` : "Synchronizing node cluster standing...";
 
   // Live real-time database query pipeline selector function
-  const fetchLiveAccountabilityRoster = async () => {
-    if (loadingRoster) return;
-    setLoadingRoster(true);
-    try {
-      const { data, error } = await supabase
-        .from("profiles")
-        // ✅ FIXED: Changed selection fields entirely from beta_points to the active points token parameter
-        .select("id, full_name, current_streak, max_streak, failure_count, operational_status, points")
-        .order("points", { ascending: false });
-
-      if (error) throw error;
-      if (data) {
-        setLeaderboardOperators(data);
-        // Sync the unified properties map straight to your coach local memory cache lines
-        localStorage.setItem("apexmission-leaderboard-cache", JSON.stringify(data));
+  useEffect(() => {
+    const initializeUserDataAndRoster = async () => {
+      // 1. Fetch User Profile
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUserId(user.id);
+        const displayName = user.user_metadata?.full_name || user.email?.split('@')[0] || "User";
+        setUserName(displayName.charAt(0).toUpperCase() + displayName.slice(1));
       }
-    } catch (err) {
-      console.error("Failed to map dynamic roster profiles ledger:", err);
-    } finally {
-      setLoadingRoster(false);
-    }
-  };
+
+      // 2. Fetch Leaderboard Roster so rank is ready immediately
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("id, full_name, current_streak, max_streak, failure_count, operational_status, points")
+          .order("points", { ascending: false });
+
+        if (!error && data) {
+          setLeaderboardOperators(data);
+          localStorage.setItem("apexmission-leaderboard-cache", JSON.stringify(data));
+        }
+      } catch (err) {
+        console.error("Failed to map dynamic roster profiles ledger:", err);
+      }
+    };
+
+    initializeUserDataAndRoster();
+  }, []);
 
   // Re-trigger network data sync hooks whenever the Ranks tab becomes active
   useEffect(() => {
@@ -228,29 +234,24 @@ function ApexMission() {
   
   // 🔄 AUTOMATED LOGIN TELEMETRY SCANNER LAYER WITH INTEGRATED WELCOME CHIME
   useEffect(() => {
-    if (hydrated && !hasTriggeredAutoBrief && state) {
+    // Ensure data is loaded (user profile + leaderboard roster) before auto-triggering
+    if (hydrated && !hasTriggeredAutoBrief && state && currentUserId && leaderboardOperators.length > 0) {
       setHasTriggeredAutoBrief(true);
       
-      // 🔊 LIVE RETRO-FUTURISTIC CINEMATIC INITIALIZATION CHIME
       if (typeof window !== "undefined") {
         try {
           const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
           if (AudioContextClass) {
             const ctx = new AudioContextClass();
             const now = ctx.currentTime;
-
-            // Trigger an ascending minor-seventh major-ninth cinematic sparkle chord
-            const notes = [261.63, 329.63, 392.00, 523.25, 659.25]; // C4, E4, G4, C5, E5
+            const notes = [261.63, 329.63, 392.00, 523.25, 659.25];
             notes.forEach((freq, idx) => {
               const osc = ctx.createOscillator();
               const gain = ctx.createGain();
-              
               osc.type = "sine";
-              osc.frequency.setValueAtTime(freq, now + idx * 0.05); // Delicately staggered notes arpeggio
-              
+              osc.frequency.setValueAtTime(freq, now + idx * 0.05);
               gain.gain.setValueAtTime(0.04, now + idx * 0.05);
               gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.4);
-              
               osc.connect(gain);
               gain.connect(ctx.destination);
               osc.start(now + idx * 0.05);
@@ -262,13 +263,11 @@ function ApexMission() {
         }
       }
       
-      // Delay slightly (1.2 seconds) to let the cockpit graphics finish mounting cleanly
       setTimeout(() => {
         const coachChannel = (window as any).__apex_coach_trigger;
         if (typeof coachChannel === "function") {
           console.log("🛰️ INITIAL LOGIN HANDSHAKE: Transmitting full cockpit parameters to AI Coach...");
           
-          // Check if this user is a brand new signup needing an interactive audio onboarding guide
           const isFreshSignup = localStorage.getItem("apex-tutorial-completed") !== "true";
           if (isFreshSignup) {
             coachChannel("[SYSTEM_AUTO_TRIGGER_SIGNUP_ONBOARDING_GUIDE]");
@@ -276,10 +275,10 @@ function ApexMission() {
             coachChannel("[SYSTEM_AUTO_TRIGGER_LOGIN_BRIEFING]");
           }
         }
-      }, 1200);
+      }, 500);
     }
-  }, [hydrated, state, hasTriggeredAutoBrief]);
-
+  }, [hydrated, state, hasTriggeredAutoBrief, currentUserId, leaderboardOperators]);
+  
   function handleGoToNightReflection() {
     navigate({ to: "/night-reflection" });
   }

@@ -403,7 +403,7 @@ function CoachPanel({
 
       🚨 SPECIAL ACTION DIRECTIVE: 
       The operator has JUST LOGGED IN. You must IMMEDIATELY execute a deep scan of their dashboard values above. 
-      Do not wait for them to ask a question. Greet them by name, state their exact rank standing, itemize their unfinished high-impact priority rows, and give them a sharp, 3-sentence tactical briefing commanding them exactly what node area to execute next during this active 24-hour cycle. Repeat this for the rest of their lifecycle.
+      Do not wait for them to ask a question. Greet them specifically by their OPERATOR NAME (${userName}), state their exact rank standing (${calculatedRankDisplay}), itemize their unfinished high-impact priority rows, and give them a sharp, 3-sentence tactical briefing commanding them exactly what node area to execute next during this active 24-hour cycle. Repeat this for the rest of their lifecycle.
 
       ${explicitOnboardingDirective}
     `;
