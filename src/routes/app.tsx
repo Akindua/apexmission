@@ -160,29 +160,42 @@ function ApexMission() {
     }
   };
 
-  useEffect(() => {
-    if (!hydrated) return;
+ // ☀️ MORNING CHECK-IN TRIGGER ENGINE (SIGN-IN & TIME WINDOW VERIFIED)
+ useEffect(() => {
+  if (!hydrated) return;
 
+  const checkMorningCheckinEligibility = async () => {
     if (typeof window !== "undefined") {
+      const { data: { user } } = await supabase.auth.getUser();
+      // Skip check-in if user is NOT signed in or is a brand-new user undergoing onboarding
+      if (!user) return;
+      
+      const isFreshSignup = localStorage.getItem("apex-tutorial-completed") !== "true";
+      if (isFreshSignup) return;
+
       const today = todayKey();
       const lastSeen = localStorage.getItem("apexmission-morning-checkin");
       
       const currentHour = new Date().getHours();
       const isMorningWindow = currentHour >= 5 && currentHour < 12;
       
+      // Redirect only if it's 5:00 AM - 12:00 PM and they haven't completed check-in today
       if (lastSeen !== today && isMorningWindow) {
-        navigate({ to: "/Morning-Checkin" });
+        navigate({ to: "/MorningCheckIn" });
       }
     }
-  }, [hydrated, navigate]);
+  };
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const currentHour = new Date().getHours();
-      setIsEvening(currentHour >= 18 || currentHour < 1);
-    }, 60000);
-    return () => clearInterval(timer);
-  }, []);
+  checkMorningCheckinEligibility();
+}, [hydrated, navigate]);
+
+useEffect(() => {
+  const timer = setInterval(() => {
+    const currentHour = new Date().getHours();
+    setIsEvening(currentHour >= 18 || currentHour < 1);
+  }, 60000);
+  return () => clearInterval(timer);
+}, []);
 
   useEffect(() => {
     const activeLayout = localStorage.getItem("apexmission-active-theme") || "layout-default";
