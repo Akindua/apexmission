@@ -244,9 +244,9 @@ function CoachPanel({
     };
   }, [state]);
 
-  function send(text: string) {
+  function send(text: string, isSystemTrigger = false) {
     const trimmed = text.trim(); 
-      if (!trimmed) return;
+    if (!trimmed) return;
     
     // 📡 DYNAMIC RE-ROUTING GATE: Handle fresh signups vs standard recurring briefings
     let humanInputString = trimmed;

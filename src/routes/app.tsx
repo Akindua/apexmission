@@ -550,7 +550,6 @@ function ApexMission() {
 
           setTimeout(() => setShowMilestoneCelebration(currentCount), 300);
         }
-      })
 
       return {
         ...s,
@@ -558,7 +557,7 @@ function ApexMission() {
         daily: { ...s.daily, done: nextDone, date: todayKey() },
         streak: updatedStreak
       };
-  } 
+    });
 
     // 🔊 ✅ INSTALLED: HIGH-RETENTION MASTER FOCUS COMPLETION CHORD EFFECT
     if (nextDone && typeof window !== "undefined") {
@@ -615,6 +614,7 @@ function ApexMission() {
       setJustCompleted(true);
       window.setTimeout(() => setJustCompleted(false), 500);
     }
+  }
 
   return (
     <div className={`min-h-screen transition-all duration-500 ease-in-out ${themeClasses.bg} text-zinc-100 relative overflow-hidden animate-scan-line`}>
