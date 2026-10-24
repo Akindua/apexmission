@@ -79,15 +79,16 @@ function ApexMission() {
     }
   };
 
+  // 🚀 IMMEDIATE APP SESSION & LEADERBOARD INITIALIZATION
   useEffect(() => {
-    const fetchUserProfileAndCredits = async () => {
+    const initializeAppSession = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setCurrentUserId(user.id);
         const displayName = user.user_metadata?.full_name || user.email?.split('@')[0] || "User";
         setUserName(displayName.charAt(0).toUpperCase() + displayName.slice(1));
 
-        // Fetch user's live credits from Supabase profiles table
+        // 1. Fetch user's live credits from Supabase profiles table
         const { data: profileData } = await supabase
           .from("profiles")
           .select("credits")
@@ -98,8 +99,25 @@ function ApexMission() {
           setState(s => ({ ...s, points: profileData.credits }));
         }
       }
+
+      // 2. Fetch Leaderboard Roster immediately on mount so rank is instantly available
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("id, full_name, current_streak, max_streak, failure_count, operational_status, credits")
+          .order("credits", { ascending: false });
+
+        if (!error && data) {
+          const normalizedData = data.map(op => ({ ...op, points: op.credits || 0 }));
+          setLeaderboardOperators(normalizedData);
+          localStorage.setItem("apexmission-leaderboard-cache", JSON.stringify(normalizedData));
+        }
+      } catch (err) {
+        console.error("Failed to map dynamic roster profiles ledger:", err);
+      }
     };
-    fetchUserProfileAndCredits();
+
+    initializeAppSession();
   }, []);
 
   // Re-trigger network data sync hooks whenever the Ranks tab becomes active
@@ -280,6 +298,7 @@ function ApexMission() {
         }
       }
       
+      // Delay slightly (800ms) to let the cockpit graphics finish mounting cleanly
       setTimeout(() => {
         const coachChannel = (window as any).__apex_coach_trigger;
         if (typeof coachChannel === "function") {
@@ -292,9 +311,9 @@ function ApexMission() {
             coachChannel("[SYSTEM_AUTO_TRIGGER_LOGIN_BRIEFING]");
           }
         }
-      }, 500);
+      }, 800);
     }
-  }, [hydrated, state, hasTriggeredAutoBrief, currentUserId, leaderboardOperators]);
+  }, [hydrated, state, hasTriggeredAutoBrief, currentUserId]);
 
   function handleGoToNightReflection() {
     navigate({ to: "/night-reflection" });
@@ -462,7 +481,7 @@ function ApexMission() {
           .eq("id", user.id);
       }
     };
-    
+
     setState((s) => {
       const currentTasks = s.tasks[tier] || [];
       const targetTask = currentTasks.find(t => t.id === id);
