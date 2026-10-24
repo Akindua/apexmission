@@ -241,6 +241,9 @@ function CoachPanel({
     onError: (e) => setError(e.message || "The coach could not respond. Try again."),
   });
 
+  // 🔒 Ref guard to prevent double-firing during React Strict Mode mounts
+  const hasTriggeredThisSession = useRef(false);
+
   // 🚀 GUARANTEED TRIGGER ON EVERY NEW LOGIN SESSION (REGARDLESS OF EXISTING MESSAGES)
   useEffect(() => {
     if (typeof window === "undefined") return;

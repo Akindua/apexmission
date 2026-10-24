@@ -772,6 +772,7 @@ useEffect(() => {
                 onClick={async () => {
                   await supabase.auth.signOut();
                   localStorage.removeItem("apex-tutorial-completed");
+                  sessionStorage.removeItem("apex-session-briefing-triggered"); // Clear session key on logout
                   navigate({ to: "/auth" });
                 }}
                 title="Disconnect Node"
