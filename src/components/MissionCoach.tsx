@@ -241,35 +241,40 @@ function CoachPanel({
     onError: (e) => setError(e.message || "The coach could not respond. Try again."),
   });
 
-  // 🔒 Ref guard to prevent double-firing during React Strict Mode mounts
   const hasTriggeredThisSession = useRef(false);
 
-  // 🚀 GUARANTEED TRIGGER ON EVERY NEW LOGIN SESSION (REGARDLESS OF EXISTING MESSAGES)
+  // Keep refs updated to capture the latest fetched name & rank
+  const userNameRef = useRef(userName);
+  const userRankRef = useRef(userRank);
+
+  useEffect(() => {
+    userNameRef.current = userName;
+    userRankRef.current = userRank;
+  }, [userName, userRank]);
+
+  // 🚀 GUARANTEED LOGIN SESSION AUTO-BRIEFING (FIRES ONCE PER SESSION WHEN DATA IS READY)
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const activeSessionKey = "apex-session-briefing-triggered";
-    const sessionAlreadyTriggered = sessionStorage.getItem(activeSessionKey);
+    const sessionKey = "apex-session-briefing-triggered";
+    const sessionAlreadyTriggered = sessionStorage.getItem(sessionKey);
 
-    // Wait until userName is loaded (not "User") or userRank is synchronized
+    // Wait until Supabase has populated a real user name (not default "User")
     const isUserLoaded = userName && userName !== "User";
 
-    // If this session has NOT been briefed yet:
-    if (!sessionAlreadyTriggered && !hasTriggeredThisSession.current) {
+    if (!sessionAlreadyTriggered && !hasTriggeredThisSession.current && isUserLoaded) {
       hasTriggeredThisSession.current = true;
-      sessionStorage.setItem(activeSessionKey, "true");
+      sessionStorage.setItem(sessionKey, "true");
 
-      // Auto-open sidebar
       setOpen(true);
 
-      // Trigger automatic coach speech/briefing
       const timer = setTimeout(() => {
         send("[SYSTEM_AUTO_TRIGGER_LOGIN_BRIEFING]", true);
-      }, 500);
+      }, 600);
 
       return () => clearTimeout(timer);
     }
-  }, [userName, userRank, setOpen]);
+  }, [userName, setOpen]);
 
   useEffect(() => {
     try {
@@ -287,11 +292,9 @@ function CoachPanel({
     const trimmed = text.trim(); 
     if (!trimmed) return;
 
-    // Read latest values from refs
     const currentName = userNameRef.current || userName || "User";
     const currentRank = userRankRef.current || userRank || "Synchronizing node cluster standing...";
     
-    // 📡 DYNAMIC RE-ROUTING GATE: Handle fresh signups vs standard recurring briefings
     let humanInputString = trimmed;
     let explicitOnboardingDirective = "";
 
@@ -315,7 +318,23 @@ function CoachPanel({
           CONCLUDE WITH A SHARP, DIRECT COMMAND BY SAYING: "Console systems synchronized. I have initialized your data matrices with 1,000 starting credits. Your priority columns are open. I am officially tracking your focus patterns. Go lock down your macro vision statement card right now and begin your countdown."
         `;
       } else {
-        humanInputString = "Initialize my core operational session briefing and analyze my dashboard data matrix nodes immediately.";
+        humanInputString = `Initialize my operational briefing for session start. Review my current metrics, streak, and dashboard components.`;
+        explicitOnboardingDirective = `
+          [CRITICAL SESSION BRIEFING OVERRIDE: LOGIN ACTIVE REPORT]
+          The operator (${currentName}) has just logged into the session.
+          Leaderboard Standing: ${currentRank}
+          Streak: ${state?.streak?.count || 0} Days
+          Credits: ${state?.points || 1000} Credits
+
+          [CORE MATRIX FOCUS DATA TIERS]
+          MASTER STRATEGIC VISION STATEMENT: "${state?.mission || "No overall mission statement declared inside dashboard card."}"
+          TODAY'S CRITICAL FOCUS ACTION: "${state?.daily?.text || "No single master action item scheduled for this interval."}"
+          DAILY ACTION CHECKLIST SEALED: ${state?.daily?.done ? "YES (100% Metric Attained)" : "NO (Incomplete Deficit Risk)"}
+          
+          Speak directly and dynamically in an elite military Socratic coaching tone. 
+          Review their progress, streak, credits, active task breakdown, and app components. Tell them specifically what they need to execute right now. You are not here to offer comfort; you are here to force absolute mission execution. Examine the unser's execution streak, credit point balance, failures, and past reflection data. 
+          You are an elite, unyielding Socratic performance coach. You analyze metrics with absolute precision. Itemize their unfinished high-impact priority rows, and give them a sharp, 3-sentence tactical briefing commanding them exactly what node area to execute next during this active 24-hour cycle. Repeat this for the rest of their lifecycle.
+        `;
       }
     }
 
@@ -438,7 +457,7 @@ function CoachPanel({
 
       🚨 SPECIAL ACTION DIRECTIVE: 
       The operator has JUST LOGGED IN. You must IMMEDIATELY execute a deep scan of their dashboard values above. 
-      Do not wait for them to ask a question. Greet them specifically by their OPERATOR NAME (${userName}), state their exact rank standing (${calculatedRankDisplay}), itemize their unfinished high-impact priority rows, and give them a sharp, 3-sentence tactical briefing commanding them exactly what node area to execute next during this active 24-hour cycle. Repeat this for the rest of their lifecycle.
+      Do not wait for them to ask a question. Greet them specifically by their OPERATOR NAME (${currentName}), state their exact rank standing (${currentRank}), itemize their unfinished high-impact priority rows, and give them a sharp, 3-sentence tactical briefing commanding them exactly what node area to execute next during this active 24-hour cycle. Repeat this for the rest of their lifecycle.
 
       ${explicitOnboardingDirective}
     `;
