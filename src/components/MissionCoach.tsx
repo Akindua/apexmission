@@ -323,7 +323,7 @@ function CoachPanel({
     const textLower = trimmed.toLowerCase();
     const indicatesSlacking = textLower.includes("procrastinate") || textLower.includes("gave up") || textLower.includes("lazy") || textLower.includes("didn't do");
     const calculatedRankDisplay = userRank;
-    let cleanCurrentPoints = state?.points || 0;
+    let cleanCurrentPoints = state?.points || 1000;
     let currentStreakCount = state?.streak?.count || 0;
     let currentStatus = state?.operational_status || "Operational";
     let failureTally = state?.failure_count || 0;
@@ -401,8 +401,8 @@ function CoachPanel({
     const SocraticContext = `
       [CRITICAL IDENTITY TELEMETRY BALANCES]
       OPERATOR NAME: ${currentName}
-      CURRENT OPERATOR STREAK: ${currentStreakCount} Days.
-      NET CREDIT ACCOUNT BALANCE: ${state?.points || 1000} Credits.
+      CURRENT OPERATOR STREAK: ${currentStreakCount} Days
+      NET CREDIT ACCOUNT BALANCE: ${cleanCurrentPoints} Credits.
       OPERATIONAL HUD RECON STATUS: "${currentStatus}"
       RECORDED DEADLINE BREAK FAULTS: ${failureTally} Failures.
       GLOBAL NETWORK LEADERBOARD PLACEMENT: ${currentRank}
