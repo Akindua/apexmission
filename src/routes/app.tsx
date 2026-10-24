@@ -728,7 +728,7 @@ function ApexMission() {
             </button>
           </div>
 
-          {/* Retention Metrics & Compact Controls */}
+          {/* Retention Metrics & Accessible Action Buttons */}
           <div className="flex items-center gap-2 justify-end font-mono">
             <div className="text-[10px] font-black bg-black/40 border border-emerald-500/20 px-3 py-2 rounded-lg flex items-center gap-1.5 text-emerald-400 shadow-[inset_0_1px_2px_rgba(52,211,153,0.1)]">
               <Shield className="size-3.5 text-emerald-400 fill-emerald-400/10" />
@@ -743,43 +743,34 @@ function ApexMission() {
               📈 Metrics
             </button>
 
-            {/* ⚙️ Sleek System Settings Dropdown / Popover Menu */}
-            <div className="relative group">
-              <button
-                type="button"
-                className="rounded-lg border border-zinc-800 bg-black/40 px-3 py-2 text-[10px] font-mono font-black uppercase tracking-wider text-zinc-400 hover:border-zinc-700 hover:text-white transition-all flex items-center gap-1.5"
-              >
-                <span>⚙️ System</span>
-              </button>
+            {/* 🔌 Disconnect Node Button */}
+            <button
+              type="button"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                localStorage.removeItem("apex-tutorial-completed");
+                navigate({ to: "/auth" });
+              }}
+              title="Disconnect Node"
+              className="rounded-lg border border-rose-500/20 bg-rose-950/30 px-3 py-2 text-[10px] font-mono font-black uppercase tracking-wider text-rose-400 hover:border-rose-500/50 hover:bg-rose-500 hover:text-black transition-all duration-300"
+            >
+              🔌 Disconnect
+            </button>
 
-              {/* Dropdown Menu (Appears on Hover) */}
-              <div className="absolute right-0 mt-2 w-48 rounded-xl border border-zinc-800 bg-[#0D0D11] p-1.5 shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 text-left">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    await supabase.auth.signOut();
-                    localStorage.removeItem("apex-tutorial-completed");
-                    navigate({ to: "/auth" });
-                  }}
-                  className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-[10px] font-mono font-bold text-rose-400 hover:bg-rose-950/30 transition-colors uppercase"
-                >
-                  <span>🔌 Disconnect Node</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (window.confirm("⚠️ SYSTEM FLASH RESET: Wipe active local operational data?")) {
-                      localStorage.clear();
-                      window.location.reload();
-                    }
-                  }}
-                  className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-[10px] font-mono font-bold text-amber-400 hover:bg-amber-950/30 transition-colors uppercase mt-1"
-                >
-                  <span>🧹 Flush Cache Matrix</span>
-                </button>
-              </div>
-            </div>
+            {/* 🧹 Flush Cache Matrix Button */}
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm("⚠️ SYSTEM FLASH RESET: Wipe active local operational data?")) {
+                  localStorage.clear();
+                  window.location.reload();
+                }
+              }}
+              title="Flush Cache Matrix"
+              className="rounded-lg border border-amber-500/20 bg-amber-950/30 px-3 py-2 text-[10px] font-mono font-black uppercase tracking-wider text-amber-400 hover:border-amber-500/50 hover:bg-amber-500 hover:text-black transition-all duration-300"
+            >
+              🧹 Flush Cache
+            </button>
           </div>
         </header>
 
@@ -1369,35 +1360,6 @@ function ApexMission() {
           </div>
         )}
       </div>
-      {/* 🛠️ LOW-PROFILE SUB-SURFACE COCKPIT CONTROL PANEL */}
-      <footer className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-zinc-900/60 pt-4 px-2 text-zinc-600 font-mono text-[10px]">
-        <div>✓ Connected Securely to Remote Supabase Cluster Schema</div>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={async () => {
-              await supabase.auth.signOut();
-              localStorage.removeItem("apex-tutorial-completed");
-              navigate({ to: "/auth" });
-            }}
-            className="hover:text-rose-400 transition-colors uppercase font-bold"
-          >
-            [Disconnect Node]
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (window.confirm("⚠️ SYSTEM FLASH RESET: Wipe active local operational data?")) {
-                localStorage.clear();
-                window.location.reload();
-              }
-            }}
-            className="hover:text-amber-400 transition-colors uppercase font-bold"
-          >
-            [Flush Cache Matrix]
-          </button>
-        </div>
-      </footer>
     </div>
   );
 }

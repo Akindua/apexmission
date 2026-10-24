@@ -53,6 +53,20 @@ export function MissionCoach({
 }) {
   const [open, setOpen] = useState(false);
   const [initial, setInitial] = useState<UIMessage[] | null>(null);
+
+  // 🌐 Global window trigger hook inside panel
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      (window as any).__apex_coach_trigger = (triggerText: string) => {
+        send(triggerText, true);
+        setOpen(true); // Ensures sidebar slides open automatically
+      };
+    }
+    return () => {
+      if (typeof window !== "undefined") delete (window as any).__apex_coach_trigger;
+    };
+  }, [state]);
+
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [files, setFiles] = useState<File[]>([]);
@@ -226,6 +240,22 @@ function CoachPanel({
     transport,
     onError: (e) => setError(e.message || "The coach could not respond. Try again."),
   });
+
+  // 🚀 ROBUST AUTO-OPEN & WELCOME BRIEFING ON SESSION START
+  useEffect(() => {
+    if (messages.length === 0 && !open) {
+      const welcomeKey = `apexmission-welcomed-${new Date().toDateString()}`;
+      if (!localStorage.getItem(welcomeKey)) {
+        localStorage.setItem(welcomeKey, "true");
+        setOpen(true);
+        const isFreshSignup = localStorage.getItem("apex-tutorial-completed") !== "true";
+        const promptText = isFreshSignup 
+          ? "Initiate my operational onboarding command briefing. Break down how to get started on ApexMission."
+          : "Initialize my core operational session briefing and analyze my dashboard data matrix nodes immediately.";
+        send(promptText, true);
+      }
+    }
+  }, [messages.length, open]);
 
   useEffect(() => {
     try {
