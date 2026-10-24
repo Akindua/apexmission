@@ -167,7 +167,6 @@ function ApexMission() {
   const checkMorningCheckinEligibility = async () => {
     if (typeof window !== "undefined") {
       const { data: { user } } = await supabase.auth.getUser();
-      // Skip check-in if user is NOT signed in or is a brand-new user undergoing onboarding
       if (!user) return;
       
       const isFreshSignup = localStorage.getItem("apex-tutorial-completed") !== "true";
@@ -179,7 +178,6 @@ function ApexMission() {
       const currentHour = new Date().getHours();
       const isMorningWindow = currentHour >= 5 && currentHour < 12;
       
-      // Redirect only if it's 5:00 AM - 12:00 PM and they haven't completed check-in today
       if (lastSeen !== today && isMorningWindow) {
         navigate({ to: "/MorningCheckIn" });
       }
@@ -650,10 +648,10 @@ useEffect(() => {
   }
 
   return (
-    <div className={`min-h-screen transition-all duration-500 ease-in-out ${themeClasses.bg} text-zinc-100 flex overflow-hidden animate-scan-line`}>
+    <div className={`min-h-screen transition-all duration-500 ease-in-out ${themeClasses.bg} text-zinc-100 flex overflow-hidden animate-scan-line relative`}>
       
-      {/* 🧭 LEFT SIDEBAR NAVIGATION BAR */}
-      <aside className="w-64 border-r border-emerald-500/10 bg-[#07070A] flex flex-col justify-between p-4 shrink-0 z-20">
+      {/* 🧭 DESKTOP SIDEBAR NAVIGATION BAR */}
+      <aside className="hidden md:flex w-64 border-r border-emerald-500/10 bg-[#07070A] flex-col justify-between p-4 shrink-0 z-20">
         <div className="flex flex-col gap-6">
           {/* Brand Logo Header */}
           <div className="flex items-center gap-3 px-2 py-2">
@@ -722,8 +720,50 @@ useEffect(() => {
         </div>
       </aside>
 
+      {/* 📱 MOBILE BOTTOM NAVIGATION BAR */}
+      <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#07070A]/95 border-t border-emerald-500/20 backdrop-blur-lg px-2 py-2 flex items-center justify-around font-mono text-[10px] font-black uppercase tracking-wider">
+        <button
+          type="button"
+          onClick={() => setActiveTab("workspace")}
+          className={`flex flex-col items-center gap-1 py-1.5 px-3 rounded-xl transition-all ${
+            activeTab === "workspace" ? "text-emerald-400 bg-emerald-950/30 font-black" : "text-zinc-500 hover:text-zinc-300"
+          }`}
+        >
+          <LayoutDashboard className="size-4" />
+          <span>Workspace</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("leaderboard")}
+          className={`flex flex-col items-center gap-1 py-1.5 px-3 rounded-xl transition-all ${
+            activeTab === "leaderboard" ? "text-emerald-400 bg-emerald-950/30 font-black" : "text-zinc-500 hover:text-zinc-300"
+          }`}
+        >
+          <Award className="size-4" />
+          <span>Ranks</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("hardware")}
+          className={`flex flex-col items-center gap-1 py-1.5 px-3 rounded-xl transition-all ${
+            activeTab === "hardware" ? "text-emerald-400 bg-emerald-950/30 font-black" : "text-zinc-500 hover:text-zinc-300"
+          }`}
+        >
+          <HardDrive className="size-4" />
+          <span>Hardware</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowSupport(true)}
+          className="flex flex-col items-center gap-1 py-1.5 px-3 rounded-xl text-zinc-500 hover:text-zinc-300 transition-all"
+        >
+          <HelpCircle className="size-4 text-emerald-500" />
+          <span>Support</span>
+        </button>
+      </div>
+
       {/* 🚀 MAIN CONTENT AREA */}
-      <main className="flex-1 overflow-y-auto relative z-10 px-6 py-6 sm:px-10">
+      <main className="flex-1 overflow-y-auto relative z-10 px-4 py-4 sm:px-10 pb-24 md:pb-6">
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
 
           {/* ⚡ FLOATING EMERALD NOTIFICATION BANNER */}
@@ -753,7 +793,7 @@ useEffect(() => {
             </div>
 
             {/* Right System Controls & Metrics */}
-            <div className="flex items-center gap-2 justify-end font-mono">
+            <div className="flex flex-wrap items-center gap-2 justify-end font-mono">
               <div className="text-[10px] font-black bg-black/40 border border-emerald-500/20 px-3 py-2 rounded-lg flex items-center gap-1.5 text-emerald-400 shadow-[inset_0_1px_2px_rgba(52,211,153,0.1)]">
                 <Shield className="size-3.5 text-emerald-400 fill-emerald-400/10" />
                 <span>{state?.points || 0} Credits</span>
@@ -772,7 +812,7 @@ useEffect(() => {
                 onClick={async () => {
                   await supabase.auth.signOut();
                   localStorage.removeItem("apex-tutorial-completed");
-                  sessionStorage.removeItem("apex-session-briefing-triggered"); // Clear session key on logout
+                  sessionStorage.removeItem("apex-session-briefing-triggered");
                   navigate({ to: "/auth" });
                 }}
                 title="Disconnect Node"
@@ -853,7 +893,7 @@ useEffect(() => {
 
               {/* Profile Selector */}
               <div className="flex items-center gap-3 bg-[#0D0D11]/90 border border-zinc-800 rounded-xl p-3 text-left emerald-glass-panel">
-                <span className="text-[10px] font-black uppercase tracking-wider text-zinc-500 whitespace-nowrap pl-1">Audience Profile Track:</span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-zinc-500 whitespace-nowrap pl-1">Audience Track:</span>
                 <select 
                   defaultValue="general"
                   onChange={(e) => {
@@ -1046,8 +1086,8 @@ useEffect(() => {
                 </button>
               </div>
               
-              <div className="overflow-hidden rounded-xl border border-zinc-900 bg-black/20 font-mono text-xs">
-                <div className="grid grid-cols-6 bg-zinc-950/80 px-4 py-3 text-[9px] font-black uppercase tracking-wider text-zinc-500 border-b border-zinc-900 text-center sm:text-left">
+              <div className="overflow-x-auto rounded-xl border border-zinc-900 bg-black/20 font-mono text-xs">
+                <div className="min-w-[600px] grid grid-cols-6 bg-zinc-950/80 px-4 py-3 text-[9px] font-black uppercase tracking-wider text-zinc-500 border-b border-zinc-900 text-center sm:text-left">
                   <span>Rank</span>
                   <span className="text-left">Operator Node</span>
                   <span className="text-center">Current</span>
@@ -1056,9 +1096,9 @@ useEffect(() => {
                   <span className="text-right">Credit Balance</span>
                 </div>
 
-                <div className="divide-y divide-zinc-900/60">
+                <div className="min-w-[600px] divide-y divide-zinc-900/60">
                   {leaderboardOperators.map((operator, index) => {
-                    const isCurrentClientNode = operator.id === (supabase.auth.getUser() as any)?.data?.user?.id;
+                    const isCurrentClientNode = operator.id === currentUserId;
                     const activeDisplayCredits = isCurrentClientNode 
                       ? ((state as any).points !== undefined ? (state as any).points : 1000) 
                       : (operator.points || operator.beta_points || 0);
@@ -1162,7 +1202,7 @@ useEffect(() => {
 
       {/* OVERLAY MODALS & COMPONENTS */}
       {surpriseLoot && (
-        <div className="fixed bottom-6 left-72 z-40 rounded-xl border border-emerald-500/20 bg-[#0E1612]/90 p-4 text-left flex items-center gap-3 text-xs font-bold text-emerald-400 border-l-4 border-l-emerald-500 animate-fade-in shadow-2xl">
+        <div className="fixed bottom-20 sm:bottom-6 left-4 right-4 sm:left-auto sm:right-6 z-40 rounded-xl border border-emerald-500/20 bg-[#0E1612]/90 p-4 text-left flex items-center gap-3 text-xs font-bold text-emerald-400 border-l-4 border-l-emerald-500 animate-fade-in shadow-2xl max-w-md mx-auto sm:mx-0">
           <Sparkles className="size-4 animate-spin shrink-0" />
           <span>{surpriseLoot.msg}</span>
         </div>

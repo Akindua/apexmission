@@ -28,17 +28,17 @@ function VerifyEmailPage() {
       const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
       if (refreshError) throw refreshError;
   
-      // 2. Retrieve user context configuration properties securely[cite: 25]
+      // 2. Retrieve user context configuration properties securely
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError) throw userError;
   
       // Find the email provider identity to check if the email has actually been verified
       const emailIdentity = user?.identities?.find((id: any) => id.provider === "email");
       
-      // Strict verification check: ensures email_confirmed_at exists and email_verified is true
+      // Strict verification check: requires both confirmed timestamp AND explicit identity verification flag
       const isVerified = Boolean(
         user?.email_confirmed_at && 
-        (emailIdentity ? emailIdentity.identity_data?.email_verified !== false : true)
+        emailIdentity?.identity_data?.email_verified === true
       );
 
       if (user && isVerified) {
@@ -47,7 +47,6 @@ function VerifyEmailPage() {
           navigate({ to: "/plans" });
         }, 1500);
       } else {
-        // If they click manually but haven't authorized the inbox packet link, show a defensive alert[cite: 25]
         setErrorMessage("Verification link not yet confirmed. Please check your email inbox and click the secure confirmation link before proceeding.");
       }
     } catch (err: any) {
@@ -56,7 +55,7 @@ function VerifyEmailPage() {
     } finally {
       setChecking(false);
     }
-  };  
+  };
   
   useEffect(() => {
     console.log("🔒 Identity verification lock initialized. Manual confirmation required.");
