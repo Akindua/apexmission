@@ -398,8 +398,8 @@ function CoachPanel({
     `;
 
     const activePayload = uploadedText.trim()
-      ? '${humanInputString}\n\n${SocraticContext}\n\n[PARSED DOCUMENT FILE CONTEXT]:\n\n${uploadedText}'
-      : '${humanInputString}\n\n${SocraticContext}';
+      ? `${humanInputString}\n\n${SocraticContext}\n\n[PARSED DOCUMENT FILE CONTEXT]:\n\n${uploadedText}`
+      : `${humanInputString}\n\n${SocraticContext}`;
 
 
     void sendMessage({ text: activePayload });
