@@ -109,7 +109,7 @@ export const Route = createFileRoute("/api/chat")({
         usageStore[ip] = count + 1;
 
         const result = streamText({
-          model: openai("gpt-6-astra"),
+          model: openai("gpt-6-sol"),
           system: enhancedPrompt,
           messages: await convertToModelMessages(
           messages as UIMessage[],

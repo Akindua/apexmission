@@ -31,7 +31,7 @@ export const Route = createFileRoute(
                 });
 
                 const result = await generateText({
-                    model: openai("gpt-6-astra"),
+                    model: openai("gpt-6-sol"),
                     // ✅ FIXED: Your custom high-performance prompt directive is now injected directly as the system layer instruction
                     system: `
 You are an advanced, high-performance tactical optimization parser. Your absolute mandate is to ingest the attached raw document text parameters and decompose them into an immediate execution plan.

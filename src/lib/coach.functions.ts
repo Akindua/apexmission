@@ -36,7 +36,7 @@ export const recommendNextAction = createServerFn({ method: "POST" })
         : "(no tasks listed)";
 
     const result = streamText({
-      model: lovable.responses("openai/gpt-6-astra"),
+      model: lovable.responses("openai/gpt-6-sol"),
       system:
         "You are a sharp, concise execution coach. Given a mission, a task list and today's progress note, recommend exactly ONE next highest-impact action. Reply in at most 55 words: one bold-free sentence naming the action, then one short sentence on why it is the highest leverage right now. No lists, no preamble.",
       prompt: `Mission: ${data.mission || "(not set)"}\n\nTasks:\n${taskList}\n\nToday's progress note:\n${data.note}`,
