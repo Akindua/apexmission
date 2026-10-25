@@ -444,9 +444,18 @@ function CoachPanel({
             {messages.map((message, index) => {
               let text = message.parts.map((part) => (part.type === "text" ? part.text : "")).join("");
               if (!text) return null;
-              if (message.role === "user" && text.includes("[CRITICAL")) {
-                text = text.split("[CRITICAL")[0].trim();
+
+              // ✅ Cleanly strip out internal telemetry payloads from user chat bubbles so only human messages show
+              if (message.role === "user") {
+                const telemetryIdx = text.indexOf("\n\n[");
+                if (telemetryIdx !== -1) {
+                  text = text.substring(0, telemetryIdx).trim();
+                }
+                if (text.includes("[SYSTEM_AUTO_TRIGGER")) {
+                  text = "Initialize my operational briefing and review active metrics.";
+                }
               }
+
               const locked = !premium && index < messages.length - FREE_HISTORY_LIMIT;
               return (
                 <div key={message.id} className={locked ? "relative opacity-40 grayscale blur-[4px] pointer-events-none select-none" : "w-full text-left"}>
