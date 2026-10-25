@@ -42,6 +42,8 @@ interface BehaviorAnalytics {
 }
 
 function loadMessages(): UIMessage[] {
+  if (typeof window === "undefined") return [];
+  
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     return raw ? (JSON.parse(raw) as UIMessage[]) : [];
@@ -87,6 +89,34 @@ function saveBehaviorAnalytics(analytics: BehaviorAnalytics) {
 
 let audioContext: AudioContext | null = null;
 let audioInitialized = false;
+let userInteracted = false;
+
+// Initialize audio on first user interaction
+function initAudioOnInteraction() {
+  if (userInteracted) return;
+  userInteracted = true;
+  
+  if (typeof window !== "undefined") {
+    const ctx = getAudioContext();
+    if (ctx && ctx.state === "suspended") {
+      ctx.resume().catch(() => {});
+    }
+  }
+}
+
+// Listen for first user interaction
+if (typeof window !== "undefined") {
+  const handleInteraction = () => {
+    initAudioOnInteraction();
+    document.removeEventListener("click", handleInteraction);
+    document.removeEventListener("keydown", handleInteraction);
+    document.removeEventListener("touchstart", handleInteraction);
+  };
+  
+  document.addEventListener("click", handleInteraction, { once: true, passive: true });
+  document.addEventListener("keydown", handleInteraction, { once: true, passive: true });
+  document.addEventListener("touchstart", handleInteraction, { once: true, passive: true });
+}
 
 function getAudioContext(): AudioContext | null {
   if (typeof window === "undefined") return null;
@@ -99,7 +129,7 @@ function getAudioContext(): AudioContext | null {
       audioContext = new AudioCtxClass();
     }
     
-    if (audioContext.state === "suspended") {
+    if (audioContext.state === "suspended" && userInteracted) {
       audioContext.resume().catch(() => {
         // Ignore resume errors - audio may not be available
       });
@@ -230,20 +260,37 @@ export function MissionCoach({
   onClose?: () => void;
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
-  const [initial, setInitial] = useState<UIMessage[] | null>(null);
-  const [behaviorAnalytics, setBehaviorAnalytics] = useState<BehaviorAnalytics>(loadBehaviorAnalytics());
+  const [initial, setInitial] = useState<UIMessage[]>([]);
+  const [behaviorAnalytics, setBehaviorAnalytics] = useState<BehaviorAnalytics>({
+    sessionCount: 0,
+    lastSessionDate: "",
+    totalTasksCompleted: 0,
+    averageCompletionTime: 0,
+    procrastinationEvents: 0,
+    peakProductivityHour: 12,
+    totalMessagesExchanged: 0,
+    streakConsistency: 0,
+    preferredFocusAreas: []
+  });
+  const [mounted, setMounted] = useState(false);
 
   const open = isOpen !== undefined ? isOpen : internalOpen;
   const setOpen = onClose ? onClose : setInternalOpen;
 
   useEffect(() => {
-    setInitial(loadMessages());
+    setMounted(true);
+    const messages = loadMessages();
+    const analytics = loadBehaviorAnalytics();
+    setInitial(messages);
+    setBehaviorAnalytics(analytics);
   }, []);
 
   useEffect(() => {
+    if (!mounted) return;
+    
     if (open) {
       playSoundEffect("open");
-      const analytics = loadBehaviorAnalytics();
+      const analytics = { ...behaviorAnalytics };
       analytics.sessionCount += 1;
       analytics.lastSessionDate = new Date().toISOString();
       const currentHour = new Date().getHours();
@@ -262,9 +309,9 @@ export function MissionCoach({
     } else {
       playSoundEffect("close");
     }
-  }, [open]);
+  }, [open, mounted, behaviorAnalytics]);
 
-  if (initial === null) {
+  if (!mounted) {
     return <CoachLauncher open={open} onToggle={() => setOpen(true)} />;
   }
     

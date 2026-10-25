@@ -23,6 +23,31 @@ import { generateMissionPlan } from "@/lib/mission-planner";
 
 // Shared audio context for the entire app
 let sharedAudioContext: AudioContext | null = null;
+let audioUserInteracted = false;
+
+// Initialize audio on first user interaction
+function initAppAudioOnInteraction() {
+  if (audioUserInteracted) return;
+  audioUserInteracted = true;
+  
+  if (typeof window !== "undefined" && sharedAudioContext && sharedAudioContext.state === "suspended") {
+    sharedAudioContext.resume().catch(() => {});
+  }
+}
+
+// Listen for first user interaction
+if (typeof window !== "undefined") {
+  const handleInteraction = () => {
+    initAppAudioOnInteraction();
+    document.removeEventListener("click", handleInteraction);
+    document.removeEventListener("keydown", handleInteraction);
+    document.removeEventListener("touchstart", handleInteraction);
+  };
+  
+  document.addEventListener("click", handleInteraction, { once: true, passive: true });
+  document.addEventListener("keydown", handleInteraction, { once: true, passive: true });
+  document.addEventListener("touchstart", handleInteraction, { once: true, passive: true });
+}
 
 function getSharedAudioContext(): AudioContext | null {
   if (typeof window === "undefined") return null;
@@ -35,7 +60,7 @@ function getSharedAudioContext(): AudioContext | null {
       sharedAudioContext = new AudioCtxClass();
     }
     
-    if (sharedAudioContext.state === "suspended") {
+    if (sharedAudioContext.state === "suspended" && audioUserInteracted) {
       sharedAudioContext.resume().catch(() => {
         // Ignore resume errors
       });
