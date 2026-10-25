@@ -42,15 +42,39 @@ interface BehaviorAnalytics {
   preferredFocusAreas: string[];
 }
 
-function loadMessages(): UIMessage[] {
+function loadMessages(userName: string, userRank: string, state: any, behaviorAnalytics: any, isFirstSignup: boolean): UIMessage[] {
   if (typeof window === "undefined") return [];
   
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as UIMessage[]) : [];
-  } catch {
-    return [];
-  }
+    if (raw) {
+      const parsed = JSON.parse(raw) as UIMessage[];
+      if (parsed.length > 0) return parsed;
+    }
+  } catch {}
+
+  // Generate clean conversational synthetic briefing items with $0 API cost
+  const syntheticItems = generateSyntheticBriefing({
+    userName,
+    userRank,
+    state,
+    behaviorAnalytics,
+    isFirstSignup,
+    currentHour: new Date().getHours()
+  });
+
+  // Convert to UIMessage format so they render natively as clean chat bubbles
+  const initialUIMessages: UIMessage[] = syntheticItems.map((item, idx) => ({
+    id: `synthetic-seed-${idx}-${Date.now()}`,
+    role: item.role,
+    parts: [{ type: "text", text: item.content }]
+  }));
+
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(initialUIMessages));
+  } catch {}
+
+  return initialUIMessages;
 }
 
 function loadBehaviorAnalytics(): BehaviorAnalytics {
@@ -273,11 +297,9 @@ export function MissionCoach({
 
   useEffect(() => {
     setMounted(true);
-    const messages = loadMessages();
-    const analytics = loadBehaviorAnalytics();
+    const messages = loadMessages(userName, userRank, state, behaviorAnalytics, isFirstSignup);
     setInitial(messages);
-    setBehaviorAnalytics(analytics);
-  }, []);
+  }, [userName, userRank, state, isFirstSignup]);
 
   useEffect(() => {
     if (!mounted || !open) return;
