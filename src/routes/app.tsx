@@ -531,6 +531,11 @@ useEffect(() => {
           } catch (audioErr) {
             console.warn("Audio node context deferred by client browser interaction guard lines:", audioErr);
           }
+          
+          const taskCompletionHook = (window as any).__apex_task_completed;
+          if (typeof taskCompletionHook === "function") {
+            taskCompletionHook(targetTask?.text || "Task completed");
+          }
         }
       }
 

@@ -1,7 +1,7 @@
 import { useChat } from "@ai-sdk/react";
 import { extractText } from "@/lib/document-parser";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { Lock, MessageCircle, X, Paperclip, Sparkles, Loader2 } from "lucide-react";
+import { Lock, MessageCircle, X, Paperclip, Sparkles, Loader2, Target, Flame, Trophy, Activity, Zap, Brain, Shield, AlertTriangle } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
@@ -14,15 +14,32 @@ import { Message, MessageContent, MessageResponse } from "@/components/ai-elemen
 const STORAGE_KEY = "mission-coach-chat-v1";
 const LIMIT_KEY = "apexmission-coach-daily-tokens";
 const FREE_HISTORY_LIMIT = 6;
+const BEHAVIOR_ANALYTICS_KEY = "apexmission-behavior-analytics";
 
 const QUICK_STARTS = [
-  { label: "📚 Help me study", prompt: "Help me study — I need a plan for the subject I'm struggling with." },
-  { label: "🌱 Life advice", prompt: "I'd like some life advice about what I should focus on right now." },
+  { label: "🎯 Mission Strategy", prompt: "Analyze my current mission strategy and provide tactical improvements based on my performance metrics." },
+  { label: "⚡ Break Through Blockers", prompt: "I'm facing obstacles. Help me identify and overcome my current blockers with military precision." },
   {
-    label: "⏱️ Fix procrastination",
-    prompt: "I keep procrastinating. Help me figure out why and give me a way to start right now.",
+    label: "📊 Performance Review",
+    prompt: "Conduct a comprehensive performance review of my execution patterns, streak consistency, and behavioral metrics.",
+  },
+  {
+    label: "🔥 Restore Momentum",
+    prompt: "My momentum has degraded. Deploy recovery protocols to get me back to elite execution velocity immediately.",
   },
 ];
+
+interface BehaviorAnalytics {
+  sessionCount: number;
+  lastSessionDate: string;
+  totalTasksCompleted: number;
+  averageCompletionTime: number;
+  procrastinationEvents: number;
+  peakProductivityHour: number;
+  totalMessagesExchanged: number;
+  streakConsistency: number;
+  preferredFocusAreas: string[];
+}
 
 function loadMessages(): UIMessage[] {
   try {
@@ -33,6 +50,141 @@ function loadMessages(): UIMessage[] {
   }
 }
 
+function loadBehaviorAnalytics(): BehaviorAnalytics {
+  try {
+    const raw = window.localStorage.getItem(BEHAVIOR_ANALYTICS_KEY);
+    return raw ? (JSON.parse(raw) as BehaviorAnalytics) : {
+      sessionCount: 0,
+      lastSessionDate: "",
+      totalTasksCompleted: 0,
+      averageCompletionTime: 0,
+      procrastinationEvents: 0,
+      peakProductivityHour: 12,
+      totalMessagesExchanged: 0,
+      streakConsistency: 0,
+      preferredFocusAreas: []
+    };
+  } catch {
+    return {
+      sessionCount: 0,
+      lastSessionDate: "",
+      totalTasksCompleted: 0,
+      averageCompletionTime: 0,
+      procrastinationEvents: 0,
+      peakProductivityHour: 12,
+      totalMessagesExchanged: 0,
+      streakConsistency: 0,
+      preferredFocusAreas: []
+    };
+  }
+}
+
+function saveBehaviorAnalytics(analytics: BehaviorAnalytics) {
+  try {
+    window.localStorage.setItem(BEHAVIOR_ANALYTICS_KEY, JSON.stringify(analytics));
+  } catch {}
+}
+
+function playSoundEffect(type: "success" | "warning" | "alert" | "message" | "open" | "close") {
+  if (typeof window === "undefined") return;
+  
+  try {
+    const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtxClass) return;
+    
+    const ctx = new AudioCtxClass();
+    const now = ctx.currentTime;
+    
+    switch (type) {
+      case "success":
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+          gain.gain.setValueAtTime(0.05, now + idx * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.3);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + idx * 0.08);
+          osc.stop(now + idx * 0.08 + 0.3);
+        });
+        break;
+        
+      case "warning":
+        const warnOsc = ctx.createOscillator();
+        const warnGain = ctx.createGain();
+        warnOsc.type = "sawtooth";
+        warnOsc.frequency.setValueAtTime(440, now);
+        warnOsc.frequency.linearRampToValueAtTime(220, now + 0.3);
+        warnGain.gain.setValueAtTime(0.08, now);
+        warnGain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        warnOsc.connect(warnGain);
+        warnGain.connect(ctx.destination);
+        warnOsc.start();
+        warnOsc.stop(now + 0.3);
+        break;
+        
+      case "alert":
+        const alertOsc = ctx.createOscillator();
+        const alertGain = ctx.createGain();
+        alertOsc.type = "square";
+        alertOsc.frequency.setValueAtTime(880, now);
+        alertGain.gain.setValueAtTime(0.06, now);
+        alertGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        alertOsc.connect(alertGain);
+        alertGain.connect(ctx.destination);
+        alertOsc.start();
+        alertOsc.stop(now + 0.15);
+        break;
+        
+      case "message":
+        const msgOsc = ctx.createOscillator();
+        const msgGain = ctx.createGain();
+        msgOsc.type = "sine";
+        msgOsc.frequency.setValueAtTime(880, now);
+        msgGain.gain.setValueAtTime(0.03, now);
+        msgGain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+        msgOsc.connect(msgGain);
+        msgGain.connect(ctx.destination);
+        msgOsc.start();
+        msgOsc.stop(now + 0.1);
+        break;
+        
+      case "open":
+        [261.63, 329.63, 392.00].forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+          gain.gain.setValueAtTime(0.04, now + idx * 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.2);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + idx * 0.05);
+          osc.stop(now + idx * 0.05 + 0.2);
+        });
+        break;
+        
+      case "close":
+        const closeOsc = ctx.createOscillator();
+        const closeGain = ctx.createGain();
+        closeOsc.type = "sine";
+        closeOsc.frequency.setValueAtTime(392.00, now);
+        closeOsc.frequency.linearRampToValueAtTime(261.63, now + 0.2);
+        closeGain.gain.setValueAtTime(0.04, now);
+        closeGain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+        closeOsc.connect(closeGain);
+        closeGain.connect(ctx.destination);
+        closeOsc.start();
+        closeOsc.stop(now + 0.2);
+        break;
+    }
+  } catch (e) {
+    console.warn("Audio context unavailable:", e);
+  }
+}
+
 export function MissionCoach({
   premium = false,
   state,
@@ -40,6 +192,8 @@ export function MissionCoach({
   userRank = "Global Operator Node",
   onLockedHistory,
   onActionPlanGenerated,
+  isOpen,
+  onClose,
 }: {
   premium?: boolean;
   state: any;
@@ -47,13 +201,43 @@ export function MissionCoach({
   userRank?: string;
   onLockedHistory?: () => void;
   onActionPlanGenerated?: (plan: any) => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const [initial, setInitial] = useState<UIMessage[] | null>(null);
+  const [behaviorAnalytics, setBehaviorAnalytics] = useState<BehaviorAnalytics>(loadBehaviorAnalytics());
+
+  const open = isOpen !== undefined ? isOpen : internalOpen;
+  const setOpen = onClose ? onClose : setInternalOpen;
 
   useEffect(() => {
     setInitial(loadMessages());
   }, []);
+
+  useEffect(() => {
+    if (open) {
+      playSoundEffect("open");
+      const analytics = loadBehaviorAnalytics();
+      analytics.sessionCount += 1;
+      analytics.lastSessionDate = new Date().toISOString();
+      const currentHour = new Date().getHours();
+      if (analytics.totalTasksCompleted > 0) {
+        analytics.peakProductivityHour = currentHour;
+      }
+      
+      if (analytics.sessionCount >= 10) {
+        setInsightLevel("advanced");
+      } else if (analytics.sessionCount >= 5) {
+        setInsightLevel("intermediate");
+      }
+      
+      saveBehaviorAnalytics(analytics);
+      setBehaviorAnalytics(analytics);
+    } else {
+      playSoundEffect("close");
+    }
+  }, [open]);
 
   if (initial === null) {
     return <CoachLauncher open={open} onToggle={() => setOpen(true)} />;
@@ -71,6 +255,8 @@ export function MissionCoach({
       userName={userName}
       userRank={userRank}
       onActionPlanGenerated={onActionPlanGenerated}
+      behaviorAnalytics={behaviorAnalytics}
+      setBehaviorAnalytics={setBehaviorAnalytics}
     />
   );
 }
@@ -100,6 +286,8 @@ function CoachPanel({
   userName,
   userRank,
   onActionPlanGenerated,
+  behaviorAnalytics,
+  setBehaviorAnalytics,
 }: {
   open: boolean;
   setOpen: (v: boolean) => void;
@@ -110,6 +298,8 @@ function CoachPanel({
   userName: string;
   userRank: string;
   onActionPlanGenerated?: (plan: any) => void;
+  behaviorAnalytics: BehaviorAnalytics;
+  setBehaviorAnalytics: (analytics: BehaviorAnalytics) => void;
 }) {
   const transport = useMemo(() => new DefaultChatTransport({ api: "/api/chat" }), []);
   const [input, setInput] = useState("");
@@ -120,6 +310,7 @@ function CoachPanel({
   const [planGenerated, setPlanGenerated] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [usageCount, setUsageCount] = useState(0);
+  const [insightLevel, setInsightLevel] = useState<"basic" | "intermediate" | "advanced">("basic");
 
   const isRateLimited = false; 
 
@@ -195,30 +386,22 @@ function CoachPanel({
         localStorage.setItem("apexmission-state", JSON.stringify(currentStore));
       }
 
-      try {
-        const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
-        if (AudioCtxClass) {
-          const ctx = new AudioCtxClass();
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          
-          osc.type = "sawtooth";
-          osc.frequency.setValueAtTime(320, ctx.currentTime);
-          osc.frequency.linearRampToValueAtTime(80, ctx.currentTime + 0.5);
-          
-          gain.gain.setValueAtTime(0.12, ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-          
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start();
-          osc.stop(ctx.currentTime + 0.5);
-        }
-      } catch (e) {}
+      playSoundEffect("warning");
+      
+      setBehaviorAnalytics(prev => ({
+        ...prev,
+        procrastinationEvents: prev.procrastinationEvents + 1
+      }));
     }
 
     const nextCount = usageCount + 1;
     setUsageCount(nextCount);
+    
+    setBehaviorAnalytics(prev => ({
+      ...prev,
+      totalMessagesExchanged: prev.totalMessagesExchanged + 1
+    }));
+    
     try {
       localStorage.setItem(LIMIT_KEY, JSON.stringify({
         date: new Date().toDateString(),
@@ -238,35 +421,97 @@ function CoachPanel({
       .map((t: any) => `[${t.done ? "✓" : " "}] ${t.text}`)
       .join("\n      ") || "No low impact maintenance items mapped.";
 
+    const taskCompletionRate = (() => {
+      const allTasks = [...(state?.tasks?.high || []), ...(state?.tasks?.medium || []), ...(state?.tasks?.low || [])];
+      if (allTasks.length === 0) return 0;
+      const completed = allTasks.filter((t: any) => t.done).length;
+      return Math.round((completed / allTasks.length) * 100);
+    })();
+
+    const currentHour = new Date().getHours();
+    const productivityPhase = currentHour < 12 ? "Morning Peak" : currentHour < 17 ? "Afternoon Execution" : "Evening Review";
+
+    const streakHealth = (() => {
+      const streak = state?.streak?.count || 0;
+      if (streak === 0) return "Inactive - Immediate Attention Required";
+      if (streak < 3) return "Emerging - Fragile Momentum";
+      if (streak < 7) return "Building - Consistent Velocity";
+      if (streak < 14) return "Strong - Elite Trajectory";
+      return "Legendary - Apex Mastery";
+    })();
+
+    const behaviorInsight = (() => {
+      if (behaviorAnalytics.procrastinationEvents > 5) return "CRITICAL ALERT: Operator shows high procrastination patterns. Immediate intervention required.";
+      if (behaviorAnalytics.sessionCount < 3) return "Operator in early integration phase. Focus on habit formation.";
+      if (taskCompletionRate > 80) return "Excellent execution velocity. Recommend escalating mission complexity.";
+      if (taskCompletionRate < 40) return "Execution metrics below optimal threshold. Investigate blockers.";
+      return "Maintaining standard operational parameters.";
+    })();
+
     const SocraticContext = `
-      [ADVANCED APP COMPONENT TELEMETRY & AUTOMATED USER BEHAVIOR ANALYSIS]
+      [ELITE MILITARY-GRADE OPERATOR TELEMETRY & BEHAVIORAL ANALYSIS SYSTEM]
+      
+      === OPERATOR IDENTITY MATRIX ===
       OPERATOR NAME: ${currentName}
-      CURRENT STREAK: ${state?.streak?.count || 0} Days
+      DESIGNATION: ${currentRank}
+      OPERATIONAL STATUS: ${streakHealth}
+      TOTAL SESSIONS LOGGED: ${behaviorAnalytics.sessionCount}
+      SESSION FREQUENCY: ${behaviorAnalytics.sessionCount > 10 ? "High Engagement" : "Building Consistency"}
+      
+      === PERFORMANCE METRICS ===
+      CURRENT STREAK: ${state?.streak?.count || 0} Days (Health: ${streakHealth})
       CREDIT BALANCE: ${state?.points || 1000} Credits
       LEADERBOARD PLACEMENT: ${currentRank}
+      TASK COMPLETION RATE: ${taskCompletionRate}%
+      TOTAL TASKS COMPLETED: ${behaviorAnalytics.totalTasksCompleted}
+      AVERAGE COMPLETION TIME: ${behaviorAnalytics.averageCompletionTime > 0 ? `${Math.round(behaviorAnalytics.averageCompletionTime)} min/task` : "Insufficient Data"}
+      PEAK PRODUCTIVITY HOUR: ${behaviorAnalytics.peakProductivityHour}:00
+      CURRENT TIME PHASE: ${productivityPhase}
       
-      [GOAL & TASK EXECUTION MATRIX]
+      === BEHAVIORAL TELEMETRY ===
+      PROCRASTINATION EVENTS: ${behaviorAnalytics.procrastinationEvents}
+      STREAK CONSISTENCY SCORE: ${behaviorAnalytics.streakConsistency}%
+      TOTAL COACH INTERACTIONS: ${behaviorAnalytics.totalMessagesExchanged}
+      AI BEHAVIORAL ASSESSMENT: ${behaviorInsight}
+      
+      === MISSION EXECUTION MATRIX ===
       MASTER VISION STATEMENT: "${state?.mission || "No overall mission statement declared."}"
       TODAY'S MASTER FOCUS ACTION: "${state?.daily?.text || "No single master action scheduled."}"
-      DAILY ACTION SEALED: ${state?.daily?.done ? "YES (Completed)" : "NO (Pending / At Risk)"}
+      DAILY ACTION STATUS: ${state?.daily?.done ? "✓ COMPLETED" : "⚠ PENDING / AT RISK"}
       
-      HIGH IMPACT LEVERAGE TASKS:
+      === TASK VECTOR BREAKDOWN ===
+      HIGH IMPACT LEVERAGE TASKS (${(state?.tasks?.high || []).length} total):
       ${highImpactTasks}
       
-      MEDIUM IMPACT ALIGNMENT TASKS:
+      MEDIUM IMPACT ALIGNMENT TASKS (${(state?.tasks?.medium || []).length} total):
       ${mediumImpactTasks}
       
-      LOW IMPACT MAINTENANCE TASKS:
+      LOW IMPACT MAINTENANCE TASKS (${(state?.tasks?.low || []).length} total):
       ${lowImpactTasks}
       
-      [REFLECTIONS & BEHAVIORAL TELEMETRY]
-      MORNING CHECK-IN STATUS: Completed & Synchronized
-      NIGHT REFLECTION LOGS: "${state?.reflection?.wins || "No evening closeout logged yet."}"
-      SLACKING / LAZINESS INDICATORS: ${indicatesSlacking ? "DETECTED (Penalty Audited)" : "None active. User maintaining hard work velocity."}
-
-      DIRECTIVE: Act as an elite, unyielding Socratic performance coach. Thoroughly analyze all user app components, task completion rates, goal proximity, work ethic vs. slacking, leaderboard standing, and reflection notes. Hold the user strictly accountable.
-
+      === REFLECTION & INTELLIGENCE LOGS ===
+      MORNING CHECK-IN: Synchronized
+      NIGHT REFLECTION DATA: "${state?.reflection?.wins || "No evening closeout logged yet."}"
+      IDENTIFIED BLOCKERS: "${state?.reflection?.blockers || "None reported."}"
+      TOMORROW'S TACTICAL DIRECTIVE: "${state?.reflection?.tomorrowAction || "Not defined."}"
+      
+      === SLACKING / DISCIPLINE ANALYSIS ===
+      CURRENT DISCIPLINE METRIC: ${indicatesSlacking ? "⚠ DEGRADED - Penalty Audited" : "✓ OPTIMAL - Maintaining Elite Velocity"}
+      RECENT BEHAVIORAL PATTERNS: ${behaviorAnalytics.procrastinationEvents > 2 ? "Warning: Recurring procrastination detected" : "Disciplined execution patterns observed"}
+      
+      === MILITARY COACH DIRECTIVE ===
+      You are an elite, unyielding Socratic performance coach with military-grade precision. Your mission:
+      
+      1. ANALYZE: Deeply analyze all user metrics, task completion rates, goal proximity, work ethic, leaderboard standing, and behavioral patterns.
+      2. HOLD ACCOUNTABLE: Strictly enforce discipline. Acknowledge wins but ruthlessly expose failures and procrastination.
+      3. STRATEGIZE: Provide tactical, actionable recommendations based on behavioral data and time of day.
+      4. MOTIVATE: Use military-inspired language that balances respect with uncompromising standards.
+      5. PERSONALIZE: Reference the operator's name, rank, streak, and specific tasks in your responses.
+      6. BE ELITE: Your responses should reflect the highest standards of coaching - concise, impactful, and brutally honest.
+      
       ${explicitOnboardingDirective}
+      
+      [END TELEMETRY TRANSMISSION]
     `;
 
     const activePayload = uploadedText.trim()
@@ -275,6 +520,7 @@ function CoachPanel({
 
     void sendMessage({ text: activePayload });
     setInput("");
+    playSoundEffect("message");
   }
 
   useEffect(() => {
@@ -283,9 +529,36 @@ function CoachPanel({
         send(triggerText, true);
         setOpen(true);
       };
+      
+      (window as any).__apex_task_completed = (taskText: string) => {
+        const analytics = loadBehaviorAnalytics();
+        analytics.totalTasksCompleted += 1;
+        
+        const currentHour = new Date().getHours();
+        if (analytics.totalTasksCompleted === 1) {
+          analytics.peakProductivityHour = currentHour;
+        } else {
+          const taskCounts: Record<number, number> = {};
+          taskCounts[currentHour] = (taskCounts[currentHour] || 0) + 1;
+          const maxHour = Object.entries(taskCounts).sort((a, b) => b[1] - a[1])[0];
+          if (maxHour) {
+            analytics.peakProductivityHour = parseInt(maxHour[0]);
+          }
+        }
+        
+        saveBehaviorAnalytics(analytics);
+        setBehaviorAnalytics(analytics);
+        
+        if (analytics.totalTasksCompleted % 5 === 0) {
+          playSoundEffect("success");
+        }
+      };
     }
     return () => {
-      if (typeof window !== "undefined") delete (window as any).__apex_coach_trigger;
+      if (typeof window !== "undefined") {
+        delete (window as any).__apex_coach_trigger;
+        delete (window as any).__apex_task_completed;
+      }
     };
   }, [state]);
 
@@ -395,18 +668,89 @@ function CoachPanel({
           <div className="flex size-9 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-950/20 text-emerald-400">
             <MessageCircle className="size-4.5 animate-pulse" />
           </div>
-          <div className="min-w-0 text-left">
+          <div className="min-w-0 text-left flex-1">
             <h2 className="font-display text-sm font-black tracking-tight text-white uppercase">My Mission Coach</h2>
             <p className="truncate text-[10px] font-bold text-zinc-500 uppercase tracking-wider mt-0.5">Socratic Strategy · Active</p>
           </div>
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
-            className="ml-auto rounded-xl border border-zinc-800 bg-zinc-950 p-2 text-zinc-500 transition-colors hover:border-zinc-800 hover:text-white"
-          >
-            <X className="size-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-lg bg-emerald-950/30 border border-emerald-500/20">
+              <Brain className="size-3 text-emerald-400" />
+              <span className="text-[9px] font-bold text-emerald-400 font-mono">{insightLevel.toUpperCase()}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="rounded-xl border border-zinc-800 bg-zinc-950 p-2 text-zinc-500 transition-colors hover:border-zinc-800 hover:text-white"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
         </header>
+
+        {/* Behavioral Intelligence Dashboard */}
+        <div className="border-b border-zinc-900 px-5 py-3 bg-black/10">
+          <div className="grid grid-cols-4 gap-2">
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <Flame className="size-3 text-orange-400" />
+                <span className="text-[10px] font-bold text-zinc-400">Streak</span>
+              </div>
+              <span className="text-xs font-black text-white font-mono">{state?.streak?.count || 0}</span>
+            </div>
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <Target className="size-3 text-emerald-400" />
+                <span className="text-[10px] font-bold text-zinc-400">Tasks</span>
+              </div>
+              <span className="text-xs font-black text-white font-mono">
+                {(() => {
+                  const allTasks = [...(state?.tasks?.high || []), ...(state?.tasks?.medium || []), ...(state?.tasks?.low || [])];
+                  const completed = allTasks.filter((t: any) => t.done).length;
+                  return `${completed}/${allTasks.length}`;
+                })()}
+              </span>
+            </div>
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <Trophy className="size-3 text-amber-400" />
+                <span className="text-[10px] font-bold text-zinc-400">Rank</span>
+              </div>
+              <span className="text-[10px] font-black text-white font-mono truncate px-1">{userRank.split(' ')[0] || "N/A"}</span>
+            </div>
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <Activity className="size-3 text-sky-400" />
+                <span className="text-[10px] font-bold text-zinc-400">Sessions</span>
+              </div>
+              <span className="text-xs font-black text-white font-mono">{behaviorAnalytics.sessionCount}</span>
+            </div>
+          </div>
+          
+          {/* Behavioral Health Indicator */}
+          <div className="mt-3 flex items-center gap-2">
+            <div className="flex-1 h-1.5 bg-black rounded-full overflow-hidden border border-zinc-800">
+              <div 
+                className={`h-full transition-all duration-500 ${
+                  behaviorAnalytics.procrastinationEvents > 5 
+                    ? "bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]" 
+                    : behaviorAnalytics.procrastinationEvents > 2 
+                    ? "bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" 
+                    : "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                }`}
+                style={{ width: `${Math.max(0, 100 - (behaviorAnalytics.procrastinationEvents * 10))}%` }}
+              />
+            </div>
+            <span className="text-[9px] font-bold uppercase tracking-wider whitespace-nowrap">
+              {behaviorAnalytics.procrastinationEvents > 5 ? (
+                <span className="text-rose-400 flex items-center gap-1"><AlertTriangle className="size-3" />Critical</span>
+              ) : behaviorAnalytics.procrastinationEvents > 2 ? (
+                <span className="text-amber-400">Warning</span>
+              ) : (
+                <span className="text-emerald-400 flex items-center gap-1"><Shield className="size-3" />Optimal</span>
+              )}
+            </span>
+          </div>
+        </div>
 
         <div className="flex flex-wrap gap-2 border-b border-zinc-900 px-5 py-3.5 bg-black/10">
           {QUICK_STARTS.map((chip) => (
