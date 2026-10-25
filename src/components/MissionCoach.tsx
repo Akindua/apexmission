@@ -1,7 +1,7 @@
 import { useChat } from "@ai-sdk/react";
 import { extractText } from "@/lib/document-parser";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { Lock, MessageCircle, X, Paperclip, Sparkles, Loader2, ShieldAlert } from "lucide-react";
+import { Lock, MessageCircle, X, Paperclip, Sparkles, Loader2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
@@ -10,13 +10,9 @@ import {
   ConversationScrollButton,
 } from "@/components/ai-elements/conversation";
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
-import { Shimmer } from "@/components/ai-elements/shimmer";
 
 const STORAGE_KEY = "mission-coach-chat-v1";
-const LIMIT_KEY = "apexmission-coach-daily-tokens";
 const FREE_HISTORY_LIMIT = 6;
-// ⚡ HARD RATE LIMIT CAP: Restricts total server transmissions to protect your $4.50 credit pool
-const MAX_DAILY_MESSAGES = 10;
 
 const QUICK_STARTS = [
   { label: "📚 Help me study", prompt: "Help me study — I need a plan for the subject I'm struggling with." },
@@ -40,7 +36,7 @@ export function MissionCoach({
   premium = false,
   state,
   userName = "User",
-  userRank = "Synchronizing node cluster standing...",
+  userRank = "Global Operator Node",
   onLockedHistory,
   onActionPlanGenerated,
 }: {
@@ -54,90 +50,9 @@ export function MissionCoach({
   const [open, setOpen] = useState(false);
   const [initial, setInitial] = useState<UIMessage[] | null>(null);
 
-  // 🌐 Global window trigger hook inside panel
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      (window as any).__apex_coach_trigger = (triggerText: string) => {
-        send(triggerText, true);
-        setOpen(true); // Ensures sidebar slides open automatically
-      };
-    }
-    return () => {
-      if (typeof window !== "undefined") delete (window as any).__apex_coach_trigger;
-    };
-  }, [state]);
-
-  const [input, setInput] = useState("");
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const [files, setFiles] = useState<File[]>([]);
-  const [uploadedText, setUploadedText] = useState("");
-  const [generatingPlan, setGeneratingPlan] = useState(false);
-  const [planGenerated, setPlanGenerated] = useState(false);
-
-  function handleRemoveFile(indexToRemove: number) {
-    // If files are managed via props, call your parent state array modifier setter here
-    if (typeof setFiles === "function") {
-      setFiles((prevFiles: File[]) => prevFiles.filter((_, idx) => idx !== indexToRemove));
-    }
-    // If you are tracking parsed string buffers locally, clear out the context row
-    if (typeof setUploadedText === "function") {
-      setUploadedText("");
-    }
-  }
-
-  useEffect(() => {
-    setPlanGenerated(false);
-  }, [uploadedText]);
-
   useEffect(() => {
     setInitial(loadMessages());
   }, []);
-
-  async function generateActionPlan() {
-    if (!uploadedText || generatingPlan) return;
-    setGeneratingPlan(true);
-    try {
-      const response = await fetch("/api/mission-plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mission: uploadedText }),
-      });
-      if (!response.ok) throw new Error(`Mission Planner processing failure: ${response.status}`);
-      const plan = await response.json();
-      
-      // ✅ Explicitly passes down clean nextId arrays for all columns to fix the missing medium tier bug
-      onActionPlanGenerated?.({
-        mission: plan.mission,
-        high: plan.high || [],
-        medium: plan.medium || [],
-        low: plan.low || [],
-        dailyAction: plan.dailyAction || ""
-      });
-      
-      setPlanGenerated(true);
-      
-      // 🔄 AUTOMATIC CACHE CLEAR TRIGGER: Purges your attached files list badge instantly on completion
-      setFiles([]);
-      setUploadedText("");
-      
-    } catch (error) {
-      console.error("Document action plan mapping failed:", error);
-      alert("Could not extract parameters from the attached context file.");
-    } finally {
-      setGeneratingPlan(false);
-    }
-  }
-
-
-  async function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
-    const selected = Array.from(event.target.files ?? []);
-    if (selected.length === 0) return;
-    setFiles(selected);
-    setPlanGenerated(false);
-    const contents = await Promise.all(selected.map(extractText));
-    const combined = contents.join("\n\n");
-    setUploadedText(combined);
-  }
 
   if (initial === null) {
     return <CoachLauncher open={open} onToggle={() => setOpen(true)} />;
@@ -149,21 +64,12 @@ export function MissionCoach({
       open={open}
       setOpen={setOpen}
       initialMessages={initial}
-      input={input}
-      setInput={setInput}
-      textareaRef={textareaRef}
       premium={premium}
       onLockedHistory={onLockedHistory}
-      files={files}
-      handleRemoveFile={handleRemoveFile}
-      handleFileUpload={handleFileUpload}
-      uploadedText={uploadedText}
-      generateActionPlan={generateActionPlan}
-      generatingPlan={generatingPlan}
-      planGenerated={planGenerated}
       state={state}
       userName={userName}
       userRank={userRank}
+      onActionPlanGenerated={onActionPlanGenerated}
     />
   );
 }
@@ -187,50 +93,32 @@ function CoachPanel({
   open,
   setOpen,
   initialMessages,
-  input,
-  setInput,
-  textareaRef,
   premium,
   onLockedHistory,
-  files,
-  handleRemoveFile,
-  setFiles,
-  setUploadedText,
-  handleFileUpload,
-  uploadedText,
-  generateActionPlan,
-  generatingPlan,
-  planGenerated,
   state,
   userName,
   userRank,
+  onActionPlanGenerated,
 }: {
-  uploadedText: string;
   open: boolean;
   setOpen: (v: boolean) => void;
   initialMessages: UIMessage[];
-  input: string;
-  setInput: (v: string) => void;
-  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   premium: boolean;
   onLockedHistory?: () => void;
-  files: File[];
-  handleRemoveFile: (index: number) => void;
-  setFiles: React.Dispatch<React.SetStateAction<File[]>>;
-  setUploadedText: React.Dispatch<React.SetStateAction<string>>;
-  handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  generateActionPlan: () => Promise<void>;
-  generatingPlan: boolean;
-  planGenerated: boolean;
   state: any;
   userName: string;
   userRank: string;
+  onActionPlanGenerated?: (plan: any) => void;
 }) {
   const transport = useMemo(() => new DefaultChatTransport({ api: "/api/chat" }), []);
+  const [input, setInput] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
+  const [uploadedText, setUploadedText] = useState("");
+  const [generatingPlan, setGeneratingPlan] = useState(false);
+  const [planGenerated, setPlanGenerated] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // --- 🔒 LOCAL BUDGETING TRACKER ENGINE ---
-  const [usageCount, setUsageCount] = useState(0)
+  const [usageCount, setUsageCount] = useState(0);
 
   const isRateLimited = false; 
 
@@ -242,8 +130,6 @@ function CoachPanel({
   });
 
   const hasTriggeredThisSession = useRef(false);
-
-  // Keep refs updated to capture the latest fetched name & rank
   const userNameRef = useRef(userName);
   const userRankRef = useRef(userRank);
 
@@ -252,48 +138,12 @@ function CoachPanel({
     userRankRef.current = userRank;
   }, [userName, userRank]);
 
-  // 🚀 GUARANTEED LOGIN SESSION AUTO-BRIEFING (FIRES ONCE PER SESSION WHEN DATA IS READY)
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const sessionKey = "apex-session-briefing-triggered";
-    const sessionAlreadyTriggered = sessionStorage.getItem(sessionKey);
-
-    // Wait until Supabase has populated a real user name (not default "User")
-    const isUserLoaded = userName && userName !== "User";
-
-    if (!sessionAlreadyTriggered && !hasTriggeredThisSession.current && isUserLoaded) {
-      hasTriggeredThisSession.current = true;
-      sessionStorage.setItem(sessionKey, "true");
-
-      setOpen(true);
-
-      const timer = setTimeout(() => {
-        send("[SYSTEM_AUTO_TRIGGER_LOGIN_BRIEFING]", true);
-      }, 600);
-
-      return () => clearTimeout(timer);
-    }
-  }, [userName, setOpen]);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
-    } catch {}
-  }, [messages]);
-
-  useEffect(() => {
-    if (open) textareaRef.current?.focus();
-  }, [open, status]);
-
-  const busy = status === "submitted" || status === "streaming";
-
   function send(text: string, isSystemTrigger = false) {
     const trimmed = text.trim(); 
     if (!trimmed) return;
 
     const currentName = userNameRef.current || userName || "User";
-    const currentRank = userRankRef.current || userRank || "Synchronizing node cluster standing...";
+    const currentRank = userRankRef.current || userRank || "Global Operator Node";
     
     let humanInputString = trimmed;
     let explicitOnboardingDirective = "";
@@ -471,6 +321,97 @@ function CoachPanel({
     setInput("");
   }
   
+// 🌐 Global window trigger hook inside CoachPanel where `send` is in scope
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      (window as any).__apex_coach_trigger = (triggerText: string) => {
+        send(triggerText, true);
+        setOpen(true);
+      };
+    }
+    return () => {
+      if (typeof window !== "undefined") delete (window as any).__apex_coach_trigger;
+    };
+  }, [state]);
+
+  // 🚀 GUARANTEED LOGIN SESSION AUTO-BRIEFING
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const sessionKey = "apex-session-briefing-triggered";
+    const sessionAlreadyTriggered = sessionStorage.getItem(sessionKey);
+    const isUserLoaded = userName && userName !== "User";
+
+    if (!sessionAlreadyTriggered && !hasTriggeredThisSession.current && isUserLoaded) {
+      hasTriggeredThisSession.current = true;
+      sessionStorage.setItem(sessionKey, "true");
+      setOpen(true);
+
+      const timer = setTimeout(() => {
+        send("[SYSTEM_AUTO_TRIGGER_LOGIN_BRIEFING]", true);
+      }, 600);
+
+      return () => clearTimeout(timer);
+    }
+  }, [userName, setOpen]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    } catch {}
+  }, [messages]);
+
+  useEffect(() => {
+    if (open) textareaRef.current?.focus();
+  }, [open, status]);
+
+  const busy = status === "submitted" || status === "streaming";
+
+  function handleRemoveFile(indexToRemove: number) {
+    setFiles((prevFiles: File[]) => prevFiles.filter((_, idx) => idx !== indexToRemove));
+    setUploadedText("");
+  }
+
+  async function handleFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const selected = Array.from(event.target.files ?? []);
+    if (selected.length === 0) return;
+    setFiles(selected);
+    setPlanGenerated(false);
+    const contents = await Promise.all(selected.map(extractText));
+    const combined = contents.join("\n\n");
+    setUploadedText(combined);
+  }
+
+  async function generateActionPlan() {
+    if (!uploadedText || generatingPlan) return;
+    setGeneratingPlan(true);
+    try {
+      const response = await fetch("/api/mission-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mission: uploadedText }),
+      });
+      if (!response.ok) throw new Error(`Mission Planner processing failure: ${response.status}`);
+      const plan = await response.json();
+      
+      onActionPlanGenerated?.({
+        mission: plan.mission,
+        high: plan.high || [],
+        medium: plan.medium || [],
+        low: plan.low || [],
+        dailyAction: plan.dailyAction || ""
+      });
+      
+      setPlanGenerated(true);
+      setFiles([]);
+      setUploadedText("");
+    } catch (error) {
+      console.error("Document action plan mapping failed:", error);
+      alert("Could not extract parameters from the attached context file.");
+    } finally {
+      setGeneratingPlan(false);
+    }
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
