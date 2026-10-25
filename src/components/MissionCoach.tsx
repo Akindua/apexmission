@@ -260,9 +260,6 @@ export function MissionCoach({
 
   const open = isOpen !== undefined ? isOpen : internalOpen;
   const setOpen = (next: boolean) => {
-    // #region agent log
-    fetch('http://127.0.0.1:7678/ingest/579042e6-c02b-4f8a-9ee7-63d6d222301a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6a0f5c'},body:JSON.stringify({sessionId:'6a0f5c',runId:'post-fix',hypothesisId:'F',location:'MissionCoach.tsx:setOpen',message:'coach setOpen',data:{next,controlled:isOpen!==undefined,hasOnOpenChange:typeof onOpenChange==='function',hasOnClose:typeof onClose==='function'},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
     if (onOpenChange) {
       onOpenChange(next);
       return;
@@ -316,6 +313,7 @@ export function MissionCoach({
       onActionPlanGenerated={onActionPlanGenerated}
       behaviorAnalytics={behaviorAnalytics}
       setBehaviorAnalytics={setBehaviorAnalytics}
+      isFirstSignup={isFirstSignup}
     />
   );
 }
@@ -347,6 +345,7 @@ function CoachPanel({
   onActionPlanGenerated,
   behaviorAnalytics,
   setBehaviorAnalytics,
+  isFirstSignup,
 }: {
   open: boolean;
   setOpen: (v: boolean) => void;
@@ -359,6 +358,7 @@ function CoachPanel({
   onActionPlanGenerated?: (plan: any) => void;
   behaviorAnalytics: BehaviorAnalytics;
   setBehaviorAnalytics: (analytics: BehaviorAnalytics) => void;
+  isFirstSignup?: boolean;
 }) {
   const transport = useMemo(() => new DefaultChatTransport({ api: "/api/chat" }), []);
   const [input, setInput] = useState("");
@@ -660,26 +660,20 @@ function CoachPanel({
     if (!sessionAlreadyTriggered && !hasTriggeredThisSession.current && isUserLoaded) {
       hasTriggeredThisSession.current = true;
       sessionStorage.setItem(sessionKey, "true");
-      // #region agent log
-      fetch('http://127.0.0.1:7678/ingest/579042e6-c02b-4f8a-9ee7-63d6d222301a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6a0f5c'},body:JSON.stringify({sessionId:'6a0f5c',runId:'post-fix',hypothesisId:'F',location:'MissionCoach.tsx:autoSessionBrief',message:'CoachPanel auto-open with synthetic briefing',data:{userName,open,isFirstSignup},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
       setOpen(true);
 
       const timer = setTimeout(() => {
-        // Generate synthetic briefing without API
         const syntheticMessages = generateSyntheticBriefing({
           userName,
           userRank,
           state,
           behaviorAnalytics,
-          isFirstSignup,
+          isFirstSignup: !!isFirstSignup,
           currentHour: new Date().getHours()
         });
         
-        // Inject synthetic messages into the chat
         syntheticMessages.forEach(msg => {
           if (msg.role === "assistant") {
-            // Add as assistant message
             append({
               role: "assistant",
               content: msg.content
