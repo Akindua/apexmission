@@ -265,7 +265,10 @@ function CoachLauncher({ onToggle, open }: { onToggle: () => void; open: boolean
   return (
     <button
       type="button"
-      onClick={onToggle}
+      onClick={() => {
+        onToggle();
+        playSoundEffect("open");
+      }}
       className={`fixed right-5 bottom-5 z-40 flex h-12 transform items-center gap-2.5 rounded-full border border-zinc-800 bg-[#0D0D11] px-5 text-xs font-bold tracking-wide text-zinc-200 shadow-2xl transition-all duration-300 ease-out hover:scale-105 hover:border-emerald-500/40 hover:text-emerald-400 hover:shadow-[0_0_20px_rgba(16,185,129,0.15)] active:scale-98 ${
         open ? "pointer-events-none opacity-0 scale-90" : "opacity-100 scale-100"
       }`}
@@ -350,12 +353,26 @@ function CoachPanel({
         `;
       } else {
         humanInputString = `Initialize my operational briefing for session start. Review my current metrics, streak, and dashboard components.`;
+        
+        const operationalStatus = (() => {
+          const failureCount = state?.failureCount || 0;
+          if (failureCount > 5) return "FALLEN - Critical Intervention Required";
+          if (failureCount > 2) return "AT RISK - Performance Degraded";
+          return "OPERATIONAL - Elite Execution Mode";
+        })();
+        
         explicitOnboardingDirective = `
           [CRITICAL SESSION BRIEFING OVERRIDE: LOGIN ACTIVE REPORT]
           The operator (${currentName}) has just logged into the session.
+          
+          === IMMEDIATE STATUS BRIEFING ===
           Leaderboard Standing: ${currentRank}
+          Operational Status: ${operationalStatus}
+          Failure Count: ${state?.failureCount || 0}
           Streak: ${state?.streak?.count || 0} Days
           Credits: ${state?.points || 1000} Credits
+          
+          MISSION DIRECTIVE: Greet the operator by name, acknowledge their operational status, call out their failures if any, and provide a comprehensive analysis of their current mission, daily action, and task matrix. Hold them accountable for their performance.
         `;
       }
     }
@@ -440,6 +457,13 @@ function CoachPanel({
       return "Legendary - Apex Mastery";
     })();
 
+    const operationalStatus = (() => {
+      const failureCount = state?.failureCount || 0;
+      if (failureCount > 5) return "FALLEN - Critical Intervention Required";
+      if (failureCount > 2) return "AT RISK - Performance Degraded";
+      return "OPERATIONAL - Elite Execution Mode";
+    })();
+
     const behaviorInsight = (() => {
       if (behaviorAnalytics.procrastinationEvents > 5) return "CRITICAL ALERT: Operator shows high procrastination patterns. Immediate intervention required.";
       if (behaviorAnalytics.sessionCount < 3) return "Operator in early integration phase. Focus on habit formation.";
@@ -454,7 +478,8 @@ function CoachPanel({
       === OPERATOR IDENTITY MATRIX ===
       OPERATOR NAME: ${currentName}
       DESIGNATION: ${currentRank}
-      OPERATIONAL STATUS: ${streakHealth}
+      OPERATIONAL STATUS: ${operationalStatus}
+      STREAK HEALTH: ${streakHealth}
       TOTAL SESSIONS LOGGED: ${behaviorAnalytics.sessionCount}
       SESSION FREQUENCY: ${behaviorAnalytics.sessionCount > 10 ? "High Engagement" : "Building Consistency"}
       
@@ -462,6 +487,7 @@ function CoachPanel({
       CURRENT STREAK: ${state?.streak?.count || 0} Days (Health: ${streakHealth})
       CREDIT BALANCE: ${state?.points || 1000} Credits
       LEADERBOARD PLACEMENT: ${currentRank}
+      FAILURE COUNT: ${state?.failureCount || 0}
       TASK COMPLETION RATE: ${taskCompletionRate}%
       TOTAL TASKS COMPLETED: ${behaviorAnalytics.totalTasksCompleted}
       AVERAGE COMPLETION TIME: ${behaviorAnalytics.averageCompletionTime > 0 ? `${Math.round(behaviorAnalytics.averageCompletionTime)} min/task` : "Insufficient Data"}
@@ -472,6 +498,7 @@ function CoachPanel({
       PROCRASTINATION EVENTS: ${behaviorAnalytics.procrastinationEvents}
       STREAK CONSISTENCY SCORE: ${behaviorAnalytics.streakConsistency}%
       TOTAL COACH INTERACTIONS: ${behaviorAnalytics.totalMessagesExchanged}
+      FAILURE ANALYSIS: ${state?.failureCount > 0 ? `${state?.failureCount} failures detected - Pattern analysis required` : "Zero failures - Elite execution maintained"}
       AI BEHAVIORAL ASSESSMENT: ${behaviorInsight}
       
       === MISSION EXECUTION MATRIX ===
@@ -567,7 +594,7 @@ function CoachPanel({
 
     const sessionKey = "apex-session-briefing-triggered";
     const sessionAlreadyTriggered = sessionStorage.getItem(sessionKey);
-    const isUserLoaded = userName && userName !== "User";
+    const isUserLoaded = userName && userName !== "User" && state && state.points !== undefined;
 
     if (!sessionAlreadyTriggered && !hasTriggeredThisSession.current && isUserLoaded) {
       hasTriggeredThisSession.current = true;
@@ -580,7 +607,7 @@ function CoachPanel({
 
       return () => clearTimeout(timer);
     }
-  }, [userName, setOpen]);
+  }, [userName, state, setOpen]);
 
   useEffect(() => {
     try {

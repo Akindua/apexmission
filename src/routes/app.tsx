@@ -60,6 +60,11 @@ function ApexMission() {
       : `Unranked (${leaderboardOperators.length} Active Operators)`;
   }, [userRankIndex, leaderboardOperators]);
 
+  const userFailureCount = useMemo(() => {
+    const currentUser = leaderboardOperators.find(op => op.id === currentUserId);
+    return currentUser?.failure_count || 0;
+  }, [leaderboardOperators, currentUserId]);
+
   // Live real-time database query pipeline selector function
   const fetchLiveAccountabilityRoster = async () => {
     if (loadingRoster) return;
@@ -765,7 +770,7 @@ useEffect(() => {
         </button>
         <button
           type="button"
-          onClick={() => setCoachOpen(prev => !prev)}
+          onClick={() => setCoachOpen(true)}
           className="flex flex-col items-center gap-1 py-1.5 px-3 rounded-xl text-emerald-400 bg-emerald-950/30 border border-emerald-500/20 hover:bg-emerald-950/50 transition-all"
         >
           <MessageSquare className="size-4" />
@@ -1284,7 +1289,7 @@ useEffect(() => {
       {/* MISSION COACH COMPONENT WITH ACCESSIBLE MOBILE TOGGLE */}
       <MissionCoach
         premium={premium}
-        state={state}
+        state={{ ...state, failureCount: userFailureCount }}
         userName={userName}
         userRank={userRankText}
         isOpen={coachOpen}
