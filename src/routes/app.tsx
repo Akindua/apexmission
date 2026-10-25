@@ -21,24 +21,6 @@ import {
 } from "@/lib/mission-store";
 import { generateMissionPlan } from "@/lib/mission-planner";
 
-let sharedAudioContext: AudioContext | null = null;
-let sharedAudioUnlocked = false;
-
-function getSharedAudioContext(): AudioContext | null {
-  if (typeof window === "undefined" || !sharedAudioUnlocked) return null;
-  try {
-    const Ctor = window.AudioContext || (window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!Ctor) return null;
-    if (!sharedAudioContext) sharedAudioContext = new Ctor();
-    if (sharedAudioContext.state === "suspended") {
-      void sharedAudioContext.resume().catch(() => {});
-    }
-    return sharedAudioContext;
-  } catch {
-    return null;
-  }
-}
-
 export const Route = createFileRoute("/app")({
   component: ApexMission,
 });
@@ -68,20 +50,6 @@ function ApexMission() {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) setCurrentUserId(user.id);
     });
-  }, []);
-
-  useEffect(() => {
-    const unlock = () => {
-      sharedAudioUnlocked = true;
-      const ctx = getSharedAudioContext();
-      void ctx?.resume().catch(() => {});
-    };
-    window.addEventListener("pointerdown", unlock, { once: true });
-    window.addEventListener("keydown", unlock, { once: true });
-    return () => {
-      window.removeEventListener("pointerdown", unlock);
-      window.removeEventListener("keydown", unlock);
-    };
   }, []);
 
   const userRankIndex = leaderboardOperators.findIndex(op => op.id === currentUserId);
@@ -249,11 +217,11 @@ useEffect(() => {
   // 📉 ACCELERATED INTEL LOSS DEGRADATION MATRIX (Loss Aversion Engine)
   useEffect(() => {
     if (!hydrated) return;
-  
+
     const executePenaltyAudit = async () => {
       const highImpactTasks = state.tasks?.high || [];
       const pendingHighCount = highImpactTasks.filter(t => !t.done).length;
-  
+
       if (pendingHighCount > 0) {
         const penaltyAmount = pendingHighCount * 15;
         const targetCurrentPoints = (state as any).points || 0;
@@ -265,7 +233,7 @@ useEffect(() => {
         if (user) {
           await supabase
             .from("profiles")
-            .update({ 
+            .update({
               points: optimizedPoints,
               operational_status: "FALLEN",
               last_action_logged: `Deducted ${penaltyAmount} credits due to active operational slacking metrics.`
@@ -273,87 +241,26 @@ useEffect(() => {
             .eq("id", user.id);
         }
 
-        if (typeof window !== "undefined") {
-          try {
-            const audioCtx = getSharedAudioContext();
-            if (audioCtx) {
-              const osc = audioCtx.createOscillator();
-              const gainNode = audioCtx.createGain();
-              
-              osc.type = "sawtooth";
-              osc.frequency.setValueAtTime(290, audioCtx.currentTime);
-              osc.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 0.4);
-              
-              gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime);
-              gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
-              
-              osc.connect(gainNode);
-              gainNode.connect(audioCtx.destination);
-              
-              osc.start();
-              osc.stop(audioCtx.currentTime + 0.4);
-            }
-          } catch (audioErr) {
-            console.warn("Audio node context blocked by browser gesture guard lines:", audioErr);
-          }
-
-          setSurpriseLoot({
-            active: true,
-            msg: `📉 COGNITIVE PENALTY ENFORCED: Lost ${penaltyAmount} credits. AI tracking flagged sustained slacking parameters. Leaderboard synced.`,
-            points: -penaltyAmount
-          });
-          setTimeout(() => setSurpriseLoot(null), 4500);
-        }
+        setSurpriseLoot({
+          active: true,
+          msg: `📉 COGNITIVE PENALTY ENFORCED: Lost ${penaltyAmount} credits. AI tracking flagged sustained slacking parameters. Leaderboard synced.`,
+          points: -penaltyAmount
+        });
+        setTimeout(() => setSurpriseLoot(null), 4500);
       }
     };
-  
+
     const penaltyTimer = setInterval(executePenaltyAudit, 3600000);
     return () => clearInterval(penaltyTimer);
-  }, [hydrated, state.tasks?.high]);
+  }, [hydrated, state.tasks?.high, setState]);
   
   // 🔄 AUTOMATED LOGIN TELEMETRY SCANNER LAYER WITH INTEGRATED WELCOME CHIME
   useEffect(() => {
     if (hydrated && !hasTriggeredAutoBrief && state && currentUserId) {
       setHasTriggeredAutoBrief(true);
-      
-      if (typeof window !== "undefined") {
-        try {
-          const ctx = getSharedAudioContext();
-          if (ctx) {
-            const now = ctx.currentTime;
-            const notes = [261.63, 329.63, 392.00, 523.25, 659.25];
-            notes.forEach((freq, idx) => {
-              const osc = ctx.createOscillator();
-              const gain = ctx.createGain();
-              osc.type = "sine";
-              osc.frequency.setValueAtTime(freq, now + idx * 0.05);
-              gain.gain.setValueAtTime(0.04, now + idx * 0.05);
-              gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.4);
-              osc.connect(gain);
-              gain.connect(ctx.destination);
-              osc.start(now + idx * 0.05);
-              osc.stop(now + idx * 0.05 + 0.4);
-            });
-          }
-        } catch (audioErr) {
-          console.warn("Welcome chime deferred by client interaction safeguards:", audioErr);
-        }
-      }
-      
+
       setTimeout(() => {
         setCoachOpen(true);
-        const coachChannel = (window as any).__apex_coach_trigger;
-        // #region agent log
-        fetch('http://127.0.0.1:7678/ingest/579042e6-c02b-4f8a-9ee7-63d6d222301a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6a0f5c'},body:JSON.stringify({sessionId:'6a0f5c',runId:'post-fix',hypothesisId:'F',location:'app.tsx:autoBrief',message:'auto brief opening coach',data:{hasCoachChannel:typeof coachChannel==='function'},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
-        if (typeof coachChannel === "function") {
-          const isFreshSignup = localStorage.getItem("apex-tutorial-completed") !== "true";
-          if (isFreshSignup) {
-            coachChannel("[SYSTEM_AUTO_TRIGGER_SIGNUP_ONBOARDING_GUIDE]");
-          } else {
-            coachChannel("[SYSTEM_AUTO_TRIGGER_LOGIN_BRIEFING]");
-          }
-        }
       }, 500);
     }
   }, [hydrated, state, hasTriggeredAutoBrief, currentUserId]);
@@ -543,42 +450,9 @@ useEffect(() => {
           rewardNotice = `🔥 CRITICAL BOOTSTRAP BONUS UNLOCKED: Infused +${criticalBonus} extra credits into your matrix!`;
         }
 
-        if (typeof window !== "undefined") {
-          try {
-            const ctx = getSharedAudioContext();
-            if (ctx) {
-              const osc1 = ctx.createOscillator();
-              const gain1 = ctx.createGain();
-              osc1.type = "sine";
-              osc1.frequency.setValueAtTime(587.33, ctx.currentTime);
-              gain1.gain.setValueAtTime(0.04, ctx.currentTime);
-              gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
-              osc1.connect(gain1);
-              gain1.connect(ctx.destination);
-              osc1.start();
-              osc1.stop(ctx.currentTime + 0.12);
-
-              setTimeout(() => {
-                const osc2 = ctx.createOscillator();
-                const gain2 = ctx.createGain();
-                osc2.type = "sine";
-                osc2.frequency.setValueAtTime(880.00, ctx.currentTime);
-                gain2.gain.setValueAtTime(0.05, ctx.currentTime);
-                gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-                osc2.connect(gain2);
-                gain2.connect(ctx.destination);
-                osc2.start();
-                osc2.stop(ctx.currentTime + 0.25);
-              }, 60);
-            }
-          } catch (audioErr) {
-            console.warn("Audio node context deferred by client browser interaction guard lines:", audioErr);
-          }
-          
-          const taskCompletionHook = (window as any).__apex_task_completed;
-          if (typeof taskCompletionHook === "function") {
-            taskCompletionHook(targetTask?.text || "Task completed");
-          }
+        const taskCompletionHook = (window as any).__apex_task_completed;
+        if (typeof taskCompletionHook === "function") {
+          taskCompletionHook(targetTask?.text || "Task completed");
         }
       }
 
@@ -647,51 +521,7 @@ useEffect(() => {
       };
     });
 
-    if (nextDone && typeof window !== "undefined") {
-      try {
-        const audioCtx = getSharedAudioContext();
-        if (audioCtx) {
-          const osc1 = audioCtx.createOscillator();
-          const gain1 = audioCtx.createGain();
-          osc1.type = "sine";
-          osc1.frequency.setValueAtTime(523.25, audioCtx.currentTime);
-          gain1.gain.setValueAtTime(0.06, audioCtx.currentTime);
-          gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
-          osc1.connect(gain1);
-          gain1.connect(audioCtx.destination);
-          osc1.start();
-          osc1.stop(audioCtx.currentTime + 0.2);
 
-          setTimeout(() => {
-            const osc2 = audioCtx.createOscillator();
-            const gain2 = audioCtx.createGain();
-            osc2.type = "sine";
-            osc2.frequency.setValueAtTime(659.25, audioCtx.currentTime);
-            gain2.gain.setValueAtTime(0.06, audioCtx.currentTime);
-            gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
-            osc2.connect(gain2);
-            gain2.connect(audioCtx.destination);
-            osc2.start();
-            osc2.stop(audioCtx.currentTime + 0.35);
-          }, 70);
-
-          setTimeout(() => {
-            const osc3 = audioCtx.createOscillator();
-            const gain3 = audioCtx.createGain();
-            osc3.type = "sine";
-            osc3.frequency.setValueAtTime(783.99, audioCtx.currentTime);
-            gain3.gain.setValueAtTime(0.07, audioCtx.currentTime);
-            gain3.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
-            osc3.connect(gain3);
-            gain3.connect(audioCtx.destination);
-            osc3.start();
-            osc3.stop(audioCtx.currentTime + 0.5);
-          }, 140);
-        }
-      } catch (err) {
-        console.warn("Audio Context blocked by client gesture locks:", err);
-      }
-    }
 
     if (nextDone) {
       setJustCompleted(true);
@@ -1332,6 +1162,7 @@ useEffect(() => {
         onOpenChange={setCoachOpen}
         onClose={() => setCoachOpen(false)}
         onLockedHistory={() => setPaywall("Your full coach history is a premium feature...")}
+        isFirstSignup={localStorage.getItem("apex-tutorial-completed") !== "true"}
         onActionPlanGenerated={(plan) => {
           setState((s) => ({
             ...s,

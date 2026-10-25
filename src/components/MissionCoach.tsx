@@ -3,6 +3,7 @@ import { extractText } from "@/lib/document-parser";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { Lock, MessageCircle, X, Paperclip, Sparkles, Loader2, Target, Flame, Trophy, Activity, Zap, Brain, Shield, AlertTriangle } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { generateSyntheticBriefing } from "@/lib/synthetic-briefing";
 
 import {
   Conversation,
@@ -229,6 +230,7 @@ export function MissionCoach({
   isOpen,
   onClose,
   onOpenChange,
+  isFirstSignup = false,
 }: {
   premium?: boolean;
   state: any;
@@ -239,6 +241,7 @@ export function MissionCoach({
   isOpen?: boolean;
   onClose?: () => void;
   onOpenChange?: (open: boolean) => void;
+  isFirstSignup?: boolean;
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [initial, setInitial] = useState<UIMessage[]>([]);
@@ -375,7 +378,7 @@ function CoachPanel({
 
   const isRateLimited = false; 
 
-  const { messages, sendMessage, status } = useChat({
+  const { messages, sendMessage, status, append } = useChat({
     id: "mission-coach",
     messages: initialMessages,
     transport,
@@ -658,17 +661,36 @@ function CoachPanel({
       hasTriggeredThisSession.current = true;
       sessionStorage.setItem(sessionKey, "true");
       // #region agent log
-      fetch('http://127.0.0.1:7678/ingest/579042e6-c02b-4f8a-9ee7-63d6d222301a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6a0f5c'},body:JSON.stringify({sessionId:'6a0f5c',runId:'post-fix',hypothesisId:'F',location:'MissionCoach.tsx:autoSessionBrief',message:'CoachPanel auto-open',data:{userName,open},timestamp:Date.now()})}).catch(()=>{});
+      fetch('http://127.0.0.1:7678/ingest/579042e6-c02b-4f8a-9ee7-63d6d222301a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6a0f5c'},body:JSON.stringify({sessionId:'6a0f5c',runId:'post-fix',hypothesisId:'F',location:'MissionCoach.tsx:autoSessionBrief',message:'CoachPanel auto-open with synthetic briefing',data:{userName,open,isFirstSignup},timestamp:Date.now()})}).catch(()=>{});
       // #endregion
       setOpen(true);
 
       const timer = setTimeout(() => {
-        send("[SYSTEM_AUTO_TRIGGER_LOGIN_BRIEFING]", true);
+        // Generate synthetic briefing without API
+        const syntheticMessages = generateSyntheticBriefing({
+          userName,
+          userRank,
+          state,
+          behaviorAnalytics,
+          isFirstSignup,
+          currentHour: new Date().getHours()
+        });
+        
+        // Inject synthetic messages into the chat
+        syntheticMessages.forEach(msg => {
+          if (msg.role === "assistant") {
+            // Add as assistant message
+            append({
+              role: "assistant",
+              content: msg.content
+            });
+          }
+        });
       }, 600);
 
       return () => clearTimeout(timer);
     }
-  }, [userName, state, setOpen]);
+  }, [userName, state, setOpen, behaviorAnalytics, isFirstSignup, userRank, append]);
 
   useEffect(() => {
     try {
