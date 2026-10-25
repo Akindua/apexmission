@@ -88,38 +88,21 @@ function saveBehaviorAnalytics(analytics: BehaviorAnalytics) {
 }
 
 let audioContext: AudioContext | null = null;
-let audioInitialized = false;
-let userInteracted = false;
+let audioUnlocked = false;
 
-// Initialize audio on first user interaction
-function initAudioOnInteraction() {
-  if (userInteracted) return;
-  userInteracted = true;
-  
-  if (typeof window !== "undefined") {
-    const ctx = getAudioContext();
-    if (ctx && ctx.state === "suspended") {
-      ctx.resume().catch(() => {});
-    }
-  }
-}
-
-// Listen for first user interaction
 if (typeof window !== "undefined") {
-  const handleInteraction = () => {
-    initAudioOnInteraction();
-    document.removeEventListener("click", handleInteraction);
-    document.removeEventListener("keydown", handleInteraction);
-    document.removeEventListener("touchstart", handleInteraction);
+  const unlockAudio = () => {
+    audioUnlocked = true;
+    if (audioContext && audioContext.state === "suspended") {
+      void audioContext.resume().catch(() => {});
+    }
   };
-  
-  document.addEventListener("click", handleInteraction, { once: true, passive: true });
-  document.addEventListener("keydown", handleInteraction, { once: true, passive: true });
-  document.addEventListener("touchstart", handleInteraction, { once: true, passive: true });
+  window.addEventListener("pointerdown", unlockAudio, { once: true });
+  window.addEventListener("keydown", unlockAudio, { once: true });
 }
 
 function getAudioContext(): AudioContext | null {
-  if (typeof window === "undefined") return null;
+  if (typeof window === "undefined" || !audioUnlocked) return null;
   
   try {
     const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
@@ -128,13 +111,9 @@ function getAudioContext(): AudioContext | null {
     if (!audioContext) {
       audioContext = new AudioCtxClass();
     }
-    
-    if (audioContext.state === "suspended" && userInteracted) {
-      audioContext.resume().catch(() => {
-        // Ignore resume errors - audio may not be available
-      });
+    if (audioContext.state === "suspended") {
+      void audioContext.resume().catch(() => {});
     }
-    
     return audioContext;
   } catch {
     return null;
@@ -249,6 +228,7 @@ export function MissionCoach({
   onActionPlanGenerated,
   isOpen,
   onClose,
+  onOpenChange,
 }: {
   premium?: boolean;
   state: any;
@@ -258,6 +238,7 @@ export function MissionCoach({
   onActionPlanGenerated?: (plan: any) => void;
   isOpen?: boolean;
   onClose?: () => void;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [initial, setInitial] = useState<UIMessage[]>([]);
@@ -275,7 +256,20 @@ export function MissionCoach({
   const [mounted, setMounted] = useState(false);
 
   const open = isOpen !== undefined ? isOpen : internalOpen;
-  const setOpen = onClose ? onClose : setInternalOpen;
+  const setOpen = (next: boolean) => {
+    // #region agent log
+    fetch('http://127.0.0.1:7678/ingest/579042e6-c02b-4f8a-9ee7-63d6d222301a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6a0f5c'},body:JSON.stringify({sessionId:'6a0f5c',runId:'post-fix',hypothesisId:'F',location:'MissionCoach.tsx:setOpen',message:'coach setOpen',data:{next,controlled:isOpen!==undefined,hasOnOpenChange:typeof onOpenChange==='function',hasOnClose:typeof onClose==='function'},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+    if (onOpenChange) {
+      onOpenChange(next);
+      return;
+    }
+    if (isOpen !== undefined) {
+      if (!next) onClose?.();
+      return;
+    }
+    setInternalOpen(next);
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -286,30 +280,20 @@ export function MissionCoach({
   }, []);
 
   useEffect(() => {
-    if (!mounted) return;
-    
-    if (open) {
-      playSoundEffect("open");
-      const analytics = { ...behaviorAnalytics };
-      analytics.sessionCount += 1;
-      analytics.lastSessionDate = new Date().toISOString();
-      const currentHour = new Date().getHours();
-      if (analytics.totalTasksCompleted > 0) {
-        analytics.peakProductivityHour = currentHour;
+    if (!mounted || !open) return;
+    setBehaviorAnalytics((prev) => {
+      const next = {
+        ...prev,
+        sessionCount: prev.sessionCount + 1,
+        lastSessionDate: new Date().toISOString(),
+      };
+      if (next.totalTasksCompleted > 0) {
+        next.peakProductivityHour = new Date().getHours();
       }
-      
-      if (analytics.sessionCount >= 10) {
-        setInsightLevel("advanced");
-      } else if (analytics.sessionCount >= 5) {
-        setInsightLevel("intermediate");
-      }
-      
-      saveBehaviorAnalytics(analytics);
-      setBehaviorAnalytics(analytics);
-    } else {
-      playSoundEffect("close");
-    }
-  }, [open, mounted, behaviorAnalytics]);
+      saveBehaviorAnalytics(next);
+      return next;
+    });
+  }, [open, mounted]);
 
   if (!mounted) {
     return <CoachLauncher open={open} onToggle={() => setOpen(true)} />;
@@ -337,10 +321,7 @@ function CoachLauncher({ onToggle, open }: { onToggle: () => void; open: boolean
   return (
     <button
       type="button"
-      onClick={() => {
-        onToggle();
-        playSoundEffect("open");
-      }}
+      onClick={onToggle}
       className={`md:flex fixed right-5 bottom-5 z-40 hidden h-12 transform items-center gap-2.5 rounded-full border border-zinc-800 bg-[#0D0D11] px-5 text-xs font-bold tracking-wide text-zinc-200 shadow-2xl transition-all duration-300 ease-out hover:scale-105 hover:border-emerald-500/40 hover:text-emerald-400 hover:shadow-[0_0_20px_rgba(16,185,129,0.15)] active:scale-98 ${
         open ? "pointer-events-none opacity-0 scale-90" : "opacity-100 scale-100"
       }`}
@@ -386,6 +367,11 @@ function CoachPanel({
   const [error, setError] = useState<string | null>(null);
   const [usageCount, setUsageCount] = useState(0);
   const [insightLevel, setInsightLevel] = useState<"basic" | "intermediate" | "advanced">("basic");
+
+  useEffect(() => {
+    if (behaviorAnalytics.sessionCount >= 10) setInsightLevel("advanced");
+    else if (behaviorAnalytics.sessionCount >= 5) setInsightLevel("intermediate");
+  }, [behaviorAnalytics.sessionCount]);
 
   const isRateLimited = false; 
 
@@ -671,6 +657,9 @@ function CoachPanel({
     if (!sessionAlreadyTriggered && !hasTriggeredThisSession.current && isUserLoaded) {
       hasTriggeredThisSession.current = true;
       sessionStorage.setItem(sessionKey, "true");
+      // #region agent log
+      fetch('http://127.0.0.1:7678/ingest/579042e6-c02b-4f8a-9ee7-63d6d222301a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6a0f5c'},body:JSON.stringify({sessionId:'6a0f5c',runId:'post-fix',hypothesisId:'F',location:'MissionCoach.tsx:autoSessionBrief',message:'CoachPanel auto-open',data:{userName,open},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
       setOpen(true);
 
       const timer = setTimeout(() => {
@@ -993,6 +982,8 @@ function CoachPanel({
             className="relative flex flex-col w-full rounded-xl border border-zinc-800 bg-[#050507] p-3 focus-within:border-emerald-500/50 focus-within:shadow-[0_0_15px_rgba(16,185,129,0.08)] transition-all duration-300"
           >
             <textarea
+              id="coach-brief"
+              name="coach-brief"
               ref={textareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}

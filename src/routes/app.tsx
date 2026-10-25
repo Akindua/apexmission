@@ -21,51 +21,18 @@ import {
 } from "@/lib/mission-store";
 import { generateMissionPlan } from "@/lib/mission-planner";
 
-// Shared audio context for the entire app
 let sharedAudioContext: AudioContext | null = null;
-let audioUserInteracted = false;
-
-// Initialize audio on first user interaction
-function initAppAudioOnInteraction() {
-  if (audioUserInteracted) return;
-  audioUserInteracted = true;
-  
-  if (typeof window !== "undefined" && sharedAudioContext && sharedAudioContext.state === "suspended") {
-    sharedAudioContext.resume().catch(() => {});
-  }
-}
-
-// Listen for first user interaction
-if (typeof window !== "undefined") {
-  const handleInteraction = () => {
-    initAppAudioOnInteraction();
-    document.removeEventListener("click", handleInteraction);
-    document.removeEventListener("keydown", handleInteraction);
-    document.removeEventListener("touchstart", handleInteraction);
-  };
-  
-  document.addEventListener("click", handleInteraction, { once: true, passive: true });
-  document.addEventListener("keydown", handleInteraction, { once: true, passive: true });
-  document.addEventListener("touchstart", handleInteraction, { once: true, passive: true });
-}
+let sharedAudioUnlocked = false;
 
 function getSharedAudioContext(): AudioContext | null {
-  if (typeof window === "undefined") return null;
-  
+  if (typeof window === "undefined" || !sharedAudioUnlocked) return null;
   try {
-    const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioCtxClass) return null;
-    
-    if (!sharedAudioContext) {
-      sharedAudioContext = new AudioCtxClass();
+    const Ctor = window.AudioContext || (window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctor) return null;
+    if (!sharedAudioContext) sharedAudioContext = new Ctor();
+    if (sharedAudioContext.state === "suspended") {
+      void sharedAudioContext.resume().catch(() => {});
     }
-    
-    if (sharedAudioContext.state === "suspended" && audioUserInteracted) {
-      sharedAudioContext.resume().catch(() => {
-        // Ignore resume errors
-      });
-    }
-    
     return sharedAudioContext;
   } catch {
     return null;
@@ -101,6 +68,20 @@ function ApexMission() {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) setCurrentUserId(user.id);
     });
+  }, []);
+
+  useEffect(() => {
+    const unlock = () => {
+      sharedAudioUnlocked = true;
+      const ctx = getSharedAudioContext();
+      void ctx?.resume().catch(() => {});
+    };
+    window.addEventListener("pointerdown", unlock, { once: true });
+    window.addEventListener("keydown", unlock, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
   }, []);
 
   const userRankIndex = leaderboardOperators.findIndex(op => op.id === currentUserId);
@@ -199,10 +180,7 @@ function ApexMission() {
   const [isGeneratingMissionPlan, setIsGeneratingMissionPlan] = useState(false);
   const [hasGeneratedMissionPlan, setHasGeneratedMissionPlan] = useState(false);
 
-  const [isEvening, setIsEvening] = useState(() => {
-    const currentHour = new Date().getHours();
-    return currentHour >= 18 || currentHour < 1;
-  });
+  const [isEvening, setIsEvening] = useState(false);
 
   const [showMilestoneCelebration, setShowMilestoneCelebration] = useState<number | null>(null);
   const [activeLayoutTheme, setActiveLayoutTheme] = useState<string>("layout-default");
@@ -250,10 +228,16 @@ function ApexMission() {
 }, [hydrated, navigate]);
 
 useEffect(() => {
-  const timer = setInterval(() => {
+  const applyEvening = () => {
     const currentHour = new Date().getHours();
-    setIsEvening(currentHour >= 18 || currentHour < 1);
-  }, 60000);
+    const next = currentHour >= 18 || currentHour < 1;
+    // #region agent log
+    fetch('http://127.0.0.1:7678/ingest/579042e6-c02b-4f8a-9ee7-63d6d222301a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6a0f5c'},body:JSON.stringify({sessionId:'6a0f5c',runId:'post-fix',hypothesisId:'H',location:'app.tsx:isEvening',message:'isEvening set after mount',data:{currentHour,next},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+    setIsEvening(next);
+  };
+  applyEvening();
+  const timer = setInterval(applyEvening, 60000);
   return () => clearInterval(timer);
 }, []);
 
@@ -357,7 +341,11 @@ useEffect(() => {
       }
       
       setTimeout(() => {
+        setCoachOpen(true);
         const coachChannel = (window as any).__apex_coach_trigger;
+        // #region agent log
+        fetch('http://127.0.0.1:7678/ingest/579042e6-c02b-4f8a-9ee7-63d6d222301a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6a0f5c'},body:JSON.stringify({sessionId:'6a0f5c',runId:'post-fix',hypothesisId:'F',location:'app.tsx:autoBrief',message:'auto brief opening coach',data:{hasCoachChannel:typeof coachChannel==='function'},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
         if (typeof coachChannel === "function") {
           const isFreshSignup = localStorage.getItem("apex-tutorial-completed") !== "true";
           if (isFreshSignup) {
@@ -374,14 +362,16 @@ useEffect(() => {
     navigate({ to: "/night-reflection" });
   }
 
-  const [formattedDate] = useState(() => {
+  const [formattedDate, setFormattedDate] = useState("");
+
+  useEffect(() => {
     const now = new Date();
     const month = now.toLocaleDateString('en-US', { month: 'short' });
     const dayNum = now.getDate();
     const suffix = getOrdinalSuffix(dayNum);
     const year = now.getFullYear();
-    return `${month}. ${dayNum}${suffix} ${year}`;
-  });
+    setFormattedDate(`${month}. ${dayNum}${suffix} ${year}`);
+  }, []);
 
   const themeClasses = useMemo(() => {
     switch (activeLayoutTheme) {
@@ -1339,6 +1329,7 @@ useEffect(() => {
         userName={userName}
         userRank={userRankText}
         isOpen={coachOpen}
+        onOpenChange={setCoachOpen}
         onClose={() => setCoachOpen(false)}
         onLockedHistory={() => setPaywall("Your full coach history is a premium feature...")}
         onActionPlanGenerated={(plan) => {
