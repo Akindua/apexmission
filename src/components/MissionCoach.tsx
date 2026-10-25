@@ -85,14 +85,39 @@ function saveBehaviorAnalytics(analytics: BehaviorAnalytics) {
   } catch {}
 }
 
+let audioContext: AudioContext | null = null;
+let audioInitialized = false;
+
+function getAudioContext(): AudioContext | null {
+  if (typeof window === "undefined") return null;
+  
+  try {
+    const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtxClass) return null;
+    
+    if (!audioContext) {
+      audioContext = new AudioCtxClass();
+    }
+    
+    if (audioContext.state === "suspended") {
+      audioContext.resume().catch(() => {
+        // Ignore resume errors - audio may not be available
+      });
+    }
+    
+    return audioContext;
+  } catch {
+    return null;
+  }
+}
+
 function playSoundEffect(type: "success" | "warning" | "alert" | "message" | "open" | "close") {
   if (typeof window === "undefined") return;
   
   try {
-    const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioCtxClass) return;
+    const ctx = getAudioContext();
+    if (!ctx) return;
     
-    const ctx = new AudioCtxClass();
     const now = ctx.currentTime;
     
     switch (type) {
@@ -269,7 +294,7 @@ function CoachLauncher({ onToggle, open }: { onToggle: () => void; open: boolean
         onToggle();
         playSoundEffect("open");
       }}
-      className={`fixed right-5 bottom-5 z-40 flex h-12 transform items-center gap-2.5 rounded-full border border-zinc-800 bg-[#0D0D11] px-5 text-xs font-bold tracking-wide text-zinc-200 shadow-2xl transition-all duration-300 ease-out hover:scale-105 hover:border-emerald-500/40 hover:text-emerald-400 hover:shadow-[0_0_20px_rgba(16,185,129,0.15)] active:scale-98 ${
+      className={`md:flex fixed right-5 bottom-5 z-40 hidden h-12 transform items-center gap-2.5 rounded-full border border-zinc-800 bg-[#0D0D11] px-5 text-xs font-bold tracking-wide text-zinc-200 shadow-2xl transition-all duration-300 ease-out hover:scale-105 hover:border-emerald-500/40 hover:text-emerald-400 hover:shadow-[0_0_20px_rgba(16,185,129,0.15)] active:scale-98 ${
         open ? "pointer-events-none opacity-0 scale-90" : "opacity-100 scale-100"
       }`}
     >

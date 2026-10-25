@@ -242,5 +242,14 @@
       0 0 20px rgba(16, 185, 129, 0.12),
       inset 0 2px 4px rgba(0, 0, 0, 0.8) !important;
   }
+
+  /* 📱 Mobile Safe Area Support */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+  }
+
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 16px);
+  }
 }
 

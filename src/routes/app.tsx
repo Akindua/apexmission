@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Check, Flame, Plus, Sparkles, Loader2, Target, TimerReset, Shield, Trophy, LayoutDashboard, Award, HardDrive, HelpCircle, MessageSquare } from "lucide-react";
 import { PaywallModal } from "@/components/PaywallModal";
@@ -20,6 +20,32 @@ import {
   type Task,
 } from "@/lib/mission-store";
 import { generateMissionPlan } from "@/lib/mission-planner";
+
+// Shared audio context for the entire app
+let sharedAudioContext: AudioContext | null = null;
+
+function getSharedAudioContext(): AudioContext | null {
+  if (typeof window === "undefined") return null;
+  
+  try {
+    const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtxClass) return null;
+    
+    if (!sharedAudioContext) {
+      sharedAudioContext = new AudioCtxClass();
+    }
+    
+    if (sharedAudioContext.state === "suspended") {
+      sharedAudioContext.resume().catch(() => {
+        // Ignore resume errors
+      });
+    }
+    
+    return sharedAudioContext;
+  } catch {
+    return null;
+  }
+}
 
 export const Route = createFileRoute("/app")({
   component: ApexMission,
@@ -240,9 +266,8 @@ useEffect(() => {
 
         if (typeof window !== "undefined") {
           try {
-            const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-            if (AudioContextClass) {
-              const audioCtx = new AudioContextClass();
+            const audioCtx = getSharedAudioContext();
+            if (audioCtx) {
               const osc = audioCtx.createOscillator();
               const gainNode = audioCtx.createGain();
               
@@ -284,9 +309,8 @@ useEffect(() => {
       
       if (typeof window !== "undefined") {
         try {
-          const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-          if (AudioContextClass) {
-            const ctx = new AudioContextClass();
+          const ctx = getSharedAudioContext();
+          if (ctx) {
             const now = ctx.currentTime;
             const notes = [261.63, 329.63, 392.00, 523.25, 659.25];
             notes.forEach((freq, idx) => {
@@ -506,9 +530,8 @@ useEffect(() => {
 
         if (typeof window !== "undefined") {
           try {
-            const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
-            if (AudioCtxClass) {
-              const ctx = new AudioCtxClass();
+            const ctx = getSharedAudioContext();
+            if (ctx) {
               const osc1 = ctx.createOscillator();
               const gain1 = ctx.createGain();
               osc1.type = "sine";
@@ -611,10 +634,8 @@ useEffect(() => {
 
     if (nextDone && typeof window !== "undefined") {
       try {
-        const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
-        if (AudioCtxClass) {
-          const audioCtx = new AudioCtxClass();
-          
+        const audioCtx = getSharedAudioContext();
+        if (audioCtx) {
           const osc1 = audioCtx.createOscillator();
           const gain1 = audioCtx.createGain();
           osc1.type = "sine";
@@ -737,57 +758,57 @@ useEffect(() => {
       </aside>
 
       {/* 📱 MOBILE BOTTOM NAVIGATION BAR */}
-      <div className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-[#07070A]/95 border-t border-emerald-500/30 backdrop-blur-xl px-2 py-2 flex items-center justify-around font-mono text-[10px] font-black uppercase tracking-wider shadow-[0_-10px_30px_rgba(0,0,0,0.8)]">
+      <div className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-[#07070A]/95 border-t border-emerald-500/30 backdrop-blur-xl px-2 py-3 pb-safe flex items-center justify-around font-mono text-[9px] font-black uppercase tracking-wider shadow-[0_-10px_30px_rgba(0,0,0,0.8)]">
         <button
           type="button"
           onClick={() => setActiveTab("workspace")}
-          className={`flex flex-col items-center gap-1 py-1.5 px-3 rounded-xl transition-all ${
+          className={`flex flex-col items-center gap-1 py-2 px-2 rounded-xl transition-all min-w-0 flex-1 ${
             activeTab === "workspace" ? "text-emerald-400 bg-emerald-950/40 border border-emerald-500/30 font-black shadow-[0_0_15px_rgba(16,185,129,0.2)]" : "text-zinc-500 hover:text-zinc-300"
           }`}
         >
-          <LayoutDashboard className="size-4" />
-          <span>Workspace</span>
+          <LayoutDashboard className="size-4 flex-shrink-0" />
+          <span className="truncate max-w-full">Workspace</span>
         </button>
         <button
           type="button"
           onClick={() => setActiveTab("leaderboard")}
-          className={`flex flex-col items-center gap-1 py-1.5 px-3 rounded-xl transition-all ${
+          className={`flex flex-col items-center gap-1 py-2 px-2 rounded-xl transition-all min-w-0 flex-1 ${
             activeTab === "leaderboard" ? "text-emerald-400 bg-emerald-950/40 border border-emerald-500/30 font-black shadow-[0_0_15px_rgba(16,185,129,0.2)]" : "text-zinc-500 hover:text-zinc-300"
           }`}
         >
-          <Award className="size-4" />
-          <span>Ranks</span>
+          <Award className="size-4 flex-shrink-0" />
+          <span className="truncate max-w-full">Ranks</span>
         </button>
         <button
           type="button"
           onClick={() => setActiveTab("hardware")}
-          className={`flex flex-col items-center gap-1 py-1.5 px-3 rounded-xl transition-all ${
+          className={`flex flex-col items-center gap-1 py-2 px-2 rounded-xl transition-all min-w-0 flex-1 ${
             activeTab === "hardware" ? "text-emerald-400 bg-emerald-950/40 border border-emerald-500/30 font-black shadow-[0_0_15px_rgba(16,185,129,0.2)]" : "text-zinc-500 hover:text-zinc-300"
           }`}
         >
-          <HardDrive className="size-4" />
-          <span>Hardware</span>
+          <HardDrive className="size-4 flex-shrink-0" />
+          <span className="truncate max-w-full">Hardware</span>
         </button>
         <button
           type="button"
           onClick={() => setCoachOpen(true)}
-          className="flex flex-col items-center gap-1 py-1.5 px-3 rounded-xl text-emerald-400 bg-emerald-950/30 border border-emerald-500/20 hover:bg-emerald-950/50 transition-all"
+          className="flex flex-col items-center gap-1 py-2 px-2 rounded-xl text-emerald-400 bg-emerald-950/30 border border-emerald-500/20 hover:bg-emerald-950/50 transition-all min-w-0 flex-1"
         >
-          <MessageSquare className="size-4" />
-          <span>Coach</span>
+          <MessageSquare className="size-4 flex-shrink-0" />
+          <span className="truncate max-w-full">Coach</span>
         </button>
         <button
           type="button"
           onClick={() => setShowSupport(true)}
-          className="flex flex-col items-center gap-1 py-1.5 px-3 rounded-xl text-zinc-500 hover:text-zinc-300 transition-all"
+          className="flex flex-col items-center gap-1 py-2 px-2 rounded-xl text-zinc-500 hover:text-zinc-300 transition-all min-w-0 flex-1"
         >
-          <HelpCircle className="size-4 text-emerald-400" />
-          <span>Support</span>
+          <HelpCircle className="size-4 text-emerald-400 flex-shrink-0" />
+          <span className="truncate max-w-full">Support</span>
         </button>
       </div>
 
       {/* 🚀 MAIN CONTENT AREA */}
-      <main className="flex-1 overflow-y-auto relative z-10 px-4 py-4 sm:px-10 pb-28 md:pb-6">
+      <main className="flex-1 overflow-y-auto relative z-10 px-4 py-4 sm:px-10 pb-24 md:pb-6">
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
 
           {/* ⚡ FLOATING EMERALD NOTIFICATION BANNER */}
