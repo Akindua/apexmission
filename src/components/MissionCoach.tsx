@@ -12,6 +12,7 @@ import {
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
 
 const STORAGE_KEY = "mission-coach-chat-v1";
+const LIMIT_KEY = "apexmission-coach-daily-tokens";
 const FREE_HISTORY_LIMIT = 6;
 
 const QUICK_STARTS = [
@@ -153,19 +154,8 @@ function CoachPanel({
         humanInputString = "Initiate my operational onboarding command briefing. Break down how to get started on ApexMission.";
         explicitOnboardingDirective = `
           [CRITICAL COMMAND OVERRIDE: BRAND NEW SIGNUP OPERATOR ONBOARDING INITIALIZATION]
-          The operator has JUST CREATED THEIR ACCOUNT. They have skipped the old boring text box guide completely. 
-          You must act as a magnificent, immersive, highly engaging elite mission commander giving them a live vocal-style briefing about how to operate their dashboard. Talk directly to them in an unyielding, high-retention, cinematic style.
-          Address the operator by their exact name "${currentName}" immediately in your greeting.
+          The operator has JUST CREATED THEIR ACCOUNT. Address the operator by their exact name "${currentName}" immediately in your greeting.
           State their rank standing "${currentRank}" directly to them.
-          
-          YOU MUST THOROUGHLY BREAK DOWN EACH OF THESE MODULES IN ORDER:
-          1. ☀️ THE MORNING CHECK-IN NODE: Explain how they must open this app between 5:00 AM and 11:59 AM daily to seal their routine (hydration, focus, workout) or face instant 404 path locks.
-          2. 🏢 THE WORKSPACE GRID TIERS: Explain the leverage matrix, the High Impact columns and how it drain credits rapidly if left empty (loss aversion), the Medium and Low handle tactical subtasks, and daily maintenance rows.
-          3. ☀️ TODAY'S MASTER FOCUS ACTION: Explain that they must execute their single highest-impact target before the midnight cutoff. Completing it progresses their day. Missing it shatters their streak.
-          4. 🌙 THE NIGHT REFLECTION PORTAL: Explain that when evening strikes (6:00 PM), they must close out their parameters and log their learned intel to prep for tomorrow.
-          5. 🛡️ CREDITS, THE HARDWARE STORE & RANKS: Explain that they start with 1,000 Credits. Completing goals awards points. Slacking off or procrastinating triggers an automatic AI deduction audit! Real credits are ranked live on the multi-column real-time Ranks Leaderboard table. They can burn credits in the Hardware Market to unlock aesthetic overrides, custom layouts, or premium alpha founder insignia badges!
-          
-          CONCLUDE WITH A SHARP, DIRECT COMMAND BY SAYING: "Console systems synchronized. I have initialized your data matrices with 1,000 starting credits. Your priority columns are open. I am officially tracking your focus patterns. Go lock down your macro vision statement card right now and begin your countdown."
         `;
       } else {
         humanInputString = `Initialize my operational briefing for session start. Review my current metrics, streak, and dashboard components.`;
@@ -175,28 +165,13 @@ function CoachPanel({
           Leaderboard Standing: ${currentRank}
           Streak: ${state?.streak?.count || 0} Days
           Credits: ${state?.points || 1000} Credits
-
-          [CORE MATRIX FOCUS DATA TIERS]
-          MASTER STRATEGIC VISION STATEMENT: "${state?.mission || "No overall mission statement declared inside dashboard card."}"
-          TODAY'S CRITICAL FOCUS ACTION: "${state?.daily?.text || "No single master action item scheduled for this interval."}"
-          DAILY ACTION CHECKLIST SEALED: ${state?.daily?.done ? "YES (100% Metric Attained)" : "NO (Incomplete Deficit Risk)"}
-          
-          Speak directly and dynamically in an elite military Socratic coaching tone. 
-          Review their progress, streak, credits, active task breakdown, and app components. Tell them specifically what they need to execute right now. You are not here to offer comfort; you are here to force absolute mission execution. Examine the unser's execution streak, credit point balance, failures, and past reflection data. 
-          You are an elite, unyielding Socratic performance coach. You analyze metrics with absolute precision. Itemize their unfinished high-impact priority rows, and give them a sharp, 3-sentence tactical briefing commanding them exactly what node area to execute next during this active 24-hour cycle. Repeat this for the rest of their lifecycle.
         `;
       }
     }
 
-    // 🧠 REAL-TIME AI COACH CHAT TEXT SCANNER & SLACKING DEDUCTION WITH NATIVE AUDIO CHIME
     const textLower = trimmed.toLowerCase();
     const indicatesSlacking = textLower.includes("procrastinate") || textLower.includes("gave up") || textLower.includes("lazy") || textLower.includes("didn't do");
-    const calculatedRankDisplay = userRank;
     let cleanCurrentPoints = state?.points || 1000;
-    let currentStreakCount = state?.streak?.count || 0;
-    let currentStatus = state?.operational_status || "Operational";
-    let failureTally = state?.failure_count || 0;
-    const userCredits = cleanCurrentPoints;
   
     if (indicatesSlacking) {
       const aiPenalty = 100; 
@@ -220,7 +195,6 @@ function CoachPanel({
         localStorage.setItem("apexmission-state", JSON.stringify(currentStore));
       }
 
-      // 🔊 INTENSE OSCILLATOR SWEEP AUDIO HARBINGER CHIME FOR AI CHAT REBUKES
       try {
         const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
         if (AudioCtxClass) {
@@ -243,7 +217,6 @@ function CoachPanel({
       } catch (e) {}
     }
 
-    // Calculate, save, and increment local text usage blocks
     const nextCount = usageCount + 1;
     setUsageCount(nextCount);
     try {
@@ -253,7 +226,6 @@ function CoachPanel({
       }));
     } catch {}
 
-    // --- 📊 EXPLICIT EXTRACTION MATRICES ---
     const highImpactTasks = (state?.tasks?.high || [])
       .map((t: any) => `[${t.done ? "✓" : " "}] ${t.text}`)
       .join("\n      ") || "No high impact vectors initialized.";
@@ -266,48 +238,33 @@ function CoachPanel({
       .map((t: any) => `[${t.done ? "✓" : " "}] ${t.text}`)
       .join("\n      ") || "No low impact maintenance items mapped.";
 
-    // --- 🧠 RIGOROUS SOCRATIC DEFICIT TRANS-MATRIX INTERCEPT ---
     const SocraticContext = `
-      [CRITICAL IDENTITY TELEMETRY BALANCES]
+      [ADVANCED APP COMPONENT TELEMETRY & AUTOMATED USER BEHAVIOR ANALYSIS]
       OPERATOR NAME: ${currentName}
-      CURRENT OPERATOR STREAK: ${currentStreakCount} Days
-      NET CREDIT ACCOUNT BALANCE: ${cleanCurrentPoints} Credits.
-      OPERATIONAL HUD RECON STATUS: "${currentStatus}"
-      RECORDED DEADLINE BREAK FAULTS: ${failureTally} Failures.
-      GLOBAL NETWORK LEADERBOARD PLACEMENT: ${currentRank}
+      CURRENT STREAK: ${state?.streak?.count || 0} Days
+      CREDIT BALANCE: ${state?.points || 1000} Credits
+      LEADERBOARD PLACEMENT: ${currentRank}
       
-      [CORE MATRIX FOCUS DATA TIERS]
-      MASTER STRATEGIC VISION STATEMENT: "${state?.mission || "No overall mission statement declared inside dashboard card."}"
-      TODAY'S CRITICAL FOCUS ACTION: "${state?.daily?.text || "No single master action item scheduled for this interval."}"
-      DAILY ACTION CHECKLIST SEALED: ${state?.daily?.done ? "YES (100% Metric Attained)" : "NO (Incomplete Deficit Risk)"}
-
-      [ACTIVE PRIORITY MATRIX GRID ROWS]
+      [GOAL & TASK EXECUTION MATRIX]
+      MASTER VISION STATEMENT: "${state?.mission || "No overall mission statement declared."}"
+      TODAY'S MASTER FOCUS ACTION: "${state?.daily?.text || "No single master action scheduled."}"
+      DAILY ACTION SEALED: ${state?.daily?.done ? "YES (Completed)" : "NO (Pending / At Risk)"}
+      
       HIGH IMPACT LEVERAGE TASKS:
-      text
       ${highImpactTasks}
       
       MEDIUM IMPACT ALIGNMENT TASKS:
-      text
       ${mediumImpactTasks}
       
       LOW IMPACT MAINTENANCE TASKS:
-      text
       ${lowImpactTasks}
       
-      YESTERDAY REFLECTION SUMMARY: "${state?.reflection?.wins || "No historical notes logged for previous interval."}"
-      
-      CORE BEHAVIORAL DIRECTIVE: You are an unyielding, elite Socratic performance coach. You are not here to offer comfort; you are here to force absolute mission execution. Look closely at the operator's message and cross-examine it against their execution streak, execution balances, failures, and past reflection data. 
-      You are an elite, unyielding Socratic performance coach. You analyze metrics with absolute precision.
-      
-      🏆 SPECIAL STREAK CONDITION RULE: 
-      Review the CURRENT OPERATOR STREAK value carefully. If the user has a streak of 7 days or more (e.g., 7, 14, 21, 28... days), you must SHIFT YOUR TONE FROM HARSH REBUKE TO HIGH-LEVEL ELITE MILITARY PRAISE. Acknowledge their consistency multiplier, recognize their position near the top of the leaderboard standings, and treat them like an elite tactical commander. Challenge them to maintain this momentum without slipping.
-      
-      If their streak is 0 or their status is "FALLEN", or their failure count is greater than 0, or if their reflection signals a pattern of procrastination, choice anxiety, or broken promises, revert immediately to aggressive, uncompromising discipline. Call out their procrastination, review items they skipped by name, and demand clear strategic adjustments.
-      EXPLICITLY CALL OUT THEIR BAD PAST DECISIONS and EXPLICITLY REBUKE THEIR BROKEN RESOLVES. Confront them about why they are lingering at the bottom of the network leaderboard ranks. Force them to confront why they are deviating from their long-term vision matrix. Do not allow intellectual side-stepping. Demand strategic clarity for the rest of their lifecycle.
+      [REFLECTIONS & BEHAVIORAL TELEMETRY]
+      MORNING CHECK-IN STATUS: Completed & Synchronized
+      NIGHT REFLECTION LOGS: "${state?.reflection?.wins || "No evening closeout logged yet."}"
+      SLACKING / LAZINESS INDICATORS: ${indicatesSlacking ? "DETECTED (Penalty Audited)" : "None active. User maintaining hard work velocity."}
 
-      🚨 SPECIAL ACTION DIRECTIVE: 
-      The operator has JUST LOGGED IN. You must IMMEDIATELY execute a deep scan of their dashboard values above. 
-      Do not wait for them to ask a question. Greet them specifically by their OPERATOR NAME (${currentName}), state their exact rank standing (${currentRank}), itemize their unfinished high-impact priority rows, and give them a sharp, 3-sentence tactical briefing commanding them exactly what node area to execute next during this active 24-hour cycle. Repeat this for the rest of their lifecycle.
+      DIRECTIVE: Act as an elite, unyielding Socratic performance coach. Thoroughly analyze all user app components, task completion rates, goal proximity, work ethic vs. slacking, leaderboard standing, and reflection notes. Hold the user strictly accountable.
 
       ${explicitOnboardingDirective}
     `;
@@ -316,12 +273,10 @@ function CoachPanel({
       ? `${humanInputString}\n\n${SocraticContext}\n\n[PARSED DOCUMENT FILE CONTEXT]:\n\n${uploadedText}`
       : `${humanInputString}\n\n${SocraticContext}`;
 
-
     void sendMessage({ text: activePayload });
     setInput("");
   }
-  
-// 🌐 Global window trigger hook inside CoachPanel where `send` is in scope
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       (window as any).__apex_coach_trigger = (triggerText: string) => {
@@ -334,7 +289,6 @@ function CoachPanel({
     };
   }, [state]);
 
-  // 🚀 GUARANTEED LOGIN SESSION AUTO-BRIEFING
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -437,7 +391,6 @@ function CoachPanel({
           open ? "translate-x-0" : "pointer-events-none translate-x-full"
         }`}
       >
-        {/* Header Block */}
         <header className="flex items-center gap-3 border-b border-zinc-900 px-5 py-4 bg-black/20">
           <div className="flex size-9 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-950/20 text-emerald-400">
             <MessageCircle className="size-4.5 animate-pulse" />
@@ -455,7 +408,6 @@ function CoachPanel({
           </button>
         </header>
 
-        {/* Suggestion Chips */}
         <div className="flex flex-wrap gap-2 border-b border-zinc-900 px-5 py-3.5 bg-black/10">
           {QUICK_STARTS.map((chip) => (
             <button
@@ -470,7 +422,6 @@ function CoachPanel({
           ))}
         </div>
 
-        {/* Chat History Core */}
         <Conversation className="flex-1 bg-black/5">
           <ConversationContent className="gap-4 p-5">
             {messages.length === 0 && (
@@ -479,7 +430,6 @@ function CoachPanel({
               </div>
             )}
             
-            {/* 🔒 DAILY BUDGETING HISTORY SYNC */}
             {!premium && messages.length > FREE_HISTORY_LIMIT && (
               <button
                 type="button"
@@ -491,7 +441,6 @@ function CoachPanel({
               </button>
             )}
 
-            {/* MESSAGE RENDERING ENGINE */}
             {messages.map((message, index) => {
               let text = message.parts.map((part) => (part.type === "text" ? part.text : "")).join("");
               if (!text) return null;
@@ -521,7 +470,6 @@ function CoachPanel({
           <ConversationScrollButton />
         </Conversation>
 
-        {/* Input Control Terminal Layout Matrix */}
         <div className="border-t border-zinc-900 p-4 bg-black/20">
           <div className="flex flex-col gap-3 mb-4">
             <input
@@ -543,7 +491,6 @@ function CoachPanel({
               </label>
             </div>
 
-            {/* ✅ FIXED LAYER: Supports File Badges, Generation Triggers, and Regenerate Toggles cleanly */}
             {(files.length > 0 || planGenerated) && (
               <div className="flex flex-wrap items-center gap-2 p-2 rounded-xl bg-black/40 border border-zinc-900 animate-fade-in">
                 <div className="flex flex-col gap-1 flex-1 text-left min-w-[150px]">
@@ -551,7 +498,6 @@ function CoachPanel({
                     files.map((file, idx) => (
                       <div key={file.name} className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-zinc-400 truncate">
                         📎 {file.name}
-
                         <button
                           type="button"
                           onClick={() => handleRemoveFile(idx)}
@@ -586,22 +532,6 @@ function CoachPanel({
                 )}
               </div>
             )}
-            {/* 📄 ACTIVE ATTACHED CONTEXT DOCUMENT BADGE */}
-            {files && files.map((file, idx) => (
-              <div key={idx} className="flex items-center gap-2 rounded-xl bg-zinc-900 border border-zinc-800 px-3 py-1.5 text-[11px] text-zinc-300 font-mono shadow-inner animate-fade-in">
-                <span className="truncate max-w-[140px] font-semibold">{file.name}</span>
-                
-                {/* ✅ NATIVE EMERALD × REMOVAL TRIGGER BUTTON */}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveFile(idx)}
-                  className="ml-1 flex size-4 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-800 hover:text-rose-400 font-black text-xs transition-colors duration-200"
-                  title="Discard attached context document"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
           </div>
 
           <form
