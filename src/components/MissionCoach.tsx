@@ -445,7 +445,6 @@ function CoachPanel({
               let text = message.parts.map((part) => (part.type === "text" ? part.text : "")).join("");
               if (!text) return null;
 
-              // ✅ Cleanly strip out internal telemetry payloads from user chat bubbles so only human messages show
               if (message.role === "user") {
                 const telemetryIdx = text.indexOf("\n\n[");
                 if (telemetryIdx !== -1) {
