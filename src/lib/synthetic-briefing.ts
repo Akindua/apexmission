@@ -19,65 +19,19 @@ interface BriefingMessage {
 
 export function generateSyntheticBriefing(context: UserContext): BriefingMessage[] {
   const { userName, userRank, state, behaviorAnalytics, isFirstSignup, currentHour } = context;
-  
-  const messages: BriefingMessage[] = [];
-  
-  // Greeting based on time of day
-  const timeGreeting = getTimeGreeting(currentHour);
-  const firstName = userName.split(" ")[0];
-  
-  if (isFirstSignup) {
-    // Onboarding briefing for first-time users
-    messages.push({
-      role: "assistant",
-      content: `Welcome to ApexMission Command Terminal, ${firstName}. I am your Mission Coach.`
 
-    });
-    
-    messages.push({
-      role: "assistant",
-      content: `INITIATING OPERATIONAL BRIEFING. \n\nYour current rank: ${userRank}\n\n${timeGreeting}, Operator. Let me guide you through your mission architecture.`
-    });
-    
-    messages.push({
-      role: "assistant",
-      content: `⚡ MISSION CORE: ${state.mission || "No mission directive established yet. Initiate your master vision statement to begin operations."}`
-    });
-    
-    messages.push({
-      role: "assistant",
-      content: `🎯 HIGH-IMPACT EXECUTION: ${getTaskSummary(state.tasks?.high || [], "HIGH")}`
-    });
-    
-    messages.push({
-      role: "assistant",
-      content: `📊 MEDIUM-IMPACT: ${getTaskSummary(state.tasks?.medium || [], "MEDIUM")}`
-    });
-    
-    messages.push({
-      role: "assistant",
-      content: `🔧 LOW-IMPACT: ${getTaskSummary(state.tasks?.low || [], "LOW")}`
-    });
-    
-    messages.push({
-      role: "assistant",
-      content: `🎖️ DAILY DIRECTIVE: ${state.daily?.action || "No daily action assigned. Establish your focus target."}`
-    });
-    
-    messages.push({
-      role: "assistant",
-      content: `OPERATIONAL STATUS REPORT:\n` +
-        `• Credits: ${(state as any).points || 0}\n` +
-        `• Streak: ${state.streak?.count || 0} days\n` +
-        `• Leaderboard Position: ${userRank}\n\n` +
-        `Begin your execution. Complete high-impact objectives to advance your rank. I will monitor your progress and provide tactical guidance.`
-    });
-    
+  const messages: BriefingMessage[] = [];
+  const safeUserName = userName || "User";
+  const firstName = safeUserName.split(" ")[0];
+  const timeGreeting = getTimeGreeting(currentHour);
+
+  if (isFirstSignup) {
+    // Interactive onboarding tutorial for first-time users
+    return generateOnboardingTutorial(firstName, userRank, state, currentHour);
   } else {
     // Sign-in briefing for returning users
     const operationalStatus = getOperationalStatus(state);
     const taskCompletionRate = calculateTaskCompletionRate(state);
-    const productivityPhase = getProductivityPhase(currentHour);
     
     messages.push({
       role: "assistant",
@@ -93,38 +47,37 @@ export function generateSyntheticBriefing(context: UserContext): BriefingMessage
       role: "assistant",
       content: `📊 PERFORMANCE METRICS:\n` +
         `• Execution Rate: ${taskCompletionRate}%\n` +
-        `• Current Streak: ${state.streak?.count || 0} days\n` +
-        `• Credits Accumulated: ${(state as any).points || 0}\n` +
-        `• Leaderboard Position: ${userRank}`
+        `• Current Streak: ${state?.streak?.count || 0} days\n` +
+        `• Credits Accumulated: ${state?.points || 0}\n` +
+        `• Leaderboard Position: ${userRank || "Global Operator Node"}`
     });
     
     messages.push({
       role: "assistant",
       content: `🎯 MISSION PROGRESS:\n` +
-        `• Master Vision: ${state.mission ? "ACTIVE" : "PENDING INITIALIZATION"}\n` +
-        `• High-Impact Tasks: ${getTaskCompletionSummary(state.tasks?.high || [])}\n` +
-        `• Medium-Impact: ${getTaskCompletionSummary(state.tasks?.medium || [])}\n` +
-        `• Low-Impact: ${getTaskCompletionSummary(state.tasks?.low || [])}`
+        `• Master Vision: ${state?.mission ? "ACTIVE" : "PENDING INITIALIZATION"}\n` +
+        `• High-Impact Tasks: ${getTaskCompletionSummary(state?.tasks?.high || [])}\n` +
+        `• Medium-Impact: ${getTaskCompletionSummary(state?.tasks?.medium || [])}\n` +
+        `• Low-Impact: ${getTaskCompletionSummary(state?.tasks?.low || [])}`
     });
     
     messages.push({
       role: "assistant",
-      content: `🎖️ DAILY DIRECTIVE: ${state.daily?.action || "No daily action assigned"}\n` +
-        `Status: ${state.daily?.done ? "✅ COMPLETED" : "⏳ PENDING"}`
+      content: `🎖️ DAILY DIRECTIVE: ${state?.daily?.text || "No daily action assigned"}\n` +
+        `Status: ${state?.daily?.done ? "✅ COMPLETED" : "⏳ PENDING"}`
     });
     
-    if (state.reflection) {
+    if (state?.reflection && (state.reflection.wins || state.reflection.blockers || state.reflection.tomorrowAction)) {
       messages.push({
         role: "assistant",
         content: `📝 REFLECTION DATA:\n` +
-          `• Last Win: ${state.reflection.win || "No recent win recorded"}\n` +
-          `• Active Blocker: ${state.reflection.blocker || "No blockers identified"}\n` +
-          `• Tomorrow's Focus: ${state.reflection.tomorrow || "Not specified"}`
+          `• Last Win: ${state.reflection.wins || "No recent win recorded"}\n` +
+          `• Active Blocker: ${state.reflection.blockers || "No blockers identified"}\n` +
+          `• Tomorrow's Focus: ${state.reflection.tomorrowAction || "Not specified"}`
       });
     }
     
-    // Behavioral analysis
-    if (behaviorAnalytics.sessionCount > 0) {
+    if (behaviorAnalytics && behaviorAnalytics.sessionCount > 0) {
       messages.push({
         role: "assistant",
         content: `🧠 BEHAVIORAL ANALYSIS:\n` +
@@ -136,7 +89,6 @@ export function generateSyntheticBriefing(context: UserContext): BriefingMessage
       });
     }
     
-    // Tactical guidance based on current state
     const tacticalGuidance = generateTacticalGuidance(state, behaviorAnalytics, currentHour);
     if (tacticalGuidance) {
       messages.push({
@@ -154,17 +106,43 @@ export function generateSyntheticBriefing(context: UserContext): BriefingMessage
   return messages;
 }
 
+function generateOnboardingTutorial(firstName: string, userRank: string, state: any, currentHour: number): BriefingMessage[] {
+  const messages: BriefingMessage[] = [];
+  const timeGreeting = getTimeGreeting(currentHour);
+
+  messages.push({
+    role: "assistant",
+    content: `🎯 WELCOME TO APEXMISSION, ${firstName}!\n\n${timeGreeting}, Operator. I am your Mission Coach AI, and I'll guide you through the complete ApexMission Command Terminal step-by-step.`
+  });
+
+  messages.push({
+    role: "assistant",
+    content: `📱 APP NAVIGATION & INTERFACE\n\nApexMission is structured across core command modules:\n\n• Workspace: Your primary mission dashboard, priority task matrix, and daily focus action.\n• Ranks: Live cross-network operator standings leaderboard.\n• Hardware: Tactical store for custom themes, founder badges, and streak shields.\n• Coach: AI performance mentor & document parser.\n• Support: Direct operational assistance.`
+  });
+
+  messages.push({
+    role: "assistant",
+    content: `⚡ MISSION VISION & PRIORITY MATRIX\n\n• Master Vision: Declare your ultimate long-term objective at the top of your workspace.\n• High-Impact Tasks: Maximum leverage objectives (complete these first).\n• Medium-Impact Tasks: Secondary support objectives.\n• Low-Impact Tasks: Routine maintenance and logistics.`
+  });
+
+  messages.push({
+    role: "assistant",
+    content: `🎖️ DAILY ACTION & STREAKS\n\n• Daily Master Action: Your single most important focus for the day.\n• Streak Multiplier: Completing your daily action advances your streak and multiplies earned credits.\n• Loss Prevention: Inactive high-impact tasks trigger automated cognitive penalty audits to maintain elite discipline.`
+  });
+
+  messages.push({
+    role: "assistant",
+    content: `🤖 DUAL COACHING ARCHITECTURE\n\n• Zero-API Synthetic Engine: Instantly delivers instant onboarding briefings, status telemetry, and session check-ins at $0.00 cost.\n• AI Mission Coach: Provides deep Socratic guidance and document analysis on demand.\n\nYou are fully initialized and ready to operate. Review your workspace and execute with precision, ${firstName}! 🚀`
+  });
+
+  return messages;
+}
+
 function getTimeGreeting(hour: number): string {
   if (hour >= 5 && hour < 12) return "GOOD MORNING";
   if (hour >= 12 && hour < 17) return "GOOD AFTERNOON";
   if (hour >= 17 && hour < 21) return "GOOD EVENING";
   return "OPERATOR";
-}
-
-function getTaskSummary(tasks: any[], tier: string): string {
-  if (!tasks || tasks.length === 0) return `No ${tier.toLowerCase()}-impact execution objects mapped.`;
-  const completed = tasks.filter((t: any) => t.done).length;
-  return `${completed}/${tasks.length} execution objects ${completed === tasks.length ? "✅ COMPLETE" : "⏳ IN PROGRESS"}`;
 }
 
 function getTaskCompletionSummary(tasks: any[]): string {
@@ -174,7 +152,7 @@ function getTaskCompletionSummary(tasks: any[]): string {
 }
 
 function getOperationalStatus(state: any): string {
-  const failures = (state as any).failureCount || 0;
+  const failures = state?.failureCount || 0;
   if (failures >= 5) return "🔴 FALLEN - Critical intervention required";
   if (failures >= 3) return "🟡 AT RISK - Performance degraded";
   return "🟢 OPERATIONAL - Elite execution mode";
@@ -182,20 +160,13 @@ function getOperationalStatus(state: any): string {
 
 function calculateTaskCompletionRate(state: any): number {
   const allTasks = [
-    ...(state.tasks?.high || []),
-    ...(state.tasks?.medium || []),
-    ...(state.tasks?.low || [])
+    ...(state?.tasks?.high || []),
+    ...(state?.tasks?.medium || []),
+    ...(state?.tasks?.low || [])
   ];
   if (allTasks.length === 0) return 0;
   const completed = allTasks.filter((t: any) => t.done).length;
   return Math.round((completed / allTasks.length) * 100);
-}
-
-function getProductivityPhase(hour: number): string {
-  if (hour >= 5 && hour < 12) return "Morning Peak Phase";
-  if (hour >= 12 && hour < 17) return "Afternoon Execution Phase";
-  if (hour >= 17 && hour < 21) return "Evening Review Phase";
-  return "Night Recharge Phase";
 }
 
 function getInsightLevel(sessionCount: number): string {
@@ -207,46 +178,26 @@ function getInsightLevel(sessionCount: number): string {
 function generateTacticalGuidance(state: any, analytics: any, hour: number): string {
   const guidance: string[] = [];
   
-  // Check mission status
-  if (!state.mission) {
-    guidance.push("• CRITICAL: Establish your Master Vision Statement to initiate mission parameters");
+  if (!state?.mission) {
+    guidance.push("• CRITICAL: Establish your Master Vision Statement to initiate mission parameters.");
   }
   
-  // Check daily action
-  if (!state.daily?.action) {
-    guidance.push("• PRIORITY: Define your daily focus action for maximum impact");
-  } else if (!state.daily?.done) {
-    guidance.push("• EXECUTE: Complete your daily focus action to maintain streak momentum");
+  if (!state?.daily?.text) {
+    guidance.push("• PRIORITY: Define your daily focus action for maximum impact.");
+  } else if (!state?.daily?.done) {
+    guidance.push("• EXECUTE: Complete your daily focus action to maintain streak momentum.");
   }
   
-  // Check high-impact tasks
-  const highTasks = state.tasks?.high || [];
+  const highTasks = state?.tasks?.high || [];
   const pendingHigh = highTasks.filter((t: any) => !t.done).length;
   if (pendingHigh > 0) {
-    guidance.push(`• FOCUS: ${pendingHigh} high-impact execution object${pendingHigh > 1 ? 's' : ''} pending`);
+    guidance.push(`• FOCUS: ${pendingHigh} high-impact execution object${pendingHigh > 1 ? 's' : ''} pending.`);
   }
   
-  // Check streak
-  const streak = state.streak?.count || 0;
+  const streak = state?.streak?.count || 0;
   if (streak === 0) {
-    guidance.push("• MOMENTUM: Execute daily action to build your operational streak");
-  } else if (streak >= 7) {
-    guidance.push("• ELITE: Maintain your 7+ day streak for maximum point multiplier");
+    guidance.push("• MOMENTUM: Execute daily action to build your operational streak.");
   }
   
-  // Check procrastination
-  if (analytics.procrastinationEvents > 3) {
-    guidance.push("• WARNING: Procrastination metrics elevated. Re-align focus immediately");
-  }
-  
-  // Time-based guidance
-  if (hour >= 5 && hour < 12) {
-    guidance.push("• PHASE: Morning peak - Execute high-impact objectives now");
-  } else if (hour >= 12 && hour < 17) {
-    guidance.push("• PHASE: Afternoon execution - Maintain momentum on pending tasks");
-  } else if (hour >= 17 && hour < 21) {
-    guidance.push("• PHASE: Evening review - Assess progress and plan tomorrow");
-  }
-  
-  return guidance.length > 0 ? guidance.join("\n") : "• STATUS: All systems operational. Continue execution.";
+  return guidance.length > 0 ? guidance.join("\n") : "• STATUS: All systems operational. Continue elite execution.";
 }

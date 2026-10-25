@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Check, Flame, Plus, Sparkles, Loader2, Target, TimerReset, Shield, Trophy, LayoutDashboard, Award, HardDrive, HelpCircle, MessageSquare } from "lucide-react";
 import { PaywallModal } from "@/components/PaywallModal";
 import { MissionCoach } from "@/components/MissionCoach";
+import { SyntheticCoachOverlay } from "@/components/SyntheticCoachOverlay";
 import { useSubscriptionTier } from "@/hooks/useSubscriptionTier";
 import { supabase } from "@/integrations/supabase/client";
 import { startCheckout, type PlanId } from "@/lib/billing.functions";
@@ -153,6 +154,7 @@ function ApexMission() {
   const [showMilestoneCelebration, setShowMilestoneCelebration] = useState<number | null>(null);
   const [activeLayoutTheme, setActiveLayoutTheme] = useState<string>("layout-default");
   const [showPlanSuccessAlert, setShowPlanSuccessAlert] = useState(false);
+  const [showSyntheticCoach, setShowSyntheticCoach] = useState(false);
 
   const BETA_MODE = true;
   const { premium: subscriptionPremium, tier } = useSubscriptionTier();
@@ -259,9 +261,12 @@ useEffect(() => {
     if (hydrated && !hasTriggeredAutoBrief && state && currentUserId) {
       setHasTriggeredAutoBrief(true);
 
+      const isFreshSignup = localStorage.getItem("apex-tutorial-completed") !== "true";
+
       setTimeout(() => {
-        setCoachOpen(true);
-      }, 500);
+        // Show Synthetic Coach Overlay (zero API cost, separate from Mission Coach)
+        setShowSyntheticCoach(true);
+      }, 800);
     }
   }, [hydrated, state, hasTriggeredAutoBrief, currentUserId]);
 
@@ -1180,6 +1185,36 @@ useEffect(() => {
           setTimeout(() => setShowPlanSuccessAlert(false), 4000);
         }}
       />
+
+      {/* SYNTHETIC COACH OVERLAY - Zero-API Interactive Conversation */}
+      <SyntheticCoachOverlay
+        userName={userName}
+        userRank={userRankText}
+        state={{ ...state, failureCount: userFailureCount }}
+        behaviorAnalytics={{
+          sessionCount: 0,
+          lastSessionDate: "",
+          totalTasksCompleted: 0,
+          averageCompletionTime: 0,
+          procrastinationEvents: 0,
+          peakProductivityHour: 12,
+          totalMessagesExchanged: 0,
+          streakConsistency: 0,
+          preferredFocusAreas: []
+        }}
+        isFirstSignup={localStorage.getItem("apex-tutorial-completed") !== "true"}
+        isOpen={showSyntheticCoach}
+        onToggle={() => setShowSyntheticCoach(!showSyntheticCoach)}
+      />
+
+      {/* FLOATING SYNTHETIC COACH BUTTON - Always accessible */}
+      <button
+        onClick={() => setShowSyntheticCoach(!showSyntheticCoach)}
+        className="fixed top-20 right-4 z-40 flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-full shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all hover:scale-105 font-bold text-xs tracking-wide"
+      >
+        <MessageCircle className="size-4 animate-pulse" />
+        <span className="hidden sm:inline">Coach AI</span>
+      </button>
 
       {/* SUPPORT MODAL */}
       {showSupport && (
