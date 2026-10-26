@@ -124,3 +124,23 @@ export function completeDailyToday(streak: MissionState["streak"]): MissionState
   }
   return { count: 1, lastCompletedDate: today };
 }
+
+// New functions to update the state properties
+export function setLockdownMode(state: MissionState, active: boolean): MissionState {
+  return { ...state, lockdownModeActive: active };
+}
+
+export function tickLockdownTimer(state: MissionState): MissionState {
+  if (state.lockdownTimerSeconds > 0) {
+    return { ...state, lockdownTimerSeconds: state.lockdownTimerSeconds - 1, lockdownModeActive: false };
+  }
+  return state;
+}
+
+export function incrementFailedDays(state: MissionState): MissionState {
+  return { ...state, consecutiveDaysFailedTasks: state.consecutiveDaysFailedTasks + 1 };
+}
+
+export function resetFailedDays(state: MissionState): MissionState {
+  return { ...state, consecutiveDaysFailedTasks: 0 };
+}
