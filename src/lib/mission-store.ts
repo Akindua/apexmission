@@ -1,8 +1,8 @@
 export type ImpactTier = "high" | "medium" | "low";
 
 export interface Task {
-  id: string;
   text: string;
+  tier: ImpactTier;
   done: boolean;
 }
 
@@ -15,9 +15,11 @@ export interface MissionState {
     wins: string;
     blockers: string;
     tomorrowAction: string;
-    };
-  lastMorningBriefingDate: string | null;
-  premium: boolean;
+  };
+  lockdownModeActive: boolean;
+  lockdownTimerSeconds: number;
+  consecutiveDaysFailedTasks: number;
+  currentLeaderboardRank: string;
 }
 
 /** Free tier allows at most this many tasks across the whole matrix. */
@@ -32,7 +34,6 @@ export function aiBreakdown(mission: string): string[] {
     `Identify and remove the biggest blocker to "${m}" this week`,
   ];
 }
-
 
 const STORAGE_KEY = "mission-control-state-v1";
 
@@ -68,7 +69,10 @@ export function defaultState(): MissionState {
     },
     lastMorningBriefingDate: null,
     premium: false,
-
+    lockdownModeActive: false,
+    lockdownTimerSeconds: 0,
+    consecutiveDaysFailedTasks: 0,
+    currentLeaderboardRank: "",
   };
 }
 
