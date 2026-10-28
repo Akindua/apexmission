@@ -4,6 +4,9 @@ import { DefaultChatTransport, type UIMessage } from "ai";
 import { Lock, MessageCircle, X, Paperclip, Sparkles, Loader2, Target, Flame, Trophy, Activity, Zap, Brain, Shield, AlertTriangle } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { generateSyntheticBriefing, type LeaderboardSnapshot } from "@/lib/synthetic-briefing";
+import { loadState, saveState } from "@/lib/mission-store";
+import { getScopedItem, setScopedItem } from "@/lib/user-storage";
+import { supabase } from "@/integrations/supabase/client";
 
 import {
   Conversation,
@@ -46,7 +49,7 @@ function loadMessages(userName: string, userRank: string, state: any, behaviorAn
   if (typeof window === "undefined") return [];
   
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = getScopedItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as UIMessage[];
       if (parsed.length > 0) return parsed;
@@ -73,7 +76,7 @@ function loadMessages(userName: string, userRank: string, state: any, behaviorAn
   }));
 
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(initialUIMessages));
+    setScopedItem(STORAGE_KEY, JSON.stringify(initialUIMessages));
   } catch {}
 
   return initialUIMessages;
@@ -81,7 +84,7 @@ function loadMessages(userName: string, userRank: string, state: any, behaviorAn
 
 function loadBehaviorAnalytics(): BehaviorAnalytics {
   try {
-    const raw = window.localStorage.getItem(BEHAVIOR_ANALYTICS_KEY);
+    const raw = getScopedItem(BEHAVIOR_ANALYTICS_KEY);
     return raw ? (JSON.parse(raw) as BehaviorAnalytics) : {
       sessionCount: 0,
       lastSessionDate: "",
@@ -110,7 +113,7 @@ function loadBehaviorAnalytics(): BehaviorAnalytics {
 
 function saveBehaviorAnalytics(analytics: BehaviorAnalytics) {
   try {
-    window.localStorage.setItem(BEHAVIOR_ANALYTICS_KEY, JSON.stringify(analytics));
+    setScopedItem(BEHAVIOR_ANALYTICS_KEY, JSON.stringify(analytics));
   } catch {}
 }
 
@@ -476,29 +479,41 @@ function CoachPanel({
 
     const textLower = trimmed.toLowerCase();
     const indicatesSlacking = textLower.includes("procrastinate") || textLower.includes("gave up") || textLower.includes("lazy") || textLower.includes("didn't do");
-    let cleanCurrentPoints = state?.points || 1000;
+    const fallbackPoints = state?.points || 1000;
   
     if (indicatesSlacking) {
-      const aiPenalty = 100; 
-      const freshPoints = Math.max(0, cleanCurrentPoints - aiPenalty);
-      
-      try {
-        const activeStateStr = localStorage.getItem("apexmission-state");
-        if (activeStateStr) {
-          const parsedState = JSON.parse(activeStateStr);
-          if (parsedState && typeof parsedState.points === "number") {
-            cleanCurrentPoints = parsedState.points; 
-          }
-        }
-      } catch (e) {
-        console.error("Local storage lookup bypassed safely:", e);
+      const aiPenalty = 100;
+
+      // The mission store is the single source of truth (the previous code
+      // read/wrote a non-existent "apexmission-state" key, so penalties were
+      // silently discarded).
+      const persistedState = loadState();
+      const currentPoints =
+        typeof persistedState.points === "number" ? persistedState.points : fallbackPoints;
+      const freshPoints = Math.max(0, currentPoints - aiPenalty);
+
+      saveState({ ...persistedState, points: freshPoints });
+
+      // Keep the dashboard's in-memory balance in sync with the persisted one.
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("apexmission:points-updated", {
+            detail: { points: freshPoints },
+          }),
+        );
       }
 
-      if (typeof window !== "undefined") {
-        const currentStore = JSON.parse(localStorage.getItem("apexmission-state") || "{}");
-        currentStore.points = freshPoints;
-        localStorage.setItem("apexmission-state", JSON.stringify(currentStore));
-      }
+      // Mirror the debit to the server so reloading does not restore the old
+      // balance from the authoritative profile row.
+      void supabase.auth
+        .getUser()
+        .then(({ data: { user } }) => {
+          if (!user) return;
+          return supabase.from("profiles").update({ credits: freshPoints }).eq("id", user.id);
+        })
+        .catch((error) => {
+          console.error("Coach credit penalty sync failed:", error);
+        });
 
       playSoundEffect("warning");
       
@@ -517,7 +532,7 @@ function CoachPanel({
     }));
     
     try {
-      localStorage.setItem(LIMIT_KEY, JSON.stringify({
+      setScopedItem(LIMIT_KEY, JSON.stringify({
         date: new Date().toDateString(),
         count: nextCount
       }));
@@ -704,7 +719,7 @@ function CoachPanel({
 
   useEffect(() => {
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+      setScopedItem(STORAGE_KEY, JSON.stringify(messages));
     } catch {}
   }, [messages]);
 

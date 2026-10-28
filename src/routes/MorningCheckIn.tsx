@@ -1,12 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  appendReflectionEntry,
-  loadState,
-  saveState,
-  todayKey,
-} from "@/lib/mission-store";
+import { appendReflectionEntry, loadState, saveState, todayKey } from "@/lib/mission-store";
+import { setScopedItem } from "@/lib/user-storage";
 import { Clock, CheckSquare, Square, Target } from "lucide-react";
 
 export const Route = createFileRoute("/MorningCheckIn")({
@@ -83,6 +79,25 @@ function DailyBriefingPage() {
   const completedCount = Object.values(checklist).filter(Boolean).length;
 
   useEffect(() => {
+    let active = true;
+
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (active && !data.session) {
+          navigate({ to: "/auth", replace: true });
+        }
+      })
+      .catch(() => {
+        if (active) navigate({ to: "/auth", replace: true });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [navigate]);
+
+  useEffect(() => {
     const currentHour = new Date().getHours();
     const isMorningWindow = currentHour >= 5 && currentHour < 12;
 
@@ -96,7 +111,8 @@ function DailyBriefingPage() {
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
-        const displayName = user.user_metadata?.["full_name"] || user.email?.split("@")[0] || "User";
+        const displayName =
+          user.user_metadata?.["full_name"] || user.email?.split("@")[0] || "User";
         setUserName(displayName.charAt(0).toUpperCase() + displayName.slice(1));
       }
     };
@@ -105,7 +121,7 @@ function DailyBriefingPage() {
 
   function handleBeginMission() {
     setIsFadingOut(true);
-    localStorage.setItem("apexmission-morning-checkin", todayKey());
+    setScopedItem("apexmission-morning-checkin", todayKey());
 
     const currentStore = loadState();
     const morningEntry = {
@@ -122,10 +138,7 @@ function DailyBriefingPage() {
 
     saveState({
       ...currentStore,
-      reflectionHistory: appendReflectionEntry(
-        currentStore.reflectionHistory,
-        morningEntry,
-      ),
+      reflectionHistory: appendReflectionEntry(currentStore.reflectionHistory, morningEntry),
     });
 
     setTimeout(() => {
@@ -279,13 +292,17 @@ function DailyBriefingPage() {
               <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
                 Progress Scope
               </p>
-              <p className="text-sm font-semibold text-zinc-300 mt-1">4 High Impact Tasks</p>
+              <p className="text-sm font-semibold text-zinc-300 mt-1">
+                {state.tasks?.high?.length ?? 0} High Impact Tasks
+              </p>
             </div>
             <div className="text-right">
               <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
                 Streak Status
               </p>
-              <p className="text-sm font-semibold text-zinc-300 mt-1">🔥 0 Day Streak</p>
+              <p className="text-sm font-semibold text-zinc-300 mt-1">
+                🔥 {state.streak?.count ?? 0} Day Streak
+              </p>
             </div>
           </div>
 

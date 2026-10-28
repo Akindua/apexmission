@@ -1,3 +1,5 @@
+import { getScopedItem, setScopedItem } from "@/lib/user-storage";
+
 export type ImpactTier = "high" | "medium" | "low";
 
 export interface Task {
@@ -100,8 +102,7 @@ export function defaultState(): MissionState {
 /** Loads state and applies the 24h reset + streak decay rules. */
 export function loadState(): MissionState {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    console.log("LOADED RAW:", raw);
+    const raw = getScopedItem(STORAGE_KEY);
     if (!raw) return defaultState();
     const parsed = JSON.parse(raw) as MissionState;
     const state: MissionState = {
@@ -109,9 +110,7 @@ export function loadState(): MissionState {
       ...parsed,
       tasks: { ...defaultState().tasks, ...parsed.tasks },
       reflection: { ...defaultState().reflection, ...parsed.reflection },
-      reflectionHistory: Array.isArray(parsed.reflectionHistory)
-        ? parsed.reflectionHistory
-        : [],
+      reflectionHistory: Array.isArray(parsed.reflectionHistory) ? parsed.reflectionHistory : [],
     };
 
     const today = todayKey();
@@ -134,14 +133,7 @@ export function loadState(): MissionState {
 }
 
 export function saveState(state: MissionState): void {
-  try {
-    window.localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(state)
-    );
-  } catch {
-    // storage unavailable — non-fatal
-  }
+  setScopedItem(STORAGE_KEY, JSON.stringify(state));
 }
 
 /** Returns updated streak after the daily action is completed today. */
@@ -179,7 +171,11 @@ export function setLockdownMode(state: MissionState, active: boolean): MissionSt
 
 export function tickLockdownTimer(state: MissionState): MissionState {
   if (state.lockdownTimerSeconds > 0) {
-    return { ...state, lockdownTimerSeconds: state.lockdownTimerSeconds - 1, lockdownModeActive: false };
+    return {
+      ...state,
+      lockdownTimerSeconds: state.lockdownTimerSeconds - 1,
+      lockdownModeActive: false,
+    };
   }
   return state;
 }

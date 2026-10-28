@@ -9,15 +9,8 @@ export const Route = createFileRoute(
         handlers: {
             POST: async ({ request }) => {
                 const body = await request.json();
- 
-                console.log("MISSION PLAN BODY:");
-                console.log(body);
 
                 const { mission } = body;
-
-                // #region agent log
-                    fetch('http://127.0.0.1:7678/ingest/579042e6-c02b-4f8a-9ee7-63d6d222301a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6a0f5c'},body:JSON.stringify({sessionId:'6a0f5c',runId:'post-fix',hypothesisId:'B',location:'mission-plan.ts:POST',message:'mission-plan body',data:{keys:body&&typeof body==='object'?Object.keys(body):[],hasDocument:typeof (body as {document?:unknown}).document==='string'&&String((body as {document?:unknown}).document).length>0,documentLen:typeof (body as {document?:string}).document==='string'?(body as {document:string}).document.length:0,hasMission:typeof (body as {mission?:unknown}).mission==='string'},timestamp:Date.now()})}).catch(()=>{});
-                // #endregion
 
                 if (!mission) {
                     return new Response(
@@ -54,17 +47,11 @@ Do not include markdown tags, conversational filler, or trailing commas. Output 
                     prompt: mission,
                 });
 
-                console.log("MISSION PLAN RAW:");
-                console.log(result.text);
-                
                 try {
                     return Response.json(
                         JSON.parse(result.text)
                     );
-                } catch (error) {
-                    console.error("PARSE FAILED:");
-                    console.error(result.text);
-                    
+                } catch {
                     return new Response(
                       "Mission Plan Parse Failed",
                       { status: 500 }

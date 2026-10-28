@@ -27,6 +27,12 @@ import {
   type Task,
 } from "@/lib/mission-store";
 import { generateMissionPlan } from "@/lib/mission-planner";
+import {
+  clearCurrentUserStorage,
+  getScopedItem,
+  setScopedItem,
+  setStorageScope,
+} from "@/lib/user-storage";
 
 export const Route = createFileRoute("/app")({
   component: ApexMission,
@@ -44,6 +50,7 @@ function ApexMission() {
   // 🏛️ DYNAMIC OPERATOR REAL-TIME ROSTER TELEMETRY STATES
   const [leaderboardOperators, setLeaderboardOperators] = useState<any[]>([]);
   const [loadingRoster, setLoadingRoster] = useState(false);
+  const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState<"workspace" | "leaderboard" | "hardware">("workspace");
   const [coachOpen, setCoachOpen] = useState(false);
@@ -67,23 +74,22 @@ function ApexMission() {
     preferredFocusAreas: [] as string[],
   });
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("apexmission-behavior-analytics");
-      if (raw) {
-        setBehaviorAnalytics((previous) => ({ ...previous, ...JSON.parse(raw) }));
-      }
-    } catch {
-      // Analytics cache is optional; the synthetic engine degrades gracefully.
-    }
-  }, []);
-
   const isFirstSignup = Boolean(operatorProfile && !operatorProfile.onboardingCompleted);
 
+  // The coach penalises slacking from inside its own component; listen for its
+  // debit so the header balance and the next local save stay consistent.
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setCurrentUserId(user.id);
-    });
+    const handlePointsUpdated = (event: Event) => {
+      const detail = (event as CustomEvent<{ points?: unknown }>).detail;
+      if (detail && typeof detail.points === "number") {
+        setState((current) => ({ ...current, points: detail.points as number }));
+      }
+    };
+
+    window.addEventListener("apexmission:points-updated", handlePointsUpdated);
+    return () => {
+      window.removeEventListener("apexmission:points-updated", handlePointsUpdated);
+    };
   }, []);
 
   const userRankIndex = leaderboardOperators.findIndex(op => op.id === currentUserId);
@@ -114,7 +120,7 @@ function ApexMission() {
       setLeaderboardSnapshot(
         operatorProfile?.companyId === null ? snapshot : null,
       );
-      localStorage.setItem("apexmission-leaderboard-cache", JSON.stringify(normalizedData));
+      setScopedItem("apexmission-leaderboard-cache", JSON.stringify(normalizedData));
     } catch (err) {
       console.error("Failed to map dynamic roster profiles ledger:", err);
     } finally {
@@ -128,11 +134,46 @@ function ApexMission() {
 
     const initializeAppSession = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
+        // getSession reads/refreshes the local session without a network round
+        // trip, so a transient getUser failure cannot bounce a valid user.
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user ?? null;
         if (cancelled) return;
+
+        if (!user) {
+          // Never render another account's cached dashboard data for a guest.
+          setStorageScope(null);
+          setHydrated(true);
+          setProfileHydrated(true);
+          navigate({ to: "/auth", replace: true });
+          return;
+        }
+
+        // The account scope must be established before pulling any local
+        // mission, chat, theme, or analytics state.
+        setStorageScope(user.id);
         setCurrentUserId(user.id);
+
+        const localState = loadState();
+        if (cancelled) return;
+        setState(localState);
+        setDailyDraft(localState.daily.text);
+        setHasGeneratedMissionPlan(
+          getScopedItem("apexmission-mission-plan-generated") === "true",
+        );
+        setActiveLayoutTheme(getScopedItem("apexmission-active-theme") || "layout-default");
+
+        const rawAnalytics = getScopedItem("apexmission-behavior-analytics");
+        if (rawAnalytics) {
+          try {
+            const parsedAnalytics = JSON.parse(rawAnalytics);
+            setBehaviorAnalytics((previous) => ({ ...previous, ...parsedAnalytics }));
+          } catch {
+            // Analytics cache is optional; the synthetic engine degrades gracefully.
+          }
+        }
+
+        setHydrated(true);
 
         const profile = await fetchOperatorProfileMetadata(user.id);
         const metadataName =
@@ -176,11 +217,14 @@ function ApexMission() {
         setLeaderboardSnapshot(
           effectiveProfile.companyId === null ? snapshot : null,
         );
-        localStorage.setItem("apexmission-leaderboard-cache", JSON.stringify(normalizedData));
+        setScopedItem("apexmission-leaderboard-cache", JSON.stringify(normalizedData));
       } catch (err) {
         console.error("Failed to map dynamic operator telemetry:", err);
       } finally {
-        if (!cancelled) setProfileHydrated(true);
+        if (!cancelled) {
+          setHydrated(true);
+          setProfileHydrated(true);
+        }
       }
     };
 
@@ -189,7 +233,7 @@ function ApexMission() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [navigate]);
 
   const handleOnboardingComplete = async () => {
     // Flip the UI immediately, then persist the permanent database flag.
@@ -210,7 +254,7 @@ function ApexMission() {
     }
 
     // Legacy local flag retained for the Mission Coach panel's one-time seed.
-    localStorage.setItem("apex-tutorial-completed", "true");
+    setScopedItem("apex-tutorial-completed", "true");
   };
 
   useEffect(() => {
@@ -228,10 +272,8 @@ function ApexMission() {
     { id: "badge-apex-sentinel", name: "🛡️ APEX SENTINEL VECTOR", cost: 3200, type: "Cosmetic Alpha Badge", desc: "Unlocks an animated emerald shielding shroud aura that glows behind your user canopy parameters." }
   ];
 
-  const navigate = useNavigate();
-  const checkout = useServerFn(startCheckout);
-
   const [isGeneratingMissionPlan, setIsGeneratingMissionPlan] = useState(false);
+  const checkout = useServerFn(startCheckout);
   const [hasGeneratedMissionPlan, setHasGeneratedMissionPlan] = useState(false);
 
   const [isEvening, setIsEvening] = useState(false);
@@ -266,7 +308,7 @@ function ApexMission() {
       if (!operatorProfile?.onboardingCompleted) return;
 
       const today = todayKey();
-      const lastSeen = localStorage.getItem("apexmission-morning-checkin");
+      const lastSeen = getScopedItem("apexmission-morning-checkin");
       
       const currentHour = new Date().getHours();
       const isMorningWindow = currentHour >= 5 && currentHour < 12;
@@ -280,22 +322,18 @@ function ApexMission() {
   checkMorningCheckinEligibility();
 }, [hydrated, profileHydrated, operatorProfile, navigate]);
 
-useEffect(() => {
-  const applyEvening = () => {
-    const currentHour = new Date().getHours();
-    const next = currentHour >= 18 || currentHour < 1;
-    // #region agent log
-    fetch('http://127.0.0.1:7678/ingest/579042e6-c02b-4f8a-9ee7-63d6d222301a',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6a0f5c'},body:JSON.stringify({sessionId:'6a0f5c',runId:'post-fix',hypothesisId:'H',location:'app.tsx:isEvening',message:'isEvening set after mount',data:{currentHour,next},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
-    setIsEvening(next);
-  };
-  applyEvening();
-  const timer = setInterval(applyEvening, 60000);
-  return () => clearInterval(timer);
-}, []);
+  useEffect(() => {
+    const applyEvening = () => {
+      const currentHour = new Date().getHours();
+      setIsEvening(currentHour >= 18 || currentHour < 1);
+    };
+    applyEvening();
+    const timer = setInterval(applyEvening, 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
-    const activeLayout = localStorage.getItem("apexmission-active-theme") || "layout-default";
+    const activeLayout = getScopedItem("apexmission-active-theme") || "layout-default";
     setActiveLayoutTheme(activeLayout);
   }, []);
 
@@ -412,17 +450,49 @@ useEffect(() => {
   }, []);
 
   useEffect(() => {
-    const s = loadState();
-    setState(s);
-    setDailyDraft(s.daily.text);
-    setHasGeneratedMissionPlan(localStorage.getItem("apexmission-mission-plan-generated") === "true");
-    setHydrated(true);
-  }, []);
-
-  useEffect(() => {
     if (!hydrated) return;
     saveState(state);
   }, [state, hydrated]);
+
+  // Persist earned credits and streak progress. Without this, every reload
+  // restored the stale profile row and silently discarded completed tasks.
+  useEffect(() => {
+    if (!hydrated || !profileHydrated || !currentUserId || !operatorProfile) return;
+
+    const points = state.points ?? 0;
+    const streak = state.streak?.count ?? 0;
+
+    if (
+      points === operatorProfile.credits &&
+      streak === operatorProfile.currentStreak
+    ) {
+      return;
+    }
+
+    const timer = window.setTimeout(async () => {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          credits: points,
+          current_streak: streak,
+          max_streak: Math.max(operatorProfile.maxStreak, streak),
+        })
+        .eq("id", currentUserId);
+
+      if (error) {
+        console.error("Progress telemetry sync failed:", error);
+      }
+    }, 750);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    state.points,
+    state.streak?.count,
+    hydrated,
+    profileHydrated,
+    currentUserId,
+    operatorProfile,
+  ]);
 
   const { total, done } = useMemo(() => {
     let total = 0;
@@ -476,7 +546,7 @@ useEffect(() => {
         daily: { text: plan.dailyAction, done: false, date: todayKey() },
       }));
       setDailyDraft(plan.dailyAction);
-      localStorage.setItem("apexmission-mission-plan-generated", "true");
+      setScopedItem("apexmission-mission-plan-generated", "true");
       setHasGeneratedMissionPlan(true);
     } catch (error) {
       console.error("Mission plan generation failed:", error);
@@ -789,7 +859,8 @@ useEffect(() => {
               <button
                 type="button"
                 onClick={async () => {
-                  await supabase.auth.signOut();
+                  await supabase.auth.signOut({ scope: "local" });
+                  setStorageScope(null);
                   sessionStorage.removeItem("apex-session-briefing-triggered");
                   navigate({ to: "/auth" });
                 }}
@@ -802,8 +873,8 @@ useEffect(() => {
               <button
                 type="button"
                 onClick={() => {
-                  if (window.confirm("⚠️ SYSTEM FLASH RESET: Wipe active local operational data?")) {
-                    localStorage.clear();
+                  if (window.confirm("⚠️ SYSTEM FLASH RESET: Wipe this account's local operational data?")) {
+                    clearCurrentUserStorage();
                     window.location.reload();
                   }
                 }}
@@ -1085,7 +1156,7 @@ useEffect(() => {
                       : (operator.points || operator.beta_points || 0);
 
                     const hasFounderBadge = isCurrentClientNode 
-                      ? localStorage.getItem("apexmission-unlocked-badge-alpha-founder") === "true"
+                      ? getScopedItem("apexmission-unlocked-badge-alpha-founder") === "true"
                       : operator.unlocked_layouts?.includes("badge-alpha-founder");
 
                     return (
@@ -1154,17 +1225,32 @@ useEffect(() => {
                     <span className="font-mono text-xs font-black text-emerald-400">{item.cost} credits</span>
                     <button 
                       type="button" 
-                      onClick={() => {
-                        if (((state as any).points || 0) < item.cost) return alert("❌ INSUFFICIENT OPERATIONAL CREDITS.");
-                        
-                        setState(s => ({ ...s, points: ((s as any).points || 0) - item.cost }));
-                        
+                      onClick={async () => {
+                        const currentPoints = (state as any).points || 0;
+                        if (currentPoints < item.cost) return alert("❌ INSUFFICIENT OPERATIONAL CREDITS.");
+
+                        const nextPoints = currentPoints - item.cost;
+                        setState(s => ({ ...s, points: nextPoints }));
+
                         if (item.id.startsWith("theme-")) { 
-                          localStorage.setItem("apexmission-active-theme", item.id); 
-                          window.location.reload(); 
+                          setScopedItem("apexmission-active-theme", item.id); 
                         } else if (item.id.startsWith("badge-")) {
-                          localStorage.setItem(`apexmission-unlocked-${item.id}`, "true");
+                          setScopedItem(`apexmission-unlocked-${item.id}`, "true");
                           alert(`💎 ALPHA COGNITIVE EMBLEM EQUIPPED: ${item.name} is now locked onto your identity matrix rows!`);
+                        }
+
+                        // Persist the debit so a reload does not restore the old balance.
+                        if (currentUserId) {
+                          const { error: creditError } = await supabase
+                            .from("profiles")
+                            .update({ credits: nextPoints })
+                            .eq("id", currentUserId);
+                          if (creditError) {
+                            console.error("Credit debit persistence failed:", creditError);
+                          }
+                        }
+
+                        if (item.id.startsWith("theme-") || item.id.startsWith("badge-")) {
                           window.location.reload();
                         }
                       }} 
@@ -1244,35 +1330,37 @@ useEffect(() => {
       )}
 
       {/* MISSION COACH COMPONENT WITH ACCESSIBLE MOBILE TOGGLE */}
-      <MissionCoach
-        premium={premium}
-        state={{ ...state, failureCount: userFailureCount }}
-        userName={userName}
-        userRank={userRankText}
-        isOpen={coachOpen}
-        onOpenChange={setCoachOpen}
-        onClose={() => setCoachOpen(false)}
-        onLockedHistory={() => setPaywall("Your full coach history is a premium feature...")}
-        isFirstSignup={isFirstSignup}
-        companyId={operatorProfile?.companyId ?? null}
-        leaderboard={leaderboardSnapshot}
-        onActionPlanGenerated={(plan) => {
-          setState((s) => ({
-            ...s,
-            userName: userName,
-            mission: plan.mission || s.mission,
-            tasks: {
-              high: (plan.high || []).map((text: string) => ({ id: nextId(), text, done: false })),
-              medium: (plan.medium || []).map((text: string) => ({ id: nextId(), text, done: false })),
-              low: (plan.low || []).map((text: string) => ({ id: nextId(), text, done: false })),
-            },
-            daily: { text: plan.dailyAction || "", done: false, date: todayKey() },
-          }));
-          setDailyDraft(plan.dailyAction || "");
-          setShowPlanSuccessAlert(true);
-          setTimeout(() => setShowPlanSuccessAlert(false), 4000);
-        }}
-      />
+      {hydrated && profileHydrated && (
+        <MissionCoach
+          premium={premium}
+          state={{ ...state, failureCount: userFailureCount }}
+          userName={userName}
+          userRank={userRankText}
+          isOpen={coachOpen}
+          onOpenChange={setCoachOpen}
+          onClose={() => setCoachOpen(false)}
+          onLockedHistory={() => setPaywall("Your full coach history is a premium feature...")}
+          isFirstSignup={isFirstSignup}
+          companyId={operatorProfile?.companyId ?? null}
+          leaderboard={leaderboardSnapshot}
+          onActionPlanGenerated={(plan) => {
+            setState((s) => ({
+              ...s,
+              userName: userName,
+              mission: plan.mission || s.mission,
+              tasks: {
+                high: (plan.high || []).map((text: string) => ({ id: nextId(), text, done: false })),
+                medium: (plan.medium || []).map((text: string) => ({ id: nextId(), text, done: false })),
+                low: (plan.low || []).map((text: string) => ({ id: nextId(), text, done: false })),
+              },
+              daily: { text: plan.dailyAction || "", done: false, date: todayKey() },
+            }));
+            setDailyDraft(plan.dailyAction || "");
+            setShowPlanSuccessAlert(true);
+            setTimeout(() => setShowPlanSuccessAlert(false), 4000);
+          }}
+        />
+      )}
 
       {/* SYNTHETIC COACH OVERLAY - Zero-API Interactive Conversation */}
       <SyntheticCoachOverlay

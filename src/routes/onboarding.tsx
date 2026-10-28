@@ -1,23 +1,85 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { Building2, KeyRound, Loader2, ShieldCheck, User } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Building2, KeyRound, Loader2, ShieldCheck, User, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { setStorageScope } from "@/lib/user-storage";
 
 export const Route = createFileRoute("/onboarding")({
   component: OnboardingPage,
 });
+
+const NEW_ACCOUNT_SEARCH = { mode: "signup" as const, next: "/onboarding" };
+const SIGN_IN_SEARCH = { mode: "signin" as const, next: "/onboarding" };
 
 function OnboardingPage() {
   const navigate = useNavigate();
 
   const [inviteToken, setInviteToken] = useState("");
   const [busy, setBusy] = useState(false);
+  const [switching, setSwitching] = useState(false);
+  const [sessionChecked, setSessionChecked] = useState(false);
+  const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  function completeOnboarding() {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("apex-onboarding-completed", "true");
+  // Detect the account that is already signed in so the operator can either
+  // configure it or deliberately disconnect and register another account.
+  useEffect(() => {
+    let active = true;
+
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (!active) return;
+        const user = data.session?.user ?? null;
+        setSessionEmail(user?.email ?? null);
+        if (user) setStorageScope(user.id);
+        setSessionChecked(true);
+      })
+      .catch(() => {
+        if (active) {
+          setSessionEmail(null);
+          setSessionChecked(true);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function disconnectAndGoToAuth(mode: "signin" | "signup") {
+    if (switching || busy) return;
+
+    setSwitching(true);
+    setErrorMessage(null);
+
+    try {
+      const { error } = await supabase.auth.signOut({ scope: "local" });
+      if (error) throw error;
+    } catch (err) {
+      // A missing/expired local session is already the desired end state.
+      console.warn("Local session disconnect skipped:", err);
+    } finally {
+      setStorageScope(null);
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("apex-session-briefing-triggered");
+      }
+      setSessionEmail(null);
+      setSwitching(false);
+      navigate({ to: "/auth", search: { mode, next: "/onboarding" } });
     }
+  }
+
+  function handleCreateNewAccount() {
+    void disconnectAndGoToAuth("signup");
+  }
+
+  function handleSwitchAccount() {
+    void disconnectAndGoToAuth("signin");
+  }
+
+  function redirectToSignup() {
+    navigate({ to: "/auth", search: NEW_ACCOUNT_SEARCH });
   }
 
   // 🧑‍🚀 PERSONAL ACCOUNT PATH — routes straight to the dashboard with company_id = null.
@@ -29,18 +91,23 @@ function OnboardingPage() {
         data: { user },
       } = await supabase.auth.getUser();
 
-      if (user) {
-        const { error: metaError } = await supabase.auth.updateUser({ data: { company_id: null } });
-        if (metaError) throw metaError;
-
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .update({ company_id: null })
-          .eq("id", user.id);
-        if (profileError) throw profileError;
+      if (!user) {
+        setBusy(false);
+        redirectToSignup();
+        return;
       }
 
-      completeOnboarding();
+      setStorageScope(user.id);
+
+      const { error: metaError } = await supabase.auth.updateUser({ data: { company_id: null } });
+      if (metaError) throw metaError;
+
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({ company_id: null })
+        .eq("id", user.id);
+      if (profileError) throw profileError;
+
       navigate({ to: "/app" });
     } catch (err) {
       console.error("Personal onboarding failed:", err);
@@ -61,6 +128,18 @@ function OnboardingPage() {
     setBusy(true);
     setErrorMessage(null);
     try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        setBusy(false);
+        redirectToSignup();
+        return;
+      }
+
+      setStorageScope(user.id);
+
       const { data: companyId, error: lookupError } = await supabase.rpc(
         "get_company_id_by_invite_token",
         {
@@ -87,7 +166,6 @@ function OnboardingPage() {
       });
       if (metaError) throw metaError;
 
-      completeOnboarding();
       navigate({ to: "/app" });
     } catch (err) {
       console.error("Company join failed:", err);
@@ -126,6 +204,84 @@ function OnboardingPage() {
             Choose your command path. Operate solo or plug into an enterprise tenant.
           </p>
         </div>
+
+        {sessionChecked && sessionEmail && (
+          <div className="mb-4 glass-panel-subtle p-4 text-left animate-fade-in-up delay-100">
+            <div className="flex items-start gap-2.5">
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-black uppercase tracking-wider text-emerald-400">
+                  Active Session Detected
+                </p>
+                <p className="mt-1 truncate font-mono text-xs font-semibold text-white">
+                  {sessionEmail}
+                </p>
+                <p className="mt-1.5 text-[11px] leading-relaxed text-zinc-500">
+                  Choosing a path below configures this account. To operate a different account,
+                  create a new one — you will be signed out here, and this account's saved mission
+                  stays on this device.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCreateNewAccount}
+                    disabled={switching || busy}
+                    className="btn-glass-secondary h-10 px-4 text-[11px]"
+                  >
+                    {switching ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-black" />
+                    ) : (
+                      <>
+                        <UserPlus className="h-4 w-4" />
+                        Create a new account
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSwitchAccount}
+                    disabled={switching || busy}
+                    className="btn-glass-ghost h-10 px-4 text-[11px]"
+                  >
+                    Sign in as someone else
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {sessionChecked && !sessionEmail && (
+          <div className="mb-4 glass-panel-subtle p-4 text-left animate-fade-in-up delay-100">
+            <div className="flex items-start gap-2.5">
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-black uppercase tracking-wider text-amber-400">
+                  No Active Session
+                </p>
+                <p className="mt-1.5 text-[11px] leading-relaxed text-zinc-500">
+                  Sign in or create an account before selecting a command path.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => navigate({ to: "/auth", search: NEW_ACCOUNT_SEARCH })}
+                    className="btn-glass-primary h-10 px-4 text-[11px]"
+                  >
+                    Create an account
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate({ to: "/auth", search: SIGN_IN_SEARCH })}
+                    className="btn-glass-secondary h-10 px-4 text-[11px]"
+                  >
+                    Sign in
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {errorMessage && (
           <div className="mb-4 glass-panel-subtle p-4 text-left animate-fade-in-up delay-100">

@@ -1,15 +1,25 @@
 import React, { useEffect, useState } from "react";
-import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { ShieldAlert, Loader2, Mail, CheckCircle } from "lucide-react";
 
 export const Route = createFileRoute("/verify-email")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    email: typeof search["email"] === "string" ? search["email"] : undefined,
+    next:
+      typeof search["next"] === "string" &&
+      search["next"].startsWith("/") &&
+      !search["next"].startsWith("//")
+        ? search["next"]
+        : undefined,
+  }),
   component: VerifyEmailPage,
 });
 
 function VerifyEmailPage() {
   const navigate = useNavigate();
-  const { email } = useSearch({ from: "/verify-email" }) as { email?: string };
+  const { email, next } = Route.useSearch();
+  const destination = next || "/onboarding";
 
   const [busy, setBusy] = useState(false);
   const [checking, setChecking] = useState(false);
@@ -34,14 +44,23 @@ function VerifyEmailPage() {
 
       const emailIdentity = user?.identities?.find((id) => id.provider === "email");
 
-      const isVerified = Boolean(
-        user?.email_confirmed_at && emailIdentity?.identity_data?.["email_verified"] === true,
-      );
+      const isVerified =
+        Boolean(user?.email_confirmed_at) ||
+        emailIdentity?.identity_data?.["email_verified"] === true;
+
+      // Guard against confirming the wrong account when another session is
+      // still active in this browser.
+      if (user?.email && email && user.email.toLowerCase() !== email.trim().toLowerCase()) {
+        setErrorMessage(
+          `This browser is signed in as ${user.email}. Sign out and open the verification link for ${email} to activate the new account.`,
+        );
+        return;
+      }
 
       if (user && isVerified) {
         setIsSuccess(true);
         setTimeout(() => {
-          navigate({ to: "/plans" });
+          navigate({ to: destination });
         }, 1500);
       } else {
         setErrorMessage(
@@ -68,11 +87,15 @@ function VerifyEmailPage() {
     setErrorMessage(null);
 
     try {
+      const redirectUrl = new URL("/verify-email", window.location.origin);
+      if (email) redirectUrl.searchParams.set("email", email);
+      if (next) redirectUrl.searchParams.set("next", next);
+
       const { error } = await supabase.auth.resend({
         type: "signup",
         email: email,
         options: {
-          emailRedirectTo: `${window.location.origin}/plans`,
+          emailRedirectTo: redirectUrl.toString(),
         },
       });
       if (error) throw error;
@@ -120,7 +143,7 @@ function VerifyEmailPage() {
         </h1>
         <p className="text-xs font-medium text-zinc-400 leading-relaxed mb-6 max-w-xs mx-auto">
           {isSuccess
-            ? "Token handshake synchronized cleanly. Transferring to plan configuration cockpit..."
+            ? "Token handshake synchronized cleanly. Transferring to account setup..."
             : `A secure verification token message packet has been successfully deployed over to ${email || "your credentials"}. Open your inbox, click the activation link, then return here to confirm.`}
         </p>
 

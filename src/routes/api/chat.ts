@@ -59,8 +59,6 @@ export const Route = createFileRoute("/api/chat")({
           messages?: unknown;
           uploadedText?: string;
         };
-          
-        console.log("SERVER uploadedText:", uploadedText);
 
         if (!Array.isArray(messages)) {
           return new Response("Messages are required", { status: 400 });

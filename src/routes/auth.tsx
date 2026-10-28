@@ -1,21 +1,71 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import { setStorageScope } from "@/lib/user-storage";
 import { ShieldAlert, Loader2, KeyRound, Mail, ArrowRight } from "lucide-react";
 
+type AuthMode = "signin" | "signup";
+type AuthSearch = { mode?: AuthMode | undefined; next?: string | undefined };
+
+function sanitizeNext(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  if (!value.startsWith("/") || value.startsWith("//")) return undefined;
+  return value;
+}
+
 export const Route = createFileRoute("/auth")({
+  validateSearch: (search: Record<string, unknown>): AuthSearch => ({
+    mode:
+      search["mode"] === "signup" || search["mode"] === "signin"
+        ? (search["mode"] as AuthMode)
+        : undefined,
+    next: sanitizeNext(search["next"]),
+  }),
   component: AuthConsolePage,
 });
 
 function AuthConsolePage() {
   const navigate = useNavigate();
+  const { mode, next } = Route.useSearch();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(mode === "signup");
   const [fullName, setFullName] = useState("");
   const [busy, setBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showLoadingGate, setShowLoadingGate] = useState(false);
+  const [currentEmail, setCurrentEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    setIsSignUp(mode === "signup");
+  }, [mode]);
+
+  useEffect(() => {
+    let active = true;
+
+    supabase.auth
+      .getUser()
+      .then(({ data: { user } }) => {
+        if (active) setCurrentEmail(user?.email ?? null);
+      })
+      .catch(() => {
+        if (active) setCurrentEmail(null);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  function switchMode() {
+    const nextMode: AuthMode = isSignUp ? "signin" : "signup";
+    setErrorMessage(null);
+    navigate({
+      to: "/auth",
+      search: { mode: nextMode, next },
+      replace: true,
+    });
+  }
 
   const handleAuthentication = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,11 +106,29 @@ function AuthConsolePage() {
           return;
         }
 
-        const { error } = await supabase.auth.signUp({
+        // Supabase keeps the current browser session alive when a second
+        // signUp is submitted. Deliberately drop the active session first so
+        // the new account is not silently conflated with the signed-in one.
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData.session) {
+          const { error: signOutError } = await supabase.auth.signOut({ scope: "local" });
+          if (signOutError) throw signOutError;
+          setStorageScope(null);
+          setCurrentEmail(null);
+          if (typeof window !== "undefined") {
+            sessionStorage.removeItem("apex-session-briefing-triggered");
+          }
+        }
+
+        const redirectUrl = new URL("/verify-email", window.location.origin);
+        redirectUrl.searchParams.set("email", email.trim());
+        redirectUrl.searchParams.set("next", "/onboarding");
+
+        const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password: password.trim(),
           options: {
-            emailRedirectTo: `${window.location.origin}/verify-email`,
+            emailRedirectTo: redirectUrl.toString(),
             data: {
               full_name: fullName.trim(),
             },
@@ -78,7 +146,17 @@ function AuthConsolePage() {
           throw error;
         }
 
-        navigate({ to: "/verify-email", search: { email: email.trim() } });
+        if (data.session?.user) {
+          // Email confirmation is disabled on this project: the new account is
+          // already authenticated, so go straight to account-type selection.
+          setStorageScope(data.session.user.id);
+          navigate({ to: "/onboarding" });
+        } else {
+          navigate({
+            to: "/verify-email",
+            search: { email: email.trim(), next: "/onboarding" },
+          });
+        }
       } else {
         const { data: authData, error } = await supabase.auth.signInWithPassword({
           email: email.trim(),
@@ -88,6 +166,12 @@ function AuthConsolePage() {
         if (error) throw error;
 
         const userId = authData.user?.id;
+        if (userId) {
+          setStorageScope(userId);
+          if (typeof window !== "undefined") {
+            sessionStorage.removeItem("apex-session-briefing-triggered");
+          }
+        }
         let onboardingCompleted = false;
 
         if (userId) {
@@ -107,7 +191,7 @@ function AuthConsolePage() {
         setShowLoadingGate(true);
         setTimeout(() => {
           navigate({
-            to: onboardingCompleted ? "/app" : "/onboarding",
+            to: onboardingCompleted ? next || "/app" : "/onboarding",
           });
         }, 2000);
       }
@@ -166,6 +250,22 @@ function AuthConsolePage() {
             {isSignUp ? "Initialize Operator" : "Secure Node Access"}
           </h1>
         </div>
+
+        {isSignUp && currentEmail && (
+          <div className="mb-5 rounded-xl border border-amber-500/25 bg-amber-950/20 p-3.5 text-left flex items-start gap-2.5 text-xs text-amber-300 font-semibold animate-fade-in">
+            <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5 text-amber-400" />
+            <div className="space-y-1">
+              <p>
+                Currently signed in as{" "}
+                <span className="font-mono text-amber-200">{currentEmail}</span>.
+              </p>
+              <p className="text-[11px] font-medium text-amber-200/70">
+                Registering a new account will disconnect this session. Your saved mission data
+                stays on this device and is restored when you sign back in.
+              </p>
+            </div>
+          </div>
+        )}
 
         {errorMessage && (
           <div className="mb-5 rounded-xl border border-rose-500/20 bg-rose-950/20 p-3.5 text-left flex items-start gap-2.5 text-xs text-rose-400 font-semibold animate-fade-in">
@@ -266,10 +366,7 @@ function AuthConsolePage() {
         <div className="mt-6 text-center">
           <button
             type="button"
-            onClick={() => {
-              setIsSignUp(!isSignUp);
-              setErrorMessage(null);
-            }}
+            onClick={switchMode}
             className="text-xs font-semibold text-zinc-500 hover:text-emerald-400 transition-colors"
           >
             {isSignUp

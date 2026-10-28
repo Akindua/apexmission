@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { loadState, todayKey, saveState, appendReflectionEntry } from "@/lib/mission-store";
+import { supabase } from "@/integrations/supabase/client";
 import { Moon, Flame, ArrowRight, Loader2, MessageSquarePlus } from "lucide-react";
 
 export const Route = createFileRoute("/night-reflection")({
@@ -24,6 +25,25 @@ function NightReflectionPage() {
     const now = new Date();
     return now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   });
+
+  useEffect(() => {
+    let active = true;
+
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (active && !data.session) {
+          navigate({ to: "/auth", replace: true });
+        }
+      })
+      .catch(() => {
+        if (active) navigate({ to: "/auth", replace: true });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [navigate]);
 
   const handleCloseoutDay = async () => {
     if (actionCompleted === null || busy) return;
