@@ -2,6 +2,7 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { withTenantSubdomainHeader } from "./lib/tenant-host";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -46,9 +47,16 @@ function isH3SwallowedErrorBody(body: string): boolean {
 
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
+    // Resolve `*.apexmissions.app` before TanStack handles the request so every
+    // SSR render and server-function call sees the same trusted tenant header.
+    const scopedRequest = withTenantSubdomainHeader(
+      request,
+      process.env["TENANT_ROOT_DOMAIN"] ?? undefined,
+    );
+
     try {
       const handler = await getServerEntry();
-      const response = await handler.fetch(request, env, ctx);
+      const response = await handler.fetch(scopedRequest, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
     } catch (error) {
       console.error(error);

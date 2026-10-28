@@ -18,18 +18,21 @@ export type Database = {
         Row: {
           id: string
           name: string
+          slug: string
           invite_token: string
           created_at: string
         }
         Insert: {
           id?: string
           name: string
+          slug: string
           invite_token: string
           created_at?: string
         }
         Update: {
           id?: string
           name?: string
+          slug?: string
           invite_token?: string
           created_at?: string
         }
@@ -213,6 +216,17 @@ export type Database = {
           operator_name: string
           operational_status: string
           rank_position: number
+        }[]
+      }
+      resolve_session_tenant: {
+        Args: {
+          p_subdomain: string
+        }
+        Returns: {
+          company_id: string
+          company_name: string
+          company_slug: string
+          is_member: boolean
         }[]
       }
     }

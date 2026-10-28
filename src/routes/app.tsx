@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, Flame, Plus, Sparkles, Loader2, Target, TimerReset, Shield, Trophy, LayoutDashboard, Award, HardDrive, HelpCircle, MessageSquare, MessageCircle } from "lucide-react";
+import { Check, Flame, Plus, Sparkles, Loader2, Target, TimerReset, Shield, Trophy, LayoutDashboard, Award, HardDrive, HelpCircle, MessageSquare, MessageCircle, Building2 } from "lucide-react";
 import { PaywallModal } from "@/components/PaywallModal";
 import { MissionCoach } from "@/components/MissionCoach";
 import { SyntheticCoachOverlay } from "@/components/SyntheticCoachOverlay";
@@ -27,6 +27,8 @@ import {
   type Task,
 } from "@/lib/mission-store";
 import { generateMissionPlan } from "@/lib/mission-planner";
+import { extractSubdomainSlug, TENANT_ROOT_DOMAIN } from "@/lib/tenant-host";
+import { resolveActiveTenant, type SessionTenant } from "@/lib/tenant.functions";
 import {
   clearCurrentUserStorage,
   getScopedItem,
@@ -62,6 +64,7 @@ function ApexMission() {
   const [operatorProfile, setOperatorProfile] = useState<OperatorProfileMetadata | null>(null);
   const [leaderboardSnapshot, setLeaderboardSnapshot] = useState<LeaderboardSnapshot | null>(null);
   const [profileHydrated, setProfileHydrated] = useState(false);
+  const [activeTenant, setActiveTenant] = useState<SessionTenant | null>(null);
   const [behaviorAnalytics, setBehaviorAnalytics] = useState({
     sessionCount: 0,
     lastSessionDate: "",
@@ -202,6 +205,22 @@ function ApexMission() {
           ...current,
           points: effectiveProfile.credits,
         }));
+
+        // Wildcard host -> company tenant. Only reached on tenant subdomains;
+        // the server function reads the trusted x-subdomain-slug header.
+        const hostSlug =
+          typeof window !== "undefined"
+            ? extractSubdomainSlug(window.location.hostname)
+            : null;
+
+        if (hostSlug) {
+          try {
+            const tenant = await resolveActiveTenant();
+            if (!cancelled) setActiveTenant(tenant);
+          } catch (error) {
+            console.error("Tenant context resolution failed:", error);
+          }
+        }
 
         const { operators, snapshot } = await fetchLeaderboardTelemetry(user.id);
         const normalizedData = operators.map((operator) => ({
@@ -688,6 +707,52 @@ function ApexMission() {
     }
   }
 
+  async function handleSwitchTenantAccount() {
+    await supabase.auth.signOut({ scope: "local" });
+    setStorageScope(null);
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem("apex-session-briefing-triggered");
+    }
+    navigate({ to: "/auth", search: { mode: "signin", next: "/app" } });
+  }
+
+  // A company subdomain must never render the dashboard for a non-member.
+  if (activeTenant && !activeTenant.isMember) {
+    return (
+      <div className="min-h-screen bg-black text-zinc-100 flex items-center justify-center px-6 py-12 relative overflow-hidden">
+        <div className="ambient-emerald-glow" />
+        <div className="grid-pattern-overlay" />
+        <div className="relative w-full max-w-md rounded-2xl border border-amber-500/25 bg-[#0D0D11]/90 p-8 text-center backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.6)]">
+          <div className="mx-auto mb-5 flex size-14 items-center justify-center rounded-2xl border border-amber-500/30 bg-amber-950/30 text-amber-400">
+            <Building2 className="size-6" />
+          </div>
+          <p className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-400">
+            Tenant Access Restricted
+          </p>
+          <h1 className="mt-2 text-2xl font-black uppercase tracking-tight text-white font-display">
+            {activeTenant.companyName}
+          </h1>
+          <p className="mt-3 text-xs font-medium leading-relaxed text-zinc-400">
+            This workspace is reserved for members of {activeTenant.companyName}. The current
+            session is not linked to this organization.
+          </p>
+          <div className="mt-6 flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={handleSwitchTenantAccount}
+              className="btn-glass-primary h-11"
+            >
+              Sign in with a company account
+            </button>
+            <a href={`https://${TENANT_ROOT_DOMAIN}/app`} className="btn-glass-ghost h-11">
+              Go to {TENANT_ROOT_DOMAIN}
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`min-h-screen transition-all duration-500 ease-in-out ${themeClasses.bg} text-zinc-100 flex overflow-hidden animate-scan-line relative`}>
       
@@ -838,6 +903,11 @@ function ApexMission() {
                 <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block mt-0.5 font-mono">
                   📅 {formattedDate}
                 </span>
+                {activeTenant?.isMember && (
+                  <span className="text-[10px] font-bold text-emerald-400/80 uppercase tracking-wider block mt-0.5 font-mono">
+                    🏢 {activeTenant.companyName}
+                  </span>
+                )}
               </div>
             </div>
 
