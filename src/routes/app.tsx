@@ -27,7 +27,7 @@ import {
   type Task,
 } from "@/lib/mission-store";
 import { generateMissionPlan } from "@/lib/mission-planner";
-import { extractSubdomainSlug, TENANT_ROOT_DOMAIN } from "@/lib/tenant-host";
+import { extractSubdomainSlug, PLATFORM_APP_URL, TENANT_ROOT_DOMAIN } from "@/lib/tenant-host";
 import { resolveActiveTenant, type SessionTenant } from "@/lib/tenant.functions";
 import {
   clearCurrentUserStorage,
@@ -760,8 +760,8 @@ function ApexMission() {
             >
               Sign in with a company account
             </button>
-            <a href={`https://${TENANT_ROOT_DOMAIN}/app`} className="btn-glass-ghost h-11">
-              Go to {TENANT_ROOT_DOMAIN}
+            <a href={`${PLATFORM_APP_URL}/app`} className="btn-glass-ghost h-11">
+              Go to www.{TENANT_ROOT_DOMAIN}
             </a>
           </div>
         </div>

@@ -8,6 +8,11 @@
  */
 
 export const TENANT_ROOT_DOMAIN = "apexmissions.app";
+/**
+ * Public origin of the dashboard. The apex domain currently serves a holding
+ * page, so tenant users leaving a workspace are sent to the live `www` app.
+ */
+export const PLATFORM_APP_URL = `https://www.${TENANT_ROOT_DOMAIN}`;
 export const SUBDOMAIN_HEADER = "x-subdomain-slug";
 
 /** Single DNS label, lowercase alphanumeric plus internal hyphens (max 63). */
