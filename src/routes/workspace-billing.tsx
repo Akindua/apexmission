@@ -6,6 +6,7 @@ import {
   CalendarClock,
   CheckCircle2,
   Loader2,
+  LogIn,
   LogOut,
   Mail,
   RefreshCw,
@@ -129,20 +130,12 @@ function WorkspaceBillingPage() {
 
   const companyName = status?.companyName || company || "Your workspace";
 
-  if (authState === "signed_out") {
-    return (
-      <PausedPanel
-        companyName={companyName}
-        status={null}
-        signedIn={false}
-        signingOut={false}
-        onSignOut={handleSignOut}
-      />
-    );
-  }
-
   if (unavailable) {
     return <UnavailablePanel />;
+  }
+
+  if (authState === "signed_out") {
+    return <SignedOutPanel companyName={companyName} hasCompanyHint={Boolean(company)} />;
   }
 
   if (!status) {
@@ -154,7 +147,6 @@ function WorkspaceBillingPage() {
       <PausedPanel
         companyName={companyName}
         status={status}
-        signedIn
         signingOut={signingOut}
         onSignOut={handleSignOut}
       />
@@ -185,22 +177,72 @@ function LoadingPanel() {
   );
 }
 
+function SignedOutPanel({
+  companyName,
+  hasCompanyHint,
+}: {
+  companyName: string;
+  hasCompanyHint: boolean;
+}) {
+  return (
+    <BillingFrame>
+      <BillingPanel>
+        <div className="text-center">
+          <div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-emerald-500/25 bg-emerald-950/40 text-emerald-400 shadow-[0_0_28px_rgba(16,185,129,0.22)]">
+            <ShieldAlert className="size-7" />
+          </div>
+          <p className="mt-5 font-mono text-[10px] font-black uppercase tracking-[0.25em] text-emerald-400">
+            Enterprise billing
+          </p>
+          <h1 className="mt-2 font-display text-2xl font-black tracking-tight text-white">
+            Sign in to verify access.
+          </h1>
+          {hasCompanyHint ? (
+            <p className="mt-2 break-words text-xs text-zinc-500">{companyName}</p>
+          ) : null}
+          <p className="mt-3 text-sm leading-relaxed text-zinc-400">
+            Enterprise access is tied to your work account. Sign in with the account that belongs to
+            your company workspace to review its pilot window and license status.
+          </p>
+          <Link
+            to="/auth"
+            search={{ mode: "signin", next: "/workspace-billing" }}
+            className="btn-glass-primary mt-6 h-11 min-h-11 w-full"
+          >
+            <LogIn className="mr-2 size-4" />
+            Sign in to workspace
+          </Link>
+          <a
+            href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("Enterprise workspace access")}`}
+            className="btn-glass-ghost mt-2 h-11 min-h-11 w-full"
+          >
+            <Mail className="mr-2 size-4" />
+            Contact support
+          </a>
+          <SupportFooter />
+          <p className="mt-5 text-center text-[10px] leading-relaxed text-zinc-600">
+            Workspace billing details are only shown after your account is verified.
+          </p>
+        </div>
+      </BillingPanel>
+    </BillingFrame>
+  );
+}
+
 function PausedPanel({
   companyName,
   status,
-  signedIn,
   signingOut,
   onSignOut,
 }: {
   companyName: string;
-  status: WorkspaceAccessStatus | null;
-  signedIn: boolean;
+  status: WorkspaceAccessStatus;
   signingOut: boolean;
   onSignOut: () => void;
 }) {
   const mailtoHref = buildMailto({
     companyName,
-    companyId: status?.companyId,
+    companyId: status.companyId,
     intent: "expired",
   });
 
@@ -217,11 +259,6 @@ function PausedPanel({
 
         <div className="mt-6 rounded-xl border border-amber-500/20 bg-amber-950/10 p-4 sm:p-5">
           <p className="text-sm font-medium leading-relaxed text-zinc-200">{PILOT_ENDED_COPY}</p>
-          {!signedIn ? (
-            <p className="mt-3 text-xs leading-relaxed text-zinc-400">
-              Sign in to verify this workspace&apos;s live license status.
-            </p>
-          ) : null}
         </div>
 
         <dl className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -229,7 +266,7 @@ function PausedPanel({
           <StatusCell label="Pilot status" value="Concluded" />
           <StatusCell
             label="Pilot ended"
-            value={status ? formatDate(status.trialEndsAt) : "Sign in to view"}
+            value={formatDate(status.trialEndsAt)}
             icon={<CalendarClock className="size-3.5" />}
           />
         </dl>
@@ -239,29 +276,19 @@ function PausedPanel({
             <Mail className="mr-2 size-4" />
             Finalize enterprise license
           </a>
-          {signedIn ? (
-            <button
-              type="button"
-              onClick={onSignOut}
-              disabled={signingOut}
-              className="btn-glass-ghost h-11 min-h-11 flex-1 disabled:opacity-50"
-            >
-              {signingOut ? (
-                <Loader2 className="mr-2 size-4 animate-spin" />
-              ) : (
-                <LogOut className="mr-2 size-4" />
-              )}
-              Sign out
-            </button>
-          ) : (
-            <Link
-              to="/auth"
-              search={{ mode: "signin", next: "/workspace-billing" }}
-              className="btn-glass-ghost h-11 min-h-11 flex-1"
-            >
-              Sign in
-            </Link>
-          )}
+          <button
+            type="button"
+            onClick={onSignOut}
+            disabled={signingOut}
+            className="btn-glass-ghost h-11 min-h-11 flex-1 disabled:opacity-50"
+          >
+            {signingOut ? (
+              <Loader2 className="mr-2 size-4 animate-spin" />
+            ) : (
+              <LogOut className="mr-2 size-4" />
+            )}
+            Sign out
+          </button>
         </div>
 
         <SupportFooter />
