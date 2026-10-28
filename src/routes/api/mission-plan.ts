@@ -27,7 +27,7 @@ export const Route = createFileRoute(
                 }
 
                 const openai = createOpenAI({
-                    apiKey: process.env.OPENAI_API_KEY!,
+                    apiKey: process.env['OPENAI_API_KEY']!,
                 });
 
                 const result = await generateText({

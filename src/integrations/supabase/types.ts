@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      companies: {
+        Row: {
+          id: string
+          name: string
+          invite_token: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          invite_token: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          invite_token?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       entitlements: {
         Row: {
           created_at: string
@@ -52,24 +73,114 @@ export type Database = {
       }
       profiles: {
         Row: {
+          beta_points: number
+          company_id: string | null
           created_at: string
+          credits: number
+          current_streak: number
           email: string | null
+          failure_count: number
+          full_name: string | null
           id: string
+          last_action_logged: string | null
+          max_streak: number
+          onboarding_completed: boolean
+          operational_status: string
           subscription_tier: string
+          unlocked_layouts: string[]
           updated_at: string
         }
         Insert: {
+          beta_points?: number
+          company_id?: string | null
           created_at?: string
+          credits?: number
+          current_streak?: number
           email?: string | null
+          failure_count?: number
+          full_name?: string | null
           id: string
+          last_action_logged?: string | null
+          max_streak?: number
+          onboarding_completed?: boolean
+          operational_status?: string
           subscription_tier?: string
+          unlocked_layouts?: string[]
           updated_at?: string
         }
         Update: {
+          beta_points?: number
+          company_id?: string | null
           created_at?: string
+          credits?: number
+          current_streak?: number
           email?: string | null
+          failure_count?: number
+          full_name?: string | null
           id?: string
+          last_action_logged?: string | null
+          max_streak?: number
+          onboarding_completed?: boolean
+          operational_status?: string
           subscription_tier?: string
+          unlocked_layouts?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      points_ledger: {
+        Row: {
+          amount_changed: number
+          created_at: string
+          id: string
+          profile_id: string
+          transaction_reason: string
+        }
+        Insert: {
+          amount_changed: number
+          created_at?: string
+          id?: string
+          profile_id: string
+          transaction_reason: string
+        }
+        Update: {
+          amount_changed?: number
+          created_at?: string
+          id?: string
+          profile_id?: string
+          transaction_reason?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          id: string
+          company_id: string | null
+          user_id: string
+          task_text: string
+          impact_tier: string
+          is_done: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id?: string | null
+          user_id: string
+          task_text: string
+          impact_tier: string
+          is_done?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string | null
+          user_id?: string
+          task_text?: string
+          impact_tier?: string
+          is_done?: boolean
+          created_at?: string
           updated_at?: string
         }
         Relationships: []
@@ -79,7 +190,31 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      accept_company_invite: {
+        Args: {
+          p_invite_token: string
+        }
+        Returns: string
+      }
+      get_company_id_by_invite_token: {
+        Args: {
+          p_token: string
+        }
+        Returns: string
+      }
+      get_operator_leaderboard: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          credits: number
+          current_streak: number
+          failure_count: number
+          id: string
+          max_streak: number
+          operator_name: string
+          operational_status: string
+          rank_position: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

@@ -23,11 +23,10 @@ function AuthConsolePage() {
     setBusy(true);
     setErrorMessage(null);
 
-    // Fixed email regex
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(email.trim())) {
       setErrorMessage(
-        "❌ INVALID COORDINATES NODE: The email address format is invalid. Please supply a valid address (e.g. operator@domain.com)."
+        "❌ INVALID COORDINATES NODE: The email address format is invalid. Please supply a valid address (e.g. operator@domain.com).",
       );
       setBusy(false);
       return;
@@ -39,7 +38,6 @@ function AuthConsolePage() {
           throw new Error("Full operator name parameters required.");
         }
 
-        // Optional pre-flight check (kept for consistency with your original logic)
         const { data: existingProfile, error: profileCheckError } = await supabase
           .from("profiles")
           .select("id")
@@ -52,7 +50,7 @@ function AuthConsolePage() {
 
         if (existingProfile) {
           setErrorMessage(
-            "🔒 OPERATOR PROFILE CONFLICT: This email is already registered. Please toggle to 'Secure Node Access' and sign in."
+            "🔒 OPERATOR PROFILE CONFLICT: This email is already registered. Please toggle to 'Secure Node Access' and sign in.",
           );
           setBusy(false);
           return;
@@ -70,12 +68,9 @@ function AuthConsolePage() {
         });
 
         if (error) {
-          if (
-            error.message.toLowerCase().includes("rate limit") ||
-            error.status === 429
-          ) {
+          if (error.message.toLowerCase().includes("rate limit") || error.status === 429) {
             setErrorMessage(
-              "🔒 NETWORK BROADCAST CAP REACHED: The system is throttling signup traffic. Please wait 60 seconds."
+              "🔒 NETWORK BROADCAST CAP REACHED: The system is throttling signup traffic. Please wait 60 seconds.",
             );
             setBusy(false);
             return;
@@ -85,29 +80,50 @@ function AuthConsolePage() {
 
         navigate({ to: "/verify-email", search: { email: email.trim() } });
       } else {
-        // Login
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data: authData, error } = await supabase.auth.signInWithPassword({
           email: email.trim(),
           password: password.trim(),
         });
 
         if (error) throw error;
 
+        const userId = authData.user?.id;
+        let onboardingCompleted = false;
+
+        if (userId) {
+          const { data: profile, error: profileError } = await supabase
+            .from("profiles")
+            .select("onboarding_completed")
+            .eq("id", userId)
+            .maybeSingle();
+
+          if (profileError) {
+            console.error("Onboarding state lookup failed:", profileError);
+          }
+
+          onboardingCompleted = Boolean(profile?.onboarding_completed);
+        }
+
         setShowLoadingGate(true);
         setTimeout(() => {
-          navigate({ to: "/app" });
+          navigate({
+            to: onboardingCompleted ? "/app" : "/onboarding",
+          });
         }, 2000);
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("Auth terminal synchronization fault:", err);
 
-      // Graceful handling of 504 timeouts (common when a trigger lags)
-      if (err.message?.includes("504") || err.status === 504) {
+      const errStatus =
+        err instanceof Error && "status" in err ? (err as { status?: number }).status : undefined;
+      if (err instanceof Error && (err.message.includes("504") || errStatus === 504)) {
         setErrorMessage(
-          "⚠️ CLOUD HANDSHAKE BUFFER DELAY: Account record may have been created successfully. Please toggle to 'Secure Node Access' and try logging in."
+          "⚠️ CLOUD HANDSHAKE BUFFER DELAY: Account record may have been created successfully. Please toggle to 'Secure Node Access' and try logging in.",
         );
       } else {
-        setErrorMessage(err.message || "Failed to transmit secure session keys.");
+        setErrorMessage(
+          err instanceof Error ? err.message : "Failed to transmit secure session keys.",
+        );
       }
     } finally {
       setBusy(false);
@@ -116,16 +132,14 @@ function AuthConsolePage() {
 
   if (showLoadingGate) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-black text-zinc-100 animate-fade-in">
+      <div className="page-shell flex flex-col items-center justify-center">
         <div className="flex flex-col items-center justify-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-emerald-400" />
           <div className="text-center">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">
               System Hydration In Progress
             </p>
-            <h2 className="text-sm font-bold text-white mt-1">
-              Calibrating Command Cockpit...
-            </h2>
+            <h2 className="text-sm font-bold text-white mt-1">Calibrating Command Cockpit...</h2>
           </div>
         </div>
       </div>
@@ -133,20 +147,18 @@ function AuthConsolePage() {
   }
 
   return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#020203] px-6 py-12 text-zinc-100 relative overflow-hidden animate-scan-line">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f293704_1px,transparent_1px),linear-gradient(to_bottom,#1f293704_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
-  
-        {/* ✅ FIXED: Transformed authorization interface capsule shell card block to match reference neon emerald reflections */}
-        <div className="w-full max-w-md rounded-2xl border p-8 shadow-2xl relative overflow-hidden emerald-glass-core">
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />
+    <div className="page-shell flex items-center justify-center px-6 py-12">
+      <div className="ambient-emerald-glow" />
+      <div className="grid-pattern-overlay" />
+
+      <div className="relative w-full max-w-md glass-panel p-8">
+        <div className="top-highlight" />
 
         {/* Console Header */}
         <div className="mb-8 flex flex-col items-center justify-center text-center">
-          <img
-            src="/icon-192.png"
-            alt="ApexMission"
-            className="h-16 w-16 object-contain mb-4"
-          />
+          <div className="relative mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-400/15 to-emerald-950/50 text-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.25)]">
+            <img src="/icon-192.png" alt="ApexMission" className="h-10 w-10 object-contain" />
+          </div>
           <p className="text-[10px] font-black uppercase tracking-[0.25em] text-emerald-400 mb-1">
             Console Authorization Gateway
           </p>
@@ -156,7 +168,7 @@ function AuthConsolePage() {
         </div>
 
         {errorMessage && (
-          <div className="mb-5 rounded-xl border border-rose-500/20 bg-rose-950/10 p-3.5 text-left flex items-start gap-2.5 text-xs text-rose-400 font-semibold animate-fade-in">
+          <div className="mb-5 rounded-xl border border-rose-500/20 bg-rose-950/20 p-3.5 text-left flex items-start gap-2.5 text-xs text-rose-400 font-semibold animate-fade-in">
             <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
             <p>{errorMessage}</p>
           </div>
@@ -164,15 +176,12 @@ function AuthConsolePage() {
 
         <form onSubmit={handleAuthentication} className="space-y-4">
           {isSignUp && (
-            <div className="flex flex-col gap-3 text-left border-b border-zinc-900 pb-4 mb-2">
-              <div className="flex flex-col gap-1.5">
-                <label
-                  htmlFor="fullName"
-                  className="text-[10px] font-black uppercase tracking-wider text-zinc-500"
-                >
+            <div className="flex flex-col gap-3 text-left border-b border-zinc-900/50 pb-4 mb-2">
+              <div className="glass-input-group">
+                <label htmlFor="fullName" className="glass-input-label">
                   Operator Moniker
                 </label>
-                <div className="flex items-center gap-2.5 rounded-xl border border-zinc-800 bg-black/40 px-3.5 transition-all focus-within:border-emerald-500/40">
+                <div className="glass-input-wrapper">
                   <input
                     id="fullName"
                     type="text"
@@ -180,13 +189,13 @@ function AuthConsolePage() {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="e.g. Marcus Vance"
-                    className="h-11 w-full bg-transparent text-sm text-white placeholder-zinc-700 outline-none"
+                    className="glass-input-field"
                   />
                 </div>
               </div>
 
               {/* Age attestation */}
-              <div className="flex items-start gap-3 rounded-xl border border-zinc-900 bg-black/20 p-3 mt-1">
+              <div className="flex items-start gap-3 rounded-xl border border-zinc-900/30 bg-black/20 p-3 mt-1">
                 <input
                   id="ageCheck"
                   type="checkbox"
@@ -197,23 +206,19 @@ function AuthConsolePage() {
                   htmlFor="ageCheck"
                   className="text-[11px] font-medium text-zinc-400 leading-normal"
                 >
-                  I explicitly attest that I meet the required platform operation age
-                  threshold of{" "}
-                  <span className="text-emerald-400 font-bold">10+ years old</span>. I
-                  understand access will be restricted if this is breached.
+                  I explicitly attest that I meet the required platform operation age threshold of{" "}
+                  <span className="text-emerald-400 font-bold">10+ years old</span>. I understand
+                  access will be restricted if this is breached.
                 </label>
               </div>
             </div>
           )}
 
-          <div className="flex flex-col gap-1.5 text-left">
-            <label
-              htmlFor="email"
-              className="text-[10px] font-black uppercase tracking-wider text-zinc-500"
-            >
+          <div className="glass-input-group">
+            <label htmlFor="email" className="glass-input-label">
               Security Email Address
             </label>
-            <div className="flex items-center gap-2.5 rounded-xl border border-zinc-800 bg-black/40 px-3.5 transition-all focus-within:border-emerald-500/40">
+            <div className="glass-input-wrapper">
               <Mail className="h-4 w-4 text-zinc-600 shrink-0" />
               <input
                 id="email"
@@ -222,19 +227,16 @@ function AuthConsolePage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="operator@apexmission.com"
-                className="h-11 w-full bg-transparent text-sm text-white placeholder-zinc-700 outline-none"
+                className="glass-input-field"
               />
             </div>
           </div>
 
-          <div className="flex flex-col gap-1.5 text-left">
-            <label
-              htmlFor="password"
-              className="text-[10px] font-black uppercase tracking-wider text-zinc-500"
-            >
+          <div className="glass-input-group">
+            <label htmlFor="password" className="glass-input-label">
               Access Key Parameter
             </label>
-            <div className="flex items-center gap-2.5 rounded-xl border border-zinc-800 bg-black/40 px-3.5 transition-all focus-within:border-emerald-500/40">
+            <div className="glass-input-wrapper">
               <KeyRound className="h-4 w-4 text-zinc-600 shrink-0" />
               <input
                 id="password"
@@ -243,23 +245,17 @@ function AuthConsolePage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••••"
-                className="h-11 w-full bg-transparent text-sm text-white placeholder-zinc-700 outline-none"
+                className="glass-input-field"
               />
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={busy}
-            className="w-full h-12 flex items-center justify-center gap-1.5 rounded-xl bg-white text-sm font-bold text-black transition-all duration-300 hover:bg-emerald-400 hover:shadow-[0_0_25px_rgba(52,211,153,0.3)] active:scale-98 disabled:opacity-40 font-display mt-6 shadow-xl shadow-white/5"
-          >
+          <button type="submit" disabled={busy} className="btn-glass-primary w-full h-12 mt-2">
             {busy ? (
               <Loader2 className="h-4 w-4 animate-spin text-black" />
             ) : (
               <>
-                <span>
-                  {isSignUp ? "Initialize Console Routing" : "Sync Command Session"}
-                </span>
+                <span>{isSignUp ? "Initialize Console Routing" : "Sync Command Session"}</span>
                 <ArrowRight className="h-4 w-4 text-black" />
               </>
             )}

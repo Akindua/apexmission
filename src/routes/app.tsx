@@ -5,6 +5,12 @@ import { Check, Flame, Plus, Sparkles, Loader2, Target, TimerReset, Shield, Trop
 import { PaywallModal } from "@/components/PaywallModal";
 import { MissionCoach } from "@/components/MissionCoach";
 import { SyntheticCoachOverlay } from "@/components/SyntheticCoachOverlay";
+import {
+  fetchLeaderboardTelemetry,
+  fetchOperatorProfileMetadata,
+  type LeaderboardSnapshot,
+  type OperatorProfileMetadata,
+} from "@/lib/synthetic-briefing";
 import { useSubscriptionTier } from "@/hooks/useSubscriptionTier";
 import { supabase } from "@/integrations/supabase/client";
 import { startCheckout, type PlanId } from "@/lib/billing.functions";
@@ -46,6 +52,33 @@ function ApexMission() {
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
   const [hasTriggeredAutoBrief, setHasTriggeredAutoBrief] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [operatorProfile, setOperatorProfile] = useState<OperatorProfileMetadata | null>(null);
+  const [leaderboardSnapshot, setLeaderboardSnapshot] = useState<LeaderboardSnapshot | null>(null);
+  const [profileHydrated, setProfileHydrated] = useState(false);
+  const [behaviorAnalytics, setBehaviorAnalytics] = useState({
+    sessionCount: 0,
+    lastSessionDate: "",
+    totalTasksCompleted: 0,
+    averageCompletionTime: 0,
+    procrastinationEvents: 0,
+    peakProductivityHour: 12,
+    totalMessagesExchanged: 0,
+    streakConsistency: 0,
+    preferredFocusAreas: [] as string[],
+  });
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("apexmission-behavior-analytics");
+      if (raw) {
+        setBehaviorAnalytics((previous) => ({ ...previous, ...JSON.parse(raw) }));
+      }
+    } catch {
+      // Analytics cache is optional; the synthetic engine degrades gracefully.
+    }
+  }, []);
+
+  const isFirstSignup = Boolean(operatorProfile && !operatorProfile.onboardingCompleted);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -71,17 +104,17 @@ function ApexMission() {
     if (loadingRoster) return;
     setLoadingRoster(true);
     try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, full_name, current_streak, max_streak, failure_count, operational_status, credits")
-        .order("credits", { ascending: false });
-
-      if (error) throw error;
-      if (data) {
-        const normalizedData = data.map(op => ({ ...op, points: op.credits || 0 }));
-        setLeaderboardOperators(normalizedData);
-        localStorage.setItem("apexmission-leaderboard-cache", JSON.stringify(normalizedData));
-      }
+      const { operators, snapshot } = await fetchLeaderboardTelemetry(currentUserId);
+      const normalizedData = operators.map((operator) => ({
+        ...operator,
+        full_name: operator.operator_name,
+        points: operator.credits,
+      }));
+      setLeaderboardOperators(normalizedData);
+      setLeaderboardSnapshot(
+        operatorProfile?.companyId === null ? snapshot : null,
+      );
+      localStorage.setItem("apexmission-leaderboard-cache", JSON.stringify(normalizedData));
     } catch (err) {
       console.error("Failed to map dynamic roster profiles ledger:", err);
     } finally {
@@ -89,44 +122,96 @@ function ApexMission() {
     }
   };
 
-  // 🚀 IMMEDIATE APP SESSION & LEADERBOARD INITIALIZATION
+  // 🚀 IMMEDIATE APP SESSION, PROFILE METADATA & LEADERBOARD INITIALIZATION
   useEffect(() => {
+    let cancelled = false;
+
     const initializeAppSession = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setCurrentUserId(user.id);
-        const displayName = user.user_metadata?.full_name || user.email?.split('@')[0] || "User";
-        setUserName(displayName.charAt(0).toUpperCase() + displayName.slice(1));
-
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("credits")
-          .eq("id", user.id)
-          .single();
-
-        if (profileData && profileData.credits !== undefined) {
-          setState(s => ({ ...s, points: profileData.credits }));
-        }
-      }
-
       try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("id, full_name, current_streak, max_streak, failure_count, operational_status, credits")
-          .order("credits", { ascending: false });
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
 
-        if (!error && data) {
-          const normalizedData = data.map(op => ({ ...op, points: op.credits || 0 }));
-          setLeaderboardOperators(normalizedData);
-          localStorage.setItem("apexmission-leaderboard-cache", JSON.stringify(normalizedData));
-        }
+        if (cancelled) return;
+        setCurrentUserId(user.id);
+
+        const profile = await fetchOperatorProfileMetadata(user.id);
+        const metadataName =
+          typeof user.user_metadata?.["full_name"] === "string"
+            ? user.user_metadata["full_name"]
+            : "";
+        const emailHandle = user.email?.split("@")[0] || "";
+        const fallbackName = metadataName || emailHandle || "Operator";
+        const effectiveProfile: OperatorProfileMetadata = profile ?? {
+          id: user.id,
+          operatorName: fallbackName,
+          companyId: null,
+          onboardingCompleted: false,
+          credits: 0,
+          currentStreak: 0,
+          maxStreak: 0,
+          failureCount: 0,
+          operationalStatus: "OPERATIONAL",
+          lastActionLogged: "",
+        };
+
+        if (cancelled) return;
+        setOperatorProfile(effectiveProfile);
+        setUserName(toDisplayName(effectiveProfile.operatorName));
+        setState((current) => ({
+          ...current,
+          points: effectiveProfile.credits,
+        }));
+
+        const { operators, snapshot } = await fetchLeaderboardTelemetry(user.id);
+        const normalizedData = operators.map((operator) => ({
+          ...operator,
+          full_name: operator.operator_name,
+          points: operator.credits,
+        }));
+
+        if (cancelled) return;
+        setLeaderboardOperators(normalizedData);
+        // Personal operators receive live rank intelligence. Corporate
+        // operators never receive leaderboard telemetry in the engine.
+        setLeaderboardSnapshot(
+          effectiveProfile.companyId === null ? snapshot : null,
+        );
+        localStorage.setItem("apexmission-leaderboard-cache", JSON.stringify(normalizedData));
       } catch (err) {
-        console.error("Failed to map dynamic roster profiles ledger:", err);
+        console.error("Failed to map dynamic operator telemetry:", err);
+      } finally {
+        if (!cancelled) setProfileHydrated(true);
       }
     };
 
     initializeAppSession();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  const handleOnboardingComplete = async () => {
+    // Flip the UI immediately, then persist the permanent database flag.
+    setOperatorProfile((current) =>
+      current ? { ...current, onboardingCompleted: true } : current,
+    );
+
+    if (!currentUserId) return;
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ onboarding_completed: true })
+      .eq("id", currentUserId);
+
+    if (error) {
+      console.error("Failed to persist onboarding_completed flag:", error);
+      return;
+    }
+
+    // Legacy local flag retained for the Mission Coach panel's one-time seed.
+    localStorage.setItem("apex-tutorial-completed", "true");
+  };
 
   useEffect(() => {
     if (activeTab === "leaderboard" && hydrated) {
@@ -172,15 +257,13 @@ function ApexMission() {
 
  // ☀️ MORNING CHECK-IN TRIGGER ENGINE (SIGN-IN & TIME WINDOW VERIFIED)
  useEffect(() => {
-  if (!hydrated) return;
+  if (!hydrated || !profileHydrated) return;
 
   const checkMorningCheckinEligibility = async () => {
     if (typeof window !== "undefined") {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      
-      const isFreshSignup = localStorage.getItem("apex-tutorial-completed") !== "true";
-      if (isFreshSignup) return;
+      // The database onboarding flag is authoritative. Never interrupt the
+      // first-ever session with the morning check-in ritual.
+      if (!operatorProfile?.onboardingCompleted) return;
 
       const today = todayKey();
       const lastSeen = localStorage.getItem("apexmission-morning-checkin");
@@ -195,7 +278,7 @@ function ApexMission() {
   };
 
   checkMorningCheckinEligibility();
-}, [hydrated, navigate]);
+}, [hydrated, profileHydrated, operatorProfile, navigate]);
 
 useEffect(() => {
   const applyEvening = () => {
@@ -236,7 +319,7 @@ useEffect(() => {
           await supabase
             .from("profiles")
             .update({
-              points: optimizedPoints,
+              credits: optimizedPoints,
               operational_status: "FALLEN",
               last_action_logged: `Deducted ${penaltyAmount} credits due to active operational slacking metrics.`
             })
@@ -258,17 +341,23 @@ useEffect(() => {
   
   // 🔄 AUTOMATED LOGIN TELEMETRY SCANNER LAYER WITH INTEGRATED WELCOME CHIME
   useEffect(() => {
-    if (hydrated && !hasTriggeredAutoBrief && state && currentUserId) {
-      setHasTriggeredAutoBrief(true);
-
-      const isFreshSignup = localStorage.getItem("apex-tutorial-completed") !== "true";
-
-      setTimeout(() => {
+    if (
+      hydrated &&
+      profileHydrated &&
+      operatorProfile &&
+      !hasTriggeredAutoBrief
+    ) {
+      const timer = window.setTimeout(() => {
+        setHasTriggeredAutoBrief(true);
         // Show Synthetic Coach Overlay (zero API cost, separate from Mission Coach)
         setShowSyntheticCoach(true);
       }, 800);
+
+      return () => window.clearTimeout(timer);
     }
-  }, [hydrated, state, hasTriggeredAutoBrief, currentUserId]);
+
+    return undefined;
+  }, [hydrated, profileHydrated, operatorProfile, hasTriggeredAutoBrief]);
 
   function handleGoToNightReflection() {
     navigate({ to: "/night-reflection" });
@@ -315,17 +404,6 @@ useEffect(() => {
   }, [activeLayoutTheme]);  
 
   const [userName, setUserName] = useState("User");
-
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const displayName = user.user_metadata?.full_name || user.email?.split('@')[0] || "User";
-        setUserName(displayName.charAt(0).toUpperCase() + displayName.slice(1));
-      }
-    };
-    fetchUserProfile();
-  }, []);
 
   useEffect(() => {
     setResetMs(msUntilReset());
@@ -430,7 +508,8 @@ useEffect(() => {
   function toggleTask(tier: ImpactTier, id: string) {
     setState((s) => {
       const currentTasks = s.tasks[tier] || [];
-      const targetTask = currentTasks.find(t => t.id === id);
+      const taskId = (task: Task) => task.id ?? `${tier}-${task.text}`;
+      const targetTask = currentTasks.find(t => taskId(t) === id);
       const targetCompleting = targetTask ? !targetTask.done : false;
 
       let scoreBonus = 0;
@@ -471,7 +550,7 @@ useEffect(() => {
         points: Math.max(0, ((s as any).points || 0) + scoreBonus),
         tasks: {
           ...s.tasks,
-          [tier]: currentTasks.map((t) => (t.id === id ? { ...t, done: !t.done } : t)),
+          [tier]: currentTasks.map((t) => (taskId(t) === id ? { ...t, done: !t.done } : t)),
         },
       };
     });
@@ -480,7 +559,12 @@ useEffect(() => {
   function removeTask(tier: ImpactTier, id: string) {
     setState((s) => ({
       ...s,
-      tasks: { ...s.tasks, [tier]: (s.tasks[tier] || []).filter((t) => t.id !== id) },
+      tasks: {
+        ...s.tasks,
+        [tier]: (s.tasks[tier] || []).filter(
+          (t) => (t.id ?? `${tier}-${t.text}`) !== id,
+        ),
+      },
     }));
   }
 
@@ -706,7 +790,6 @@ useEffect(() => {
                 type="button"
                 onClick={async () => {
                   await supabase.auth.signOut();
-                  localStorage.removeItem("apex-tutorial-completed");
                   sessionStorage.removeItem("apex-session-briefing-triggered");
                   navigate({ to: "/auth" });
                 }}
@@ -795,7 +878,7 @@ useEffect(() => {
                     const selectedTrack = e.target.value as keyof typeof AUDIENCE_PROFILES;
                     const profileDefaults = AUDIENCE_PROFILES[selectedTrack];
                     
-                    if (window.confirm(`⚡ SYNCHRONIZE TRACK PROFILE: Clear current workspace grids and auto-load baseline execution rows for the ${e.target.options[e.target.selectedIndex].text} matrix?`)) {
+                    if (window.confirm(`⚡ SYNCHRONIZE TRACK PROFILE: Clear current workspace grids and auto-load baseline execution rows for the ${e.target.options[e.target.selectedIndex]?.text ?? "selected"} matrix?`)) {
                       setState((s) => ({
                         ...s,
                         tasks: {
@@ -841,14 +924,17 @@ useEffect(() => {
                     </div>
 
                     <ul className="flex flex-1 flex-col gap-1.5 overflow-y-auto max-h-[260px] pr-1">
-                      {(state.tasks[tier.key] || []).map((task) => (
-                        <TaskRow 
-                          key={task.id} 
-                          task={task} 
-                          onToggle={() => toggleTask(tier.key, task.id)} 
-                          onRemove={() => removeTask(tier.key, task.id)} 
-                        />
-                      ))}
+                      {(state.tasks[tier.key] || []).map((task) => {
+                        const taskId = task.id ?? `${tier.key}-${task.text}`;
+                        return (
+                          <TaskRow
+                            key={taskId}
+                            task={task}
+                            onToggle={() => toggleTask(tier.key, taskId)}
+                            onRemove={() => removeTask(tier.key, taskId)}
+                          />
+                        );
+                      })}
                       {(state.tasks[tier.key] || []).length === 0 && (
                         <li className="px-1 py-3 text-xs text-zinc-600 font-medium italic">No execution objects mapped.</li>
                       )}
@@ -1167,7 +1253,9 @@ useEffect(() => {
         onOpenChange={setCoachOpen}
         onClose={() => setCoachOpen(false)}
         onLockedHistory={() => setPaywall("Your full coach history is a premium feature...")}
-        isFirstSignup={localStorage.getItem("apex-tutorial-completed") !== "true"}
+        isFirstSignup={isFirstSignup}
+        companyId={operatorProfile?.companyId ?? null}
+        leaderboard={leaderboardSnapshot}
         onActionPlanGenerated={(plan) => {
           setState((s) => ({
             ...s,
@@ -1189,21 +1277,16 @@ useEffect(() => {
       {/* SYNTHETIC COACH OVERLAY - Zero-API Interactive Conversation */}
       <SyntheticCoachOverlay
         userName={userName}
+        operatorName={operatorProfile?.operatorName ?? userName}
         userRank={userRankText}
         state={{ ...state, failureCount: userFailureCount }}
-        behaviorAnalytics={{
-          sessionCount: 0,
-          lastSessionDate: "",
-          totalTasksCompleted: 0,
-          averageCompletionTime: 0,
-          procrastinationEvents: 0,
-          peakProductivityHour: 12,
-          totalMessagesExchanged: 0,
-          streakConsistency: 0,
-          preferredFocusAreas: []
-        }}
-        isFirstSignup={localStorage.getItem("apex-tutorial-completed") !== "true"}
+        behaviorAnalytics={behaviorAnalytics}
+        isFirstSignup={isFirstSignup}
+        companyId={operatorProfile?.companyId ?? null}
+        leaderboard={leaderboardSnapshot}
+        onOnboardingComplete={handleOnboardingComplete}
         isOpen={showSyntheticCoach}
+        onClose={() => setShowSyntheticCoach(false)}
         onToggle={() => setShowSyntheticCoach(!showSyntheticCoach)}
       />
 
@@ -1405,4 +1488,13 @@ let idCounter = 0;
 function nextId(): string {
   idCounter += 1;
   return `t-${Date.now()}-${idCounter}`;
+}
+
+function toDisplayName(value: string): string {
+  const cleaned = value.trim();
+  if (!cleaned) return "Operator";
+  return cleaned
+    .split(/\s+/)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }

@@ -1,9 +1,22 @@
 export type ImpactTier = "high" | "medium" | "low";
 
 export interface Task {
+  id?: string;
   text: string;
-  tier: ImpactTier;
+  tier?: ImpactTier;
   done: boolean;
+}
+
+export interface ReflectionEntry {
+  date: string;
+  phase: "morning" | "night";
+  wins: string;
+  blockers: string;
+  tomorrowAction: string;
+  dailyAction?: string;
+  actionCompleted?: boolean | null;
+  routineSealed?: number;
+  createdAt: string;
 }
 
 export interface MissionState {
@@ -15,7 +28,14 @@ export interface MissionState {
     wins: string;
     blockers: string;
     tomorrowAction: string;
+    completedToday?: boolean | null;
+    date?: string;
   };
+  reflectionHistory: ReflectionEntry[];
+  points?: number;
+  userName?: string;
+  premium?: boolean;
+  lastMorningBriefingDate?: string | null;
   lockdownModeActive: boolean;
   lockdownTimerSeconds: number;
   consecutiveDaysFailedTasks: number;
@@ -67,6 +87,7 @@ export function defaultState(): MissionState {
       blockers: "",
       tomorrowAction: "",
     },
+    reflectionHistory: [],
     lastMorningBriefingDate: null,
     premium: false,
     lockdownModeActive: false,
@@ -83,7 +104,15 @@ export function loadState(): MissionState {
     console.log("LOADED RAW:", raw);
     if (!raw) return defaultState();
     const parsed = JSON.parse(raw) as MissionState;
-    const state: MissionState = { ...defaultState(), ...parsed, tasks: { ...defaultState().tasks, ...parsed.tasks } };
+    const state: MissionState = {
+      ...defaultState(),
+      ...parsed,
+      tasks: { ...defaultState().tasks, ...parsed.tasks },
+      reflection: { ...defaultState().reflection, ...parsed.reflection },
+      reflectionHistory: Array.isArray(parsed.reflectionHistory)
+        ? parsed.reflectionHistory
+        : [],
+    };
 
     const today = todayKey();
     // Daily action resets every day
@@ -123,6 +152,24 @@ export function completeDailyToday(streak: MissionState["streak"]): MissionState
     return { count: streak.count + 1, lastCompletedDate: today };
   }
   return { count: 1, lastCompletedDate: today };
+}
+
+/**
+ * Appends a morning/night reflection entry while keeping one record per
+ * phase per day. The Zero-API engine reads this history to critique the
+ * operator's reflection discipline across past sessions.
+ */
+export function appendReflectionEntry(
+  history: ReflectionEntry[] | undefined,
+  entry: ReflectionEntry,
+): ReflectionEntry[] {
+  const existing = Array.isArray(history) ? history : [];
+  const withoutDuplicate = existing.filter(
+    (item) => !(item.date === entry.date && item.phase === entry.phase),
+  );
+  return [...withoutDuplicate, entry]
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .slice(-30);
 }
 
 // New functions to update the state properties

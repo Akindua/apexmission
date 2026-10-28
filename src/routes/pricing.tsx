@@ -99,54 +99,55 @@ function PricingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background px-4 py-14">
-      <div className="mx-auto max-w-5xl">
-        <div className="flex items-center gap-2.5">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-secondary">
-            <Crown className="size-4 text-impact-medium" />
+    <div className="page-shell flex flex-col items-center justify-center px-6 py-12">
+      <div className="ambient-emerald-glow" />
+      <div className="grid-pattern-overlay" />
+
+      <div className="w-full max-w-5xl">
+        <div className="text-center mb-10 animate-fade-in-up">
+          <div className="mx-auto mb-4 flex size-10 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-950/40 text-emerald-400">
+            <Crown className="size-5" />
           </div>
-          <span className="text-[11px] font-semibold tracking-[0.28em] text-muted-foreground uppercase">
+          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400">
             ApexMission Premium
           </span>
+          <h1 className="mt-3 font-display text-3xl font-black tracking-tight text-white sm:text-4xl">
+            Unlock your full mission.
+          </h1>
+          <p className="mt-2 max-w-xl text-sm text-zinc-500 mx-auto">
+            Pick the plan that fits. Secure checkout is handled by Stripe.
+          </p>
         </div>
-        <h1 className="mt-4 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          Unlock your full mission.
-        </h1>
-        <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-          Pick the plan that fits. Secure checkout is handled by Stripe.
-        </p>
 
         {notice && (
-          <div className="mt-6 rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-muted-foreground">
+          <div className="mb-6 glass-panel-subtle px-4 py-3 text-sm text-zinc-400 max-w-2xl mx-auto animate-fade-in-up delay-100">
             {notice}
           </div>
         )}
 
-        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="mt-6 glass-grid-2">
           {CARDS.map((plan) => (
             <div
               key={plan.id}
-              className={`relative flex flex-col rounded-xl border p-5 transition-all duration-300 ${
-                plan.featured
-                  ? "border-impact-medium/50 bg-secondary/50 shadow-[0_0_32px_color-mix(in_oklab,var(--color-impact-medium)_12%,transparent)]"
-                  : "border-border bg-background/40 hover:border-foreground/25"
-              }`}
+              className={`relative flex flex-col glass-panel ${plan.featured ? "border-emerald-500/30 glass-panel-elevated" : ""} transition-all duration-300`}
             >
               {plan.featured && (
-                <span className="absolute -top-2.5 right-4 rounded-full bg-impact-medium px-2.5 py-0.5 text-[10px] font-semibold tracking-wider text-background uppercase">
+                <span className="absolute -top-2.5 right-4 glass-badge bg-emerald-500/20 border-emerald-500/40 text-emerald-300">
                   Best value
                 </span>
               )}
-              <h2 className="font-display text-base font-semibold">{plan.name}</h2>
-              <p className="mt-1 text-xs text-muted-foreground">{plan.tagline}</p>
+              <h2 className="font-display text-base font-bold text-white">{plan.name}</h2>
+              <p className="mt-1 text-xs text-zinc-500">{plan.tagline}</p>
               <div className="mt-4 flex items-baseline gap-1">
-                <span className="font-display text-3xl font-bold tabular-nums">{plan.price}</span>
-                <span className="text-sm text-muted-foreground">{plan.cadence}</span>
+                <span className="font-display text-3xl font-bold tabular-nums text-white">
+                  {plan.price}
+                </span>
+                <span className="text-sm text-zinc-500">{plan.cadence}</span>
               </div>
               <ul className="mt-4 flex flex-1 flex-col gap-2">
                 {plan.perks.map((perk) => (
-                  <li key={perk} className="flex items-start gap-2 text-sm text-muted-foreground">
-                    <Check className="mt-0.5 size-3.5 shrink-0 text-success" strokeWidth={3} />
+                  <li key={perk} className="flex items-start gap-2 text-sm text-zinc-400">
+                    <Check className="mt-0.5 size-3.5 shrink-0 text-emerald-400" strokeWidth={3} />
                     <span>{perk}</span>
                   </li>
                 ))}
@@ -155,10 +156,8 @@ function PricingPage() {
                 type="button"
                 disabled={pending !== null}
                 onClick={() => upgrade(plan.id)}
-                className={`mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-lg text-sm font-semibold transition-all duration-200 active:scale-[0.98] disabled:opacity-60 ${
-                  plan.featured
-                    ? "bg-foreground text-background hover:opacity-90"
-                    : "border border-input text-foreground hover:bg-secondary"
+                className={`mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-xl font-semibold text-sm transition-all duration-200 active:scale-[0.98] disabled:opacity-60 ${
+                  plan.featured ? "btn-glass-primary" : "btn-glass-ghost"
                 }`}
               >
                 {pending === plan.id ? (
@@ -172,8 +171,11 @@ function PricingPage() {
           ))}
         </div>
 
-        <div className="mt-8 text-sm">
-          <Link to="/app" className="text-muted-foreground underline-offset-4 hover:underline">
+        <div className="mt-10 text-center animate-fade-in-up delay-200">
+          <Link
+            to="/app"
+            className="text-zinc-500 underline-offset-4 hover:text-emerald-400 transition-colors text-sm"
+          >
             Back to dashboard
           </Link>
         </div>

@@ -1,13 +1,20 @@
 import { useState, useEffect, useRef } from "react";
 import { X, MessageCircle, Send, Sparkles, Target, Flame, Trophy, Activity, Zap, Brain, Shield, AlertTriangle, ChevronDown, ChevronRight, BookOpen } from "lucide-react";
-import { generateSyntheticBriefing } from "@/lib/synthetic-briefing";
+import {
+  generateSyntheticBriefing,
+  type LeaderboardSnapshot,
+} from "@/lib/synthetic-briefing";
 
 interface SyntheticCoachOverlayProps {
   userName: string;
+  operatorName?: string;
   userRank: string;
   state: any;
   behaviorAnalytics: any;
   isFirstSignup: boolean;
+  companyId?: string | null;
+  leaderboard?: LeaderboardSnapshot | null;
+  onOnboardingComplete?: () => void | Promise<void>;
   onClose: () => void;
   isOpen: boolean;
   onToggle: () => void;
@@ -22,10 +29,14 @@ interface Message {
 
 export function SyntheticCoachOverlay({
   userName,
+  operatorName,
   userRank,
   state,
   behaviorAnalytics,
   isFirstSignup,
+  companyId = null,
+  leaderboard = null,
+  onOnboardingComplete,
   onClose,
   isOpen,
   onToggle,
@@ -39,19 +50,23 @@ export function SyntheticCoachOverlay({
   const [isOnboardingMode, setIsOnboardingMode] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const onboardingFinalizedRef = useRef(false);
 
-  const firstName = userName.split(" ")[0];
+  const firstName = (operatorName || userName).split(" ")[0];
 
   useEffect(() => {
     if (isOpen && messages.length === 0) {
       // Generate initial synthetic briefing
       const syntheticBriefing = generateSyntheticBriefing({
         userName,
+        operatorName: operatorName || userName,
         userRank,
         state,
         behaviorAnalytics,
         isFirstSignup,
-        currentHour: new Date().getHours()
+        currentHour: new Date().getHours(),
+        companyId,
+        leaderboard,
       });
 
       const initialMessages: Message[] = syntheticBriefing.map((item, idx) => ({
@@ -62,16 +77,17 @@ export function SyntheticCoachOverlay({
       }));
 
       // If first signup, use onboarding mode with step-by-step display
-      if (isFirstSignup && initialMessages.length > 0) {
+      const firstMessage = initialMessages[0];
+      if (isFirstSignup && firstMessage) {
         setAllOnboardingMessages(initialMessages);
         setIsOnboardingMode(true);
         setOnboardingStep(0);
-        setMessages([initialMessages[0]]);
+        setMessages([firstMessage]);
       } else {
         setMessages(initialMessages);
       }
     }
-  }, [isOpen, messages.length, userName, userRank, state, behaviorAnalytics, isFirstSignup]);
+  }, [isOpen, messages.length, userName, operatorName, userRank, state, behaviorAnalytics, isFirstSignup, companyId, leaderboard]);
 
   useEffect(() => {
     if (messagesEndRef.current && !isMinimized) {
@@ -79,7 +95,19 @@ export function SyntheticCoachOverlay({
     }
   }, [messages, isMinimized]);
 
+  const finalizeOnboarding = () => {
+    if (onboardingFinalizedRef.current) return;
+    onboardingFinalizedRef.current = true;
+    setIsOnboardingMode(false);
+    void Promise.resolve(onOnboardingComplete?.()).catch((error) => {
+      console.error("Failed to persist onboarding completion state:", error);
+    });
+  };
+
   const handleClose = () => {
+    // Closing the first-session briefing still consumes the one-time tutorial.
+    // The database flag is written so it never appears again on future logins.
+    if (isOnboardingMode) finalizeOnboarding();
     onToggle();
   };
 
@@ -90,11 +118,13 @@ export function SyntheticCoachOverlay({
   const handleNextOnboardingStep = () => {
     if (onboardingStep < allOnboardingMessages.length - 1) {
       const nextStep = onboardingStep + 1;
+      const nextMessage = allOnboardingMessages[nextStep];
+      if (!nextMessage) return;
       setOnboardingStep(nextStep);
-      setMessages(prev => [...prev, allOnboardingMessages[nextStep]]);
+      setMessages(prev => [...prev, nextMessage]);
     } else {
-      // Onboarding complete, switch to normal mode
-      setIsOnboardingMode(false);
+      // Onboarding complete; permanently disable it in the profile database.
+      finalizeOnboarding();
     }
   };
 
@@ -115,7 +145,14 @@ export function SyntheticCoachOverlay({
 
     // Generate synthetic response based on keywords (zero API cost)
     setTimeout(() => {
-      const response = generateSyntheticResponse(trimmed, userName, userRank, state, behaviorAnalytics);
+      const response = generateSyntheticResponse(
+        trimmed,
+        operatorName || userName,
+        userRank,
+        state,
+        behaviorAnalytics,
+        companyId !== null,
+      );
       const assistantMessage: Message = {
         id: `assistant-${Date.now()}`,
         role: "assistant",
@@ -272,13 +309,14 @@ export function SyntheticCoachOverlay({
 
 function generateSyntheticResponse(
   userMessage: string,
-  userName: string,
+  operatorName: string,
   userRank: string,
   state: any,
-  behaviorAnalytics: any
+  behaviorAnalytics: any,
+  isCorporate: boolean,
 ): string {
   const lowerMessage = userMessage.toLowerCase();
-  const firstName = userName.split(" ")[0];
+  const firstName = operatorName.split(" ")[0];
 
   // Task-related queries
   if (lowerMessage.includes("task") || lowerMessage.includes("to do") || lowerMessage.includes("work")) {
@@ -312,11 +350,20 @@ function generateSyntheticResponse(
       `Current Streak: ${streak} days\n` +
       `Status: ${streak === 0 ? "INACTIVE - Start today" : streak >= 7 ? "ELITE - 7+ day multiplier active" : "BUILDING - Continue execution"}\n\n` +
       `Daily Action: ${state.daily?.done ? "✅ COMPLETED" : "⏳ PENDING"}\n\n` +
-      `Maintain consistency to unlock streak bonuses and advance your operational rank.`;
+      (isCorporate
+        ? "Maintain consistency to protect your task completion trend."
+        : "Maintain consistency to unlock streak bonuses and advance your operational rank.");
   }
 
   // Leaderboard/rank queries
   if (lowerMessage.includes("rank") || lowerMessage.includes("leaderboard") || lowerMessage.includes("position")) {
+    if (isCorporate) {
+      return `CHANNEL SCOPE NOTICE, ${firstName}:\n\n` +
+        `Public ranking telemetry is outside this operator channel. It is not available in your corporate track.\n\n` +
+        `Authorized metrics: task completion trends, execution rate, streak consistency, and Priority Matrix status.\n\n` +
+        `Ask about tasks, mission alignment, or performance patterns.`;
+    }
+
     return `LEADERBOARD INTELLIGENCE, ${firstName}:\n\n` +
       `Current Position: ${userRank}\n` +
       `Operational Status: ${getOperationalStatus(state)}\n` +
@@ -347,14 +394,18 @@ function generateSyntheticResponse(
   }
 
   // Default response
+  const defaultTopics = [
+    "Tasks and execution status",
+    "Mission and vision alignment",
+    "Streak and consistency metrics",
+    ...(isCorporate ? [] : ["Leaderboard position and rank"]),
+    "Behavioral performance patterns",
+    "Tactical guidance and recommendations",
+  ];
+
   return `Message received, ${firstName}. I can provide analysis on:\n\n` +
-    `• Tasks and execution status\n` +
-    `• Mission and vision alignment\n` +
-    `• Streak and consistency metrics\n` +
-    `• Leaderboard position and rank\n` +
-    `• Behavioral performance patterns\n` +
-    `• Tactical guidance and recommendations\n\n` +
-    `Ask about any of these areas for detailed intelligence.`;
+    defaultTopics.map((topic) => `• ${topic}`).join("\n") +
+    `\n\nAsk about any of these areas for detailed intelligence.`;
 }
 
 function getOperationalStatus(state: any): string {

@@ -32,7 +32,7 @@ export function AccountTypeOnboarding({
 
     const { error: profileError } = await supabase
       .from("profiles")
-      .update({ company_id: companyId } as any)
+      .update({ company_id: companyId })
       .eq("id", userData.user.id);
 
     if (profileError) {
@@ -77,25 +77,40 @@ export function AccountTypeOnboarding({
     setErrorMessage(null);
 
     try {
-      const { data: company, error: companyLookupError } = await supabase
-        .from("companies")
-        .select("id, name")
-        .eq("invite_code", normalizedCode.toLowerCase())
-        .maybeSingle();
+      const token = normalizedCode.toLowerCase();
+
+      const { data: companyId, error: companyLookupError } = await supabase.rpc(
+        "get_company_id_by_invite_token",
+        { p_token: token },
+      );
 
       if (companyLookupError) {
         throw new Error(companyLookupError.message || "Unable to verify company code.");
       }
 
-      if (!company) {
+      if (!companyId) {
         throw new Error("That company code is invalid or not found.");
       }
 
-      await updateProfileCompany(company.id);
+      // SECURITY DEFINER RPC validates the token and binds the tenant without
+      // exposing the companies table through client-side RLS.
+      const { error: acceptError } = await supabase.rpc("accept_company_invite", {
+        p_invite_token: token,
+      });
+
+      if (acceptError) {
+        throw new Error(acceptError.message || "Unable to join that company workspace.");
+      }
+
+      await supabase.auth.updateUser({ data: { company_id: companyId } });
       await completeRoute();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to verify company code.";
-      setErrorMessage(message);
+      setErrorMessage(
+        message.includes("Invalid or expired invite token")
+          ? "That company code is invalid or not found."
+          : message,
+      );
     } finally {
       setLoading(false);
     }
@@ -109,7 +124,8 @@ export function AccountTypeOnboarding({
         </p>
         <h2 className="mt-3 text-2xl font-bold text-white">Choose your workspace</h2>
         <p className="mt-2 text-sm text-zinc-400">
-          Personal users can start immediately. Business users can join a company with an invitation code.
+          Personal users can start immediately. Business users can join a company with an invitation
+          code.
         </p>
       </div>
 

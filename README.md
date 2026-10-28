@@ -22,7 +22,28 @@ Continue developing this project in the [Lovable editor](https://lovable.dev/pro
 - **Stay in sync**: every change made in Lovable is committed straight to this repository.
 - **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
 
-## Development
+## Hybrid Onboarding & Multi-Tenant Database
+
+The platform supports two onboarding paths plus an enterprise multi-tenant data model:
+
+### Onboarding Flow (`/onboarding`)
+
+- **Personal Account** — routes straight to the dashboard with `company_id = null` (tenant-less solo operator).
+- **Join a Company** — prompts for an enterprise invite token, resolves it via
+  `get_company_id_by_invite_token`, binds the tenant via `accept_company_invite`, then routes to the dashboard.
+
+### Database Schema (Supabase migrations)
+
+- `public.companies` — enterprise tenants (`id`, `name`, unique `invite_token`).
+- `public.tasks` — mission tasks with **nullable** `company_id` FK → `companies.id` (`user_id` → `auth.users.id`).
+- `public.profiles.company_id` — current tenant assignment per user (`NULL` = personal).
+
+### Row-Level Security (tasks)
+
+- Personal accounts (`company_id IS NULL`) can only read/write their **own** tasks.
+- Corporate accounts can only read/write tasks whose `company_id` **strictly matches** their enterprise tenant.
+
+### Development
 
 Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
 

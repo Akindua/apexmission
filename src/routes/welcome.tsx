@@ -1,7 +1,4 @@
-import {
-  Link,
-  createFileRoute,
-} from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/welcome")({
   component: WelcomePage,
@@ -9,52 +6,42 @@ export const Route = createFileRoute("/welcome")({
 
 function WelcomePage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#020203] px-6 text-zinc-100 relative overflow-hidden animate-scan-line">
-      {/* Luminous Ambient Backdrop Shroud */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-96 bg-emerald-500/[0.02] rounded-full blur-3xl pointer-events-none" />
-      
-      {/* ✅ FIXED: Applied pristine emerald glass wrapper styles to the welcome screen module panel card */}
-      <div className="w-full max-w-sm text-center flex flex-col items-center justify-center p-8 rounded-2xl border emerald-glass-core">
+    <div className="page-shell flex items-center justify-center px-6 py-16">
+      <div className="ambient-emerald-glow" />
+      <div className="grid-pattern-overlay" />
+
+      <div className="relative w-full max-w-sm centered-glass-card">
+        <div className="top-highlight" />
 
         {/* Premium Geometric Logo Anchor */}
-        <img
-          src="/icon-192.png"
-          alt="ApexMission Logo"
-          className="h-28 w-28 object-contain mb-4 animate-fade-in"
-        />
-        
+        <div className="relative mx-auto mb-5 flex size-20 items-center justify-center rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-400/15 to-emerald-950/50 text-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.25)] animate-fade-in-up">
+          <img src="/icon-192.png" alt="ApexMission Logo" className="h-12 w-12 object-contain" />
+        </div>
+
         {/* Solid Neon Emerald Accent Label */}
-        <p className="text-[10px] font-black uppercase tracking-[0.25em] text-emerald-400 mb-2">
+        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400 mb-2 animate-fade-in-up delay-100">
           Mission Launchpad
         </p>
 
-        <h1 className="text-3xl font-black tracking-tight text-white mb-3 md:text-4xl">
+        <h1 className="font-display text-3xl font-black tracking-tight text-white mb-3 md:text-4xl animate-fade-in-up delay-200">
           Welcome to ApexMission
         </h1>
-  
-        <p className="text-sm font-medium text-zinc-500 max-w-xs leading-relaxed mb-10">
-          Focus on what matters most and move exactly one decisive step closer to your goals every 24 hours.
+
+        <p className="text-xs font-medium text-zinc-500 max-w-xs leading-relaxed mb-10 mx-auto animate-fade-in-up delay-300">
+          Focus on what matters most and move exactly one decisive step closer to your goals every
+          24 hours.
         </p>
-  
-        <div className="w-full flex flex-col gap-4">
-          
-          {/* Primary High-Urgengy Action Button (Get Started -> Links to your custom /signup Page) */}
-          <Link
-            to="/signup"
-            className="transform block w-full rounded-xl bg-white py-4 text-center text-sm font-bold text-black transition-all duration-300 ease-out hover:scale-105 hover:bg-emerald-400 hover:text-black hover:shadow-[0_0_30px_rgba(52,211,153,0.5)] active:scale-98 shadow-xl shadow-white/5"
-          >
+
+        <div className="w-full flex flex-col gap-3 animate-fade-in-up delay-400">
+          {/* Primary Action Button */}
+          <Link to="/onboarding" className="btn-glass-primary h-12">
             Get Started →
           </Link>
-  
-          {/* Secondary Low-Profile Action Link Toggle (Sign In) */}
-          <Link
-            to="/auth"
-            search={{ mode: "signin" }}
-            className="block w-full rounded-xl border border-zinc-800 bg-[#0D0D11] py-4 text-center text-sm font-bold text-zinc-400 transition-all duration-300 hover:border-zinc-700 hover:text-white active:scale-98"
-          >
+
+          {/* Secondary Action Link */}
+          <Link to="/auth" search={{ mode: "signin" }} className="btn-glass-ghost h-11">
             Sign In
           </Link>
-          
         </div>
       </div>
     </div>

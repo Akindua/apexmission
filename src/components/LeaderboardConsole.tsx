@@ -4,12 +4,12 @@ import { Flame, ShieldAlert, Award, Radio, X, BarChart3, History, ShieldCheck } 
 
 interface OperatorProfile {
   id: string;
-  full_name: string;
+  full_name: string | null;
   current_streak: number;
   failure_count: number;
   beta_points: number;
-  operational_status: "Operational" | "Locked In" | "FALLEN";
-  last_action_logged: string;
+  operational_status: string;
+  last_action_logged: string | null;
 }
 
 interface LedgerLog {

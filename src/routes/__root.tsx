@@ -6,6 +6,7 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
@@ -34,7 +35,7 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: ErrorComponentProps) {
   console.error(error);
   const router = useRouter();
   useEffect(() => {
@@ -62,7 +63,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
           >
             Try again
           </button>
- 
+
           <a
             href="/"
             className="inline-flex items-center justify-center rounded-md border 
@@ -129,7 +130,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         sizes: "512x512",
         href: "/icon-512.png",
       },
-      ],
+    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,
@@ -139,11 +140,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className="app-scan-bg">
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body className="min-h-screen">
         {children}
         <Scripts />
       </body>

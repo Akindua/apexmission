@@ -2,8 +2,8 @@ import { useChat } from "@ai-sdk/react";
 import { extractText } from "@/lib/document-parser";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { Lock, MessageCircle, X, Paperclip, Sparkles, Loader2, Target, Flame, Trophy, Activity, Zap, Brain, Shield, AlertTriangle } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { generateSyntheticBriefing } from "@/lib/synthetic-briefing";
+import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { generateSyntheticBriefing, type LeaderboardSnapshot } from "@/lib/synthetic-briefing";
 
 import {
   Conversation,
@@ -42,7 +42,7 @@ interface BehaviorAnalytics {
   preferredFocusAreas: string[];
 }
 
-function loadMessages(userName: string, userRank: string, state: any, behaviorAnalytics: any, isFirstSignup: boolean): UIMessage[] {
+function loadMessages(userName: string, userRank: string, state: any, behaviorAnalytics: any, isFirstSignup: boolean, companyId: string | null = null, leaderboard: LeaderboardSnapshot | null = null): UIMessage[] {
   if (typeof window === "undefined") return [];
   
   try {
@@ -60,7 +60,9 @@ function loadMessages(userName: string, userRank: string, state: any, behaviorAn
     state,
     behaviorAnalytics,
     isFirstSignup,
-    currentHour: new Date().getHours()
+    currentHour: new Date().getHours(),
+    companyId,
+    leaderboard,
   });
 
   // Convert to UIMessage format so they render natively as clean chat bubbles
@@ -255,6 +257,8 @@ export function MissionCoach({
   onClose,
   onOpenChange,
   isFirstSignup = false,
+  companyId = null,
+  leaderboard = null,
 }: {
   premium?: boolean;
   state: any;
@@ -266,6 +270,8 @@ export function MissionCoach({
   onClose?: () => void;
   onOpenChange?: (open: boolean) => void;
   isFirstSignup?: boolean;
+  companyId?: string | null;
+  leaderboard?: LeaderboardSnapshot | null;
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [initial, setInitial] = useState<UIMessage[]>([]);
@@ -297,9 +303,17 @@ export function MissionCoach({
 
   useEffect(() => {
     setMounted(true);
-    const messages = loadMessages(userName, userRank, state, behaviorAnalytics, isFirstSignup);
+    const messages = loadMessages(
+      userName,
+      userRank,
+      state,
+      behaviorAnalytics,
+      isFirstSignup,
+      companyId,
+      leaderboard,
+    );
     setInitial(messages);
-  }, [userName, userRank, state, isFirstSignup]);
+  }, [userName, userRank, state, isFirstSignup, companyId, leaderboard]);
 
   useEffect(() => {
     if (!mounted || !open) return;
@@ -373,14 +387,14 @@ function CoachPanel({
   setOpen: (v: boolean) => void;
   initialMessages: UIMessage[];
   premium: boolean;
-  onLockedHistory?: () => void;
+  onLockedHistory?: (() => void) | undefined;
   state: any;
   userName: string;
   userRank: string;
-  onActionPlanGenerated?: (plan: any) => void;
+  onActionPlanGenerated?: ((plan: any) => void) | undefined;
   behaviorAnalytics: BehaviorAnalytics;
-  setBehaviorAnalytics: (analytics: BehaviorAnalytics) => void;
-  isFirstSignup?: boolean;
+  setBehaviorAnalytics: Dispatch<SetStateAction<BehaviorAnalytics>>;
+  isFirstSignup?: boolean | undefined;
 }) {
   const transport = useMemo(() => new DefaultChatTransport({ api: "/api/chat" }), []);
   const [input, setInput] = useState("");
@@ -400,7 +414,7 @@ function CoachPanel({
 
   const isRateLimited = false; 
 
-  const { messages, sendMessage, status, append } = useChat({
+  const { messages, sendMessage, status } = useChat({
     id: "mission-coach",
     messages: initialMessages,
     transport,
@@ -683,30 +697,10 @@ function CoachPanel({
       hasTriggeredThisSession.current = true;
       sessionStorage.setItem(sessionKey, "true");
       setOpen(true);
-
-      const timer = setTimeout(() => {
-        const syntheticMessages = generateSyntheticBriefing({
-          userName,
-          userRank,
-          state,
-          behaviorAnalytics,
-          isFirstSignup: !!isFirstSignup,
-          currentHour: new Date().getHours()
-        });
-        
-        syntheticMessages.forEach(msg => {
-          if (msg.role === "assistant") {
-            append({
-              role: "assistant",
-              content: msg.content
-            });
-          }
-        });
-      }, 600);
-
-      return () => clearTimeout(timer);
     }
-  }, [userName, state, setOpen, behaviorAnalytics, isFirstSignup, userRank, append]);
+
+    return undefined;
+  }, [userName, state, setOpen, behaviorAnalytics, isFirstSignup, userRank]);
 
   useEffect(() => {
     try {

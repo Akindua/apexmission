@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2, Crown } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { confirmCheckout, getBilling, type BillingInfo } from "@/lib/billing.functions";
@@ -8,10 +8,7 @@ import { confirmCheckout, getBilling, type BillingInfo } from "@/lib/billing.fun
 export const Route = createFileRoute("/billing")({
   ssr: false,
   validateSearch: (search: Record<string, unknown>) => ({
-    session_id: 
-      typeof search["session_id"] === "string" 
-        ? search["session_id"] 
-        : undefined,
+    session_id: typeof search["session_id"] === "string" ? search["session_id"] : undefined,
   }),
   head: () => ({
     meta: [
@@ -52,7 +49,9 @@ function BillingPage() {
         return;
       }
       try {
-        const info = session_id ? await confirm({ data: { sessionId: session_id } }) : await read({});
+        const info = session_id
+          ? await confirm({ data: { sessionId: session_id } })
+          : await read({});
         if (!cancelled) setBilling(info);
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : "Could not load your plan.");
@@ -66,20 +65,32 @@ function BillingPage() {
   }, [session_id, confirm, read]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="card-surface w-full max-w-md p-7">
+    <div className="page-shell flex items-center justify-center px-6 py-12">
+      <div className="ambient-emerald-glow-sm" />
+      <div className="grid-pattern-overlay" />
+
+      <div className="relative w-full max-w-md glass-panel p-8 text-center">
+        <div className="top-highlight" />
+
         {loading ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" /> Confirming your purchase…
+          <div className="flex flex-col items-center justify-center gap-4 py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-emerald-400" />
+            <p className="text-sm text-zinc-400">Confirming your purchase…</p>
           </div>
         ) : error ? (
-          <p className="text-sm text-muted-foreground">{error}</p>
+          <div className="text-center">
+            <p className="text-sm text-rose-400">{error}</p>
+          </div>
         ) : billing?.premium ? (
           <>
-            <CheckCircle2 className="size-8 text-success" />
-            <h1 className="mt-4 font-display text-2xl font-bold tracking-tight">You're premium.</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Plan: <span className="text-foreground">{billing.plan}</span>
+            <div className="mx-auto flex size-16 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-950/40 text-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.25)]">
+              <CheckCircle2 className="size-10" />
+            </div>
+            <h1 className="mt-4 font-display text-2xl font-black tracking-tight text-white">
+              You're premium.
+            </h1>
+            <p className="mt-2 text-sm text-zinc-500">
+              Plan: <span className="text-white font-semibold">{billing.plan}</span>
               {billing.currentPeriodEnd
                 ? ` · renews ${new Date(billing.currentPeriodEnd).toLocaleDateString()}`
                 : " · lifetime access"}
@@ -87,18 +98,23 @@ function BillingPage() {
           </>
         ) : (
           <>
-            <h1 className="font-display text-2xl font-bold tracking-tight">No active plan yet</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <div className="mx-auto flex size-16 items-center justify-center rounded-2xl border border-zinc-800/50 bg-zinc-900/40 text-zinc-400">
+              <Crown className="size-10" />
+            </div>
+            <h1 className="mt-4 font-display text-2xl font-black tracking-tight text-white">
+              No active plan yet
+            </h1>
+            <p className="mt-2 text-sm text-zinc-500">
               If you just paid, this can take a few seconds. Refresh, or pick a plan below.
             </p>
           </>
         )}
 
-        <div className="mt-6 flex gap-3 text-sm">
-          <Link to="/app" className="text-foreground underline-offset-4 hover:underline">
+        <div className="mt-8 flex flex-col gap-3">
+          <Link to="/app" className="btn-glass-primary h-11">
             Go to dashboard
           </Link>
-          <Link to="/pricing" className="text-muted-foreground underline-offset-4 hover:underline">
+          <Link to="/pricing" className="btn-glass-ghost h-11">
             View plans
           </Link>
         </div>
