@@ -21,6 +21,8 @@ export type Database = {
           slug: string
           invite_token: string
           created_at: string
+          is_contract_paid: boolean
+          trial_started_at: string
         }
         Insert: {
           id?: string
@@ -28,6 +30,8 @@ export type Database = {
           slug: string
           invite_token: string
           created_at?: string
+          is_contract_paid?: boolean
+          trial_started_at?: string
         }
         Update: {
           id?: string
@@ -35,6 +39,8 @@ export type Database = {
           slug?: string
           invite_token?: string
           created_at?: string
+          is_contract_paid?: boolean
+          trial_started_at?: string
         }
         Relationships: []
       }
@@ -216,6 +222,18 @@ export type Database = {
           operator_name: string
           operational_status: string
           rank_position: number
+        }[]
+      }
+      get_workspace_access_status: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          company_id: string
+          company_name: string
+          company_slug: string
+          is_contract_paid: boolean
+          trial_started_at: string
+          trial_ends_at: string
+          is_pilot_expired: boolean
         }[]
       }
       resolve_session_tenant: {

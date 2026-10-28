@@ -23,6 +23,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as WelcomeRouteImport } from './routes/welcome'
+import { Route as WorkspaceBillingRouteImport } from './routes/workspace-billing'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiMissionPlanRouteImport } from './routes/api/mission-plan'
 import { Route as ApiPdfPlanRouteImport } from './routes/api/pdf-plan'
@@ -98,6 +99,11 @@ const WelcomeRoute = WelcomeRouteImport.update({
   path: '/welcome',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WorkspaceBillingRoute = WorkspaceBillingRouteImport.update({
+  id: '/workspace-billing',
+  path: '/workspace-billing',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiChatRoute = ApiChatRouteImport.update({
   id: '/api/chat',
   path: '/api/chat',
@@ -134,6 +140,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
   '/welcome': typeof WelcomeRoute
+  '/workspace-billing': typeof WorkspaceBillingRoute
   '/api/chat': typeof ApiChatRoute
   '/api/mission-plan': typeof ApiMissionPlanRoute
   '/api/pdf-plan': typeof ApiPdfPlanRoute
@@ -154,6 +161,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
   '/welcome': typeof WelcomeRoute
+  '/workspace-billing': typeof WorkspaceBillingRoute
   '/api/chat': typeof ApiChatRoute
   '/api/mission-plan': typeof ApiMissionPlanRoute
   '/api/pdf-plan': typeof ApiPdfPlanRoute
@@ -175,6 +183,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
   '/welcome': typeof WelcomeRoute
+  '/workspace-billing': typeof WorkspaceBillingRoute
   '/api/chat': typeof ApiChatRoute
   '/api/mission-plan': typeof ApiMissionPlanRoute
   '/api/pdf-plan': typeof ApiPdfPlanRoute
@@ -197,6 +206,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/verify-email'
     | '/welcome'
+    | '/workspace-billing'
     | '/api/chat'
     | '/api/mission-plan'
     | '/api/pdf-plan'
@@ -217,6 +227,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/verify-email'
     | '/welcome'
+    | '/workspace-billing'
     | '/api/chat'
     | '/api/mission-plan'
     | '/api/pdf-plan'
@@ -237,6 +248,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/verify-email'
     | '/welcome'
+    | '/workspace-billing'
     | '/api/chat'
     | '/api/mission-plan'
     | '/api/pdf-plan'
@@ -258,6 +270,7 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
   WelcomeRoute: typeof WelcomeRoute
+  WorkspaceBillingRoute: typeof WorkspaceBillingRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiMissionPlanRoute: typeof ApiMissionPlanRoute
   ApiPdfPlanRoute: typeof ApiPdfPlanRoute
@@ -364,6 +377,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WelcomeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/workspace-billing': {
+      id: '/workspace-billing'
+      path: '/workspace-billing'
+      fullPath: '/workspace-billing'
+      preLoaderRoute: typeof WorkspaceBillingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/chat': {
       id: '/api/chat'
       path: '/api/chat'
@@ -410,6 +430,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   VerifyEmailRoute: VerifyEmailRoute,
   WelcomeRoute: WelcomeRoute,
+  WorkspaceBillingRoute: WorkspaceBillingRoute,
   ApiChatRoute: ApiChatRoute,
   ApiMissionPlanRoute: ApiMissionPlanRoute,
   ApiPdfPlanRoute: ApiPdfPlanRoute,

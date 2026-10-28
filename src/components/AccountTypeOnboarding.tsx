@@ -4,6 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 
 type AccountMode = "personal" | "company";
 
+function friendlyMembershipError(message: string): string {
+  return message.includes("Workspace membership can only be changed") ||
+    message.includes("Workspace membership can only be assigned")
+    ? "Your account is already linked to an enterprise workspace. Contact your administrator to change it."
+    : message;
+}
+
 interface AccountTypeOnboardingProps {
   nextRoute?: string;
   onComplete?: () => void;
@@ -58,7 +65,7 @@ export function AccountTypeOnboarding({
       await completeRoute();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to continue.";
-      setErrorMessage(message);
+      setErrorMessage(friendlyMembershipError(message));
     } finally {
       setLoading(false);
     }

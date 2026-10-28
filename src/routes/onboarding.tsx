@@ -99,20 +99,26 @@ function OnboardingPage() {
 
       setStorageScope(user.id);
 
-      const { error: metaError } = await supabase.auth.updateUser({ data: { company_id: null } });
-      if (metaError) throw metaError;
-
+      // Security-relevant membership write first. A corporate account cannot
+      // clear its tenant here; the database guard rejects that downgrade.
       const { error: profileError } = await supabase
         .from("profiles")
         .update({ company_id: null })
         .eq("id", user.id);
       if (profileError) throw profileError;
 
+      const { error: metaError } = await supabase.auth.updateUser({ data: { company_id: null } });
+      if (metaError) throw metaError;
+
       navigate({ to: "/app" });
     } catch (err) {
       console.error("Personal onboarding failed:", err);
+      const rawMessage =
+        err instanceof Error ? err.message : "Failed to initialize your personal workspace.";
       setErrorMessage(
-        err instanceof Error ? err.message : "Failed to initialize your personal workspace.",
+        rawMessage.includes("Workspace membership can only be changed")
+          ? "Your account is already linked to an enterprise workspace. Contact your administrator to change it."
+          : rawMessage,
       );
       setBusy(false);
     }
