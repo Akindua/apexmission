@@ -262,6 +262,8 @@ export function MissionCoach({
   isFirstSignup = false,
   companyId = null,
   leaderboard = null,
+  showLauncher = true,
+  autoOpen = true,
 }: {
   premium?: boolean;
   state: any;
@@ -275,6 +277,8 @@ export function MissionCoach({
   isFirstSignup?: boolean;
   companyId?: string | null;
   leaderboard?: LeaderboardSnapshot | null;
+  showLauncher?: boolean;
+  autoOpen?: boolean;
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [initial, setInitial] = useState<UIMessage[]>([]);
@@ -335,7 +339,7 @@ export function MissionCoach({
   }, [open, mounted]);
 
   if (!mounted) {
-    return <CoachLauncher open={open} onToggle={() => setOpen(true)} />;
+    return showLauncher ? <CoachLauncher open={open} onToggle={() => setOpen(true)} /> : null;
   }
     
   return (
@@ -343,6 +347,8 @@ export function MissionCoach({
       key="coach"
       open={open}
       setOpen={setOpen}
+      showLauncher={showLauncher}
+      autoOpen={autoOpen}
       initialMessages={initial}
       premium={premium}
       onLockedHistory={onLockedHistory}
@@ -375,6 +381,8 @@ function CoachLauncher({ onToggle, open }: { onToggle: () => void; open: boolean
 function CoachPanel({
   open,
   setOpen,
+  showLauncher,
+  autoOpen,
   initialMessages,
   premium,
   onLockedHistory,
@@ -388,6 +396,8 @@ function CoachPanel({
 }: {
   open: boolean;
   setOpen: (v: boolean) => void;
+  showLauncher: boolean;
+  autoOpen: boolean;
   initialMessages: UIMessage[];
   premium: boolean;
   onLockedHistory?: (() => void) | undefined;
@@ -702,6 +712,7 @@ function CoachPanel({
   }, [state]);
 
   useEffect(() => {
+    if (!autoOpen) return;
     if (typeof window === "undefined") return;
 
     const sessionKey = "apex-session-briefing-triggered";
@@ -715,7 +726,7 @@ function CoachPanel({
     }
 
     return undefined;
-  }, [userName, state, setOpen, behaviorAnalytics, isFirstSignup, userRank]);
+  }, [userName, state, setOpen, behaviorAnalytics, isFirstSignup, userRank, autoOpen]);
 
   useEffect(() => {
     try {
@@ -784,22 +795,26 @@ function CoachPanel({
 
   return (
     <>
-      <CoachLauncher open={open} onToggle={() => setOpen(true)} />
+      {showLauncher && <CoachLauncher open={open} onToggle={() => setOpen(true)} />}
 
       {open && (
         <button
           type="button"
           onClick={() => setOpen(false)}
+          aria-label="Close mission coach overlay"
           className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
         />
       )}
 
       <aside
+        aria-label="My Mission Coach"
+        aria-hidden={!open}
+        inert={!open}
         className={`fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-zinc-800 bg-[#0D0D11] shadow-2xl transition-transform duration-300 ease-out ${
           open ? "translate-x-0" : "pointer-events-none translate-x-full"
         }`}
       >
-        <header className="flex items-center gap-3 border-b border-zinc-900 px-5 py-4 bg-black/20">
+        <header className="flex items-center gap-3 border-b border-zinc-900 px-5 pt-[calc(1rem+env(safe-area-inset-top))] pb-4 bg-black/20">
           <div className="flex size-9 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-950/20 text-emerald-400">
             <MessageCircle className="size-4.5 animate-pulse" />
           </div>
@@ -815,7 +830,8 @@ function CoachPanel({
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="rounded-xl border border-zinc-800 bg-zinc-950 p-2 text-zinc-500 transition-colors hover:border-zinc-800 hover:text-white"
+              aria-label="Close mission coach"
+              className="flex size-10 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-950 p-2 text-zinc-500 transition-colors hover:border-zinc-800 hover:text-white"
             >
               <X className="size-4" />
             </button>
@@ -894,7 +910,7 @@ function CoachPanel({
               type="button"
               disabled={busy || isRateLimited}
               onClick={() => send(chip.prompt)}
-              className="rounded-xl border border-zinc-800 bg-zinc-950/40 px-3 py-1.5 text-xs font-semibold text-zinc-300 transition-all duration-200 hover:border-zinc-700 hover:bg-zinc-900 hover:text-white active:scale-95 disabled:opacity-30"
+              className="min-h-11 rounded-xl border border-zinc-800 bg-zinc-950/40 px-3.5 py-2.5 text-xs font-semibold text-zinc-300 transition-all duration-200 hover:border-zinc-700 hover:bg-zinc-900 hover:text-white active:scale-95 disabled:opacity-30"
             >
               {chip.label}
             </button>
@@ -957,7 +973,7 @@ function CoachPanel({
           <ConversationScrollButton />
         </Conversation>
 
-        <div className="border-t border-zinc-900 p-4 bg-black/20">
+        <div className="border-t border-zinc-900 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-black/20">
           <div className="flex flex-col gap-3 mb-4">
             <input
               type="file"
@@ -1043,7 +1059,7 @@ function CoachPanel({
               <button
                 type="submit"
                 disabled={!input.trim() || busy || isRateLimited}
-                className="rounded-lg bg-white text-black px-4 py-1.5 text-xs font-bold transition-all duration-200 hover:bg-emerald-400 hover:text-black disabled:opacity-20"
+                className="min-h-11 rounded-lg bg-white px-4 py-2.5 text-xs font-bold text-black transition-all duration-200 hover:bg-emerald-400 hover:text-black disabled:opacity-20"
               >
                 {busy ? "Sending..." : "Send Brief →"}
               </button>

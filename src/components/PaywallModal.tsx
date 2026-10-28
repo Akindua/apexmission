@@ -56,7 +56,7 @@ export function PaywallModal({
       role="dialog"
       aria-modal="true"
       aria-label="Upgrade to Mission Control Premium"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4 py-6"
     >
       <button
         type="button"
@@ -65,14 +65,14 @@ export function PaywallModal({
         className="absolute inset-0 animate-in fade-in bg-background/80 backdrop-blur-sm duration-300"
       />
 
-      <div className="card-surface relative z-10 w-full max-w-3xl animate-in fade-in zoom-in-95 overflow-hidden p-6 duration-300 sm:p-8">
+      <div className="card-surface relative z-10 my-auto max-h-[calc(100dvh-3rem)] w-full max-w-3xl animate-in fade-in zoom-in-95 overflow-y-auto p-5 duration-300 sm:p-8">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-impact-medium/60 to-transparent" />
 
         <button
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="absolute top-4 right-4 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          className="absolute right-3 top-3 flex size-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
         >
           <X className="size-4" />
         </button>
@@ -91,7 +91,7 @@ export function PaywallModal({
         </h2>
         <p className="mt-2 max-w-xl text-sm text-muted-foreground">{reason}</p>
 
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
           {PLANS.map((plan) => (
             <div
               key={plan.id}

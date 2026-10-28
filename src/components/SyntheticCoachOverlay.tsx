@@ -175,10 +175,10 @@ export function SyntheticCoachOverlay({
 
   if (isMinimized) {
     return (
-      <div className="fixed bottom-24 right-4 sm:right-6 z-50">
+      <div className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-50 md:bottom-20 md:right-5">
         <button
           onClick={handleMinimize}
-          className="flex items-center gap-2 sm:gap-3 bg-emerald-600 hover:bg-emerald-500 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-full shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all hover:scale-105"
+          className="flex min-h-11 items-center gap-2 rounded-full bg-emerald-600 px-4 py-2.5 text-white shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all hover:scale-105 hover:bg-emerald-500 sm:gap-3 sm:px-6 sm:py-3"
         >
           <MessageCircle className="size-4 sm:size-5 animate-pulse" />
           <span className="font-bold text-xs sm:text-sm">Coach</span>
@@ -189,8 +189,8 @@ export function SyntheticCoachOverlay({
   }
 
   return (
-    <div className="fixed top-4 right-4 left-4 sm:left-auto sm:right-4 z-50 w-full max-w-md mx-auto sm:mx-0">
-      <div className="bg-[#0D0D11] rounded-2xl border border-emerald-500/30 shadow-[0_0_60px_rgba(16,185,129,0.2)] flex flex-col overflow-hidden max-h-[calc(100vh-2rem)] max-h-[calc(100dvh-2rem)]">
+    <div className="fixed left-4 right-4 top-[calc(1rem+env(safe-area-inset-top))] z-50 mx-auto max-w-md sm:left-auto sm:right-4 sm:mx-0 sm:w-full">
+      <div className="flex max-h-[calc(100dvh-2rem-env(safe-area-inset-top))] flex-col overflow-hidden rounded-2xl border border-emerald-500/30 bg-[#0D0D11] shadow-[0_0_60px_rgba(16,185,129,0.2)]">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-emerald-500/20 bg-[#0A0A0E]">
           <div className="flex items-center gap-3">
@@ -213,14 +213,18 @@ export function SyntheticCoachOverlay({
           </div>
           <div className="flex items-center gap-2">
             <button
+              type="button"
+              aria-label="Minimize AI briefing"
               onClick={handleMinimize}
-              className="p-1.5 rounded-lg hover:bg-zinc-800 transition-colors text-zinc-400 hover:text-white"
+              className="flex size-10 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white"
             >
               <ChevronDown className="size-4" />
             </button>
             <button
+              type="button"
+              aria-label="Close AI briefing"
               onClick={handleClose}
-              className="p-1.5 rounded-lg hover:bg-zinc-800 transition-colors text-zinc-400 hover:text-white"
+              className="flex size-10 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white"
             >
               <X className="size-4" />
             </button>
@@ -267,7 +271,7 @@ export function SyntheticCoachOverlay({
           {isOnboardingMode ? (
             <button
               onClick={handleNextOnboardingStep}
-              className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-lg font-bold transition-all"
+              className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 font-bold text-white transition-all hover:bg-emerald-500"
             >
               {onboardingStep < allOnboardingMessages.length - 1 ? (
                 <>
@@ -289,13 +293,13 @@ export function SyntheticCoachOverlay({
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Ask about your mission..."
-                className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 resize-none"
+                className="min-h-11 flex-1 resize-none rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-xs text-white placeholder-zinc-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                 rows={1}
               />
               <button
                 onClick={handleSend}
                 disabled={!input.trim() || isTyping}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-700 disabled:text-zinc-500 text-white rounded-lg font-bold transition-all flex items-center gap-1.5"
+                className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 font-bold text-white transition-all hover:bg-emerald-500 disabled:bg-zinc-700 disabled:text-zinc-500"
               >
                 <Send className="size-3.5" />
               </button>
