@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { setStorageScope } from "@/lib/user-storage";
+import { TACTICAL_BRIEFING_SESSION_KEY } from "@/lib/synthetic-briefing";
 import { ShieldAlert, ShieldCheck, Loader2, KeyRound, Mail, ArrowRight } from "lucide-react";
 
 type AuthMode = "signin" | "signup";
@@ -33,7 +34,6 @@ function AuthConsolePage() {
   const [fullName, setFullName] = useState("");
   const [busy, setBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [showLoadingGate, setShowLoadingGate] = useState(false);
   const [currentEmail, setCurrentEmail] = useState<string | null>(null);
 
   useEffect(() => {
@@ -116,7 +116,7 @@ function AuthConsolePage() {
           setStorageScope(null);
           setCurrentEmail(null);
           if (typeof window !== "undefined") {
-            sessionStorage.removeItem("apex-session-briefing-triggered");
+            sessionStorage.removeItem(TACTICAL_BRIEFING_SESSION_KEY);
           }
         }
 
@@ -169,7 +169,7 @@ function AuthConsolePage() {
         if (userId) {
           setStorageScope(userId);
           if (typeof window !== "undefined") {
-            sessionStorage.removeItem("apex-session-briefing-triggered");
+            sessionStorage.removeItem(TACTICAL_BRIEFING_SESSION_KEY);
           }
         }
         let onboardingCompleted = false;
@@ -188,12 +188,9 @@ function AuthConsolePage() {
           onboardingCompleted = Boolean(profile?.onboarding_completed);
         }
 
-        setShowLoadingGate(true);
-        setTimeout(() => {
-          navigate({
-            to: onboardingCompleted ? next || "/app" : "/onboarding",
-          });
-        }, 2000);
+        navigate({
+          to: onboardingCompleted ? next || "/app" : "/onboarding",
+        });
       }
     } catch (err) {
       console.error("Auth terminal synchronization fault:", err);
@@ -213,22 +210,6 @@ function AuthConsolePage() {
       setBusy(false);
     }
   };
-
-  if (showLoadingGate) {
-    return (
-      <div className="page-shell flex flex-col items-center justify-center">
-        <div className="flex flex-col items-center justify-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-emerald-400" />
-          <div className="text-center">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">
-              System Hydration In Progress
-            </p>
-            <h2 className="text-sm font-bold text-white mt-1">Calibrating Command Cockpit...</h2>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="page-shell flex items-center justify-center px-6 py-12">

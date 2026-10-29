@@ -96,8 +96,10 @@ export type Database = {
           onboarding_completed: boolean
           operational_status: string
           subscription_tier: string
+          task_history: Json
           unlocked_layouts: string[]
           updated_at: string
+          velocity_score: number
         }
         Insert: {
           beta_points?: number
@@ -114,8 +116,10 @@ export type Database = {
           onboarding_completed?: boolean
           operational_status?: string
           subscription_tier?: string
+          task_history?: Json
           unlocked_layouts?: string[]
           updated_at?: string
+          velocity_score?: number
         }
         Update: {
           beta_points?: number
@@ -132,8 +136,10 @@ export type Database = {
           onboarding_completed?: boolean
           operational_status?: string
           subscription_tier?: string
+          task_history?: Json
           unlocked_layouts?: string[]
           updated_at?: string
+          velocity_score?: number
         }
         Relationships: []
       }

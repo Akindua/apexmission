@@ -4,10 +4,14 @@ import { useServerFn } from "@tanstack/react-start";
 import { Check, Flame, Plus, Sparkles, Loader2, Target, TimerReset, Shield, Trophy, LayoutDashboard, Award, HardDrive, HelpCircle, MessageSquare, Building2 } from "lucide-react";
 import { PaywallModal } from "@/components/PaywallModal";
 import { MissionCoach } from "@/components/MissionCoach";
-import { SyntheticCoachOverlay } from "@/components/SyntheticCoachOverlay";
+import { OperatorInduction } from "@/components/OperatorInduction";
+import { TacticalBriefing } from "@/components/TacticalBriefing";
 import {
+  computeAverageCompletionsPerDay,
   fetchLeaderboardTelemetry,
   fetchOperatorProfileMetadata,
+  TACTICAL_BRIEFING_SESSION_KEY,
+  type BehaviorAnalytics,
   type LeaderboardSnapshot,
   type OperatorProfileMetadata,
 } from "@/lib/synthetic-briefing";
@@ -57,16 +61,17 @@ function ApexMission() {
   const [activeTab, setActiveTab] = useState<"workspace" | "leaderboard" | "hardware">("workspace");
   const mainRef = useRef<HTMLElement | null>(null);
   const [coachOpen, setCoachOpen] = useState(false);
+  const [showInduction, setShowInduction] = useState(false);
+  const [showTacticalBriefing, setShowTacticalBriefing] = useState(false);
   const [surpriseLoot, setSurpriseLoot] = useState<{ active: boolean; msg: string; points: number } | null>(null);
   const [showSupport, setShowSupport] = useState(false);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
-  const [hasTriggeredAutoBrief, setHasTriggeredAutoBrief] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [operatorProfile, setOperatorProfile] = useState<OperatorProfileMetadata | null>(null);
   const [leaderboardSnapshot, setLeaderboardSnapshot] = useState<LeaderboardSnapshot | null>(null);
   const [profileHydrated, setProfileHydrated] = useState(false);
   const [activeTenant, setActiveTenant] = useState<SessionTenant | null>(null);
-  const [behaviorAnalytics, setBehaviorAnalytics] = useState({
+  const [behaviorAnalytics, setBehaviorAnalytics] = useState<BehaviorAnalytics>({
     sessionCount: 0,
     lastSessionDate: "",
     totalTasksCompleted: 0,
@@ -75,10 +80,9 @@ function ApexMission() {
     peakProductivityHour: 12,
     totalMessagesExchanged: 0,
     streakConsistency: 0,
-    preferredFocusAreas: [] as string[],
+    preferredFocusAreas: [],
+    taskHistory: [],
   });
-
-  const isFirstSignup = Boolean(operatorProfile && !operatorProfile.onboardingCompleted);
 
   // The coach penalises slacking from inside its own component; listen for its
   // debit so the header balance and the next local save stay consistent.
@@ -201,6 +205,12 @@ function ApexMission() {
 
         if (cancelled) return;
         setOperatorProfile(effectiveProfile);
+        if (Array.isArray(effectiveProfile.taskHistory)) {
+          setBehaviorAnalytics((prev) => ({
+            ...prev,
+            taskHistory: effectiveProfile.taskHistory ?? [],
+          }));
+        }
         setUserName(toDisplayName(effectiveProfile.operatorName));
         setState((current) => ({
           ...current,
@@ -273,8 +283,22 @@ function ApexMission() {
       return;
     }
 
-    // Legacy local flag retained for the Mission Coach panel's one-time seed.
     setScopedItem("apex-tutorial-completed", "true");
+  };
+
+  const completeInduction = async () => {
+    setShowInduction(false);
+
+    // Do not stack the returning-login dossier directly behind the induction.
+    try {
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem(TACTICAL_BRIEFING_SESSION_KEY, "true");
+      }
+    } catch {
+      // Session storage can be unavailable in private contexts.
+    }
+
+    await handleOnboardingComplete();
   };
 
   useEffect(() => {
@@ -301,7 +325,6 @@ function ApexMission() {
   const [showMilestoneCelebration, setShowMilestoneCelebration] = useState<number | null>(null);
   const [activeLayoutTheme, setActiveLayoutTheme] = useState<string>("layout-default");
   const [showPlanSuccessAlert, setShowPlanSuccessAlert] = useState(false);
-  const [showSyntheticCoach, setShowSyntheticCoach] = useState(false);
 
   const BETA_MODE = true;
   const { premium: subscriptionPremium, tier } = useSubscriptionTier();
@@ -397,33 +420,35 @@ function ApexMission() {
     return () => clearInterval(penaltyTimer);
   }, [hydrated, state.tasks?.high, setState]);
   
-  // 🔄 AUTOMATED LOGIN TELEMETRY SCANNER LAYER WITH INTEGRATED WELCOME CHIME
+  // 🎯 DETERMINISTIC SESSION ENTRY — LOCAL INDUCTION OR TACTICAL DOSSIER
   useEffect(() => {
-    if (
-      hydrated &&
-      profileHydrated &&
-      operatorProfile &&
-      !hasTriggeredAutoBrief
-    ) {
-      const timer = window.setTimeout(() => {
-        setHasTriggeredAutoBrief(true);
-        // Auto-open the synthetic briefing at most once per browser session so a
-        // reload never stacks it on top of the Mission Coach panel.
-        try {
-          if (sessionStorage.getItem("apex-session-briefing-triggered")) return;
-          sessionStorage.setItem("apex-session-briefing-triggered", "true");
-        } catch {
-          // Storage can be unavailable in private contexts; still show once.
-        }
-        // Show Synthetic Coach Overlay (zero API cost, separate from Mission Coach)
-        setShowSyntheticCoach(true);
-      }, 800);
+    if (!hydrated || !profileHydrated || !operatorProfile) return;
 
-      return () => window.clearTimeout(timer);
+    // First session: the database onboarding flag is authoritative. Show the
+    // deterministic induction wizard, never the coach chat.
+    if (!operatorProfile.onboardingCompleted) {
+      setShowInduction(true);
+      return;
     }
 
-    return undefined;
-  }, [hydrated, profileHydrated, operatorProfile, hasTriggeredAutoBrief]);
+    // Returning login: open the locally generated dossier at most once per
+    // browser session. No AI request is made.
+    let alreadyShown = false;
+    try {
+      alreadyShown =
+        sessionStorage.getItem(TACTICAL_BRIEFING_SESSION_KEY) === "true";
+      if (!alreadyShown) {
+        sessionStorage.setItem(TACTICAL_BRIEFING_SESSION_KEY, "true");
+      }
+    } catch {
+      // Storage can be unavailable in private contexts; still show once.
+    }
+
+    if (alreadyShown) return;
+
+    const timer = window.setTimeout(() => setShowTacticalBriefing(true), 900);
+    return () => window.clearTimeout(timer);
+  }, [hydrated, profileHydrated, operatorProfile]);
 
   function handleGoToNightReflection() {
     navigate({ to: "/night-reflection" });
@@ -489,6 +514,58 @@ function ApexMission() {
     saveState(state);
   }, [state, hydrated]);
 
+  const { total, done } = useMemo(() => {
+    let total = 0;
+    let done = 0;
+    if (state && state.tasks) {
+      for (const tier of TIERS) {
+        const tierTasks = state.tasks[tier.key] || [];
+        for (const t of tierTasks) {
+          total += 1;
+          if (t.done) done += 1;
+        }
+      }
+    }
+    return { total, done };
+  }, [state]);
+
+  const progress = total === 0 ? 0 : Math.round((done / total) * 100);
+
+  // 📊 REAL OPERATOR VELOCITY TELEMETRY — feeds the Velocity Consistency Index.
+  const taskHistory = useMemo(() => {
+    const raw = behaviorAnalytics.taskHistory;
+    if (!Array.isArray(raw)) return [];
+    return raw.filter((entry) => entry && typeof entry.date === "string");
+  }, [behaviorAnalytics.taskHistory]);
+
+  const velocityHistory = useMemo(() => {
+    const days: Array<{ key: string; label: string; value: number }> = [];
+    const now = new Date();
+    for (let offset = 6; offset >= 0; offset -= 1) {
+      const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - offset);
+      const key = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
+      const completions = taskHistory.filter((entry) => entry.date === key).length;
+      days.push({
+        key,
+        label: day.toLocaleDateString("en-US", { weekday: "short" }),
+        value: completions,
+      });
+    }
+    return days;
+  }, [taskHistory]);
+
+  const currentStreak = Number(state.streak?.count ?? 0);
+  const maxStreak = Math.max(currentStreak, Number(operatorProfile?.maxStreak ?? currentStreak));
+  const streakMomentum = Math.min(100, currentStreak * 10);
+  const velocityConsistencyIndex =
+    total === 0 ? 0 : Math.min(100, Math.round(progress * 0.7 + streakMomentum * 0.3));
+  const velocityConsistencyLabel =
+    velocityConsistencyIndex >= 70
+      ? "Elite Momentum"
+      : velocityConsistencyIndex >= 40
+        ? "Stable Momentum"
+        : "Recovery Posture";
+
   // Persist earned credits and streak progress. Without this, every reload
   // restored the stale profile row and silently discarded completed tasks.
   useEffect(() => {
@@ -511,6 +588,7 @@ function ApexMission() {
           credits: points,
           current_streak: streak,
           max_streak: Math.max(operatorProfile.maxStreak, streak),
+          velocity_score: velocityConsistencyIndex,
         })
         .eq("id", currentUserId);
 
@@ -523,41 +601,62 @@ function ApexMission() {
   }, [
     state.points,
     state.streak?.count,
+    velocityConsistencyIndex,
     hydrated,
     profileHydrated,
     currentUserId,
     operatorProfile,
   ]);
 
-  const { total, done } = useMemo(() => {
-    let total = 0;
-    let done = 0;
-    if (state && state.tasks) {
-      for (const tier of TIERS) {
-        const tierTasks = state.tasks[tier.key] || [];
-        for (const t of tierTasks) {
-          total += 1;
-          if (t.done) done += 1;
-        }
+  // Persist the operator's real task-closure history + velocity score to the
+  // profile row so the Velocity Consistency Index survives cross-session
+  // reloads (sign-out -> sign-in) instead of resetting with the local cache.
+  useEffect(() => {
+    if (!hydrated || !profileHydrated || !currentUserId || !operatorProfile) return;
+    if (!Array.isArray(behaviorAnalytics.taskHistory) || behaviorAnalytics.taskHistory.length === 0) return;
+
+    const timer = window.setTimeout(async () => {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          task_history: behaviorAnalytics.taskHistory ?? [],
+          velocity_score: velocityConsistencyIndex,
+        })
+        .eq("id", currentUserId);
+
+      if (error) {
+        console.error("Task history telemetry sync failed:", error);
       }
-    }
-    return { total, done };
-  }, [state]);
+    }, 750);
 
-  const progress = total === 0 ? 0 : Math.round((done / total) * 100);
+    return () => window.clearTimeout(timer);
+  }, [
+    behaviorAnalytics.taskHistory,
+    velocityConsistencyIndex,
+    hydrated,
+    profileHydrated,
+    currentUserId,
+    operatorProfile,
+  ]);
 
-  function addTask(tier: ImpactTier) {
-    const text = drafts[tier].trim();
-    if (!text) return;
+  function addTaskToMatrix(tier: ImpactTier, rawText: string): boolean {
+    const text = rawText.trim();
+    if (!text) return false;
     if (!premium && total >= FREE_TASK_LIMIT) {
       setPaywall(`The free plan tracks up to ${FREE_TASK_LIMIT} priority tasks. Upgrade to map out your full mission without limits.`);
-      return;
+      return false;
     }
     setState((s) => ({
       ...s,
       tasks: { ...s.tasks, [tier]: [...(s.tasks[tier] || []), { id: nextId(), text, done: false }] },
     }));
-    setDrafts((d) => ({ ...d, [tier]: "" }));
+    return true;
+  }
+
+  function addTask(tier: ImpactTier) {
+    if (addTaskToMatrix(tier, drafts[tier])) {
+      setDrafts((d) => ({ ...d, [tier]: "" }));
+    }
   }
 
   async function generateActionPlan() {
@@ -643,6 +742,17 @@ function ApexMission() {
         if (typeof taskCompletionHook === "function") {
           taskCompletionHook(targetTask?.text || "Task completed");
         }
+
+        // Keep the operator-facing execution telemetry in sync so the Velocity
+        // Consistency Index reflects real task closures as they happen.
+        setBehaviorAnalytics((prev) => ({
+          ...prev,
+          totalTasksCompleted: (prev.totalTasksCompleted ?? 0) + 1,
+          taskHistory: [
+            ...(Array.isArray(prev.taskHistory) ? prev.taskHistory : []),
+            { date: todayKey(), text: targetTask?.text || "Task completed" },
+          ].slice(-30),
+        }));
       }
 
       if (rewardNotice) {
@@ -673,9 +783,14 @@ function ApexMission() {
     }));
   }
 
+  function commitDailyAction(text: string) {
+    const trimmed = text.trim();
+    setState((s) => ({ ...s, daily: { ...s.daily, text: trimmed, date: todayKey() } }));
+    setDailyDraft(trimmed);
+  }
+
   function commitDailyText() {
-    const text = dailyDraft.trim();
-    setState((s) => ({ ...s, daily: { ...s.daily, text, date: todayKey() } }));
+    commitDailyAction(dailyDraft);
   }
 
   function toggleDaily() {
@@ -727,9 +842,31 @@ function ApexMission() {
     await supabase.auth.signOut({ scope: "local" });
     setStorageScope(null);
     if (typeof window !== "undefined") {
-      sessionStorage.removeItem("apex-session-briefing-triggered");
+      sessionStorage.removeItem(TACTICAL_BRIEFING_SESSION_KEY);
     }
     navigate({ to: "/auth", search: { mode: "signin", next: "/app" } });
+  }
+
+  function handleBriefingExecute(focus: "mission" | "daily" | "high" | "matrix") {
+    setShowTacticalBriefing(false);
+    setActiveTab("workspace");
+    window.setTimeout(() => {
+      const targetId =
+        focus === "daily"
+          ? "daily-action"
+          : focus === "high" || focus === "matrix"
+            ? "task-input-high"
+            : "mission";
+      const element = document.getElementById(targetId);
+      element?.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (element instanceof HTMLElement) element.focus();
+    }, 160);
+  }
+
+  function openMissionCoach() {
+    setShowInduction(false);
+    setShowTacticalBriefing(false);
+    setCoachOpen(true);
   }
 
   // A company subdomain must never render the dashboard for a non-member.
@@ -833,16 +970,19 @@ function ApexMission() {
         <div className="flex flex-col gap-2 border-t border-emerald-500/10 pt-4">
           <button
             type="button"
-            onClick={() => setShowSyntheticCoach(true)}
+            onClick={() => {
+              setCoachOpen(false);
+              setShowTacticalBriefing(true);
+            }}
             className="flex min-h-11 w-full items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-950/30 px-4 py-3 text-xs font-bold text-emerald-300 transition-all hover:border-emerald-500/50 hover:bg-emerald-500 hover:text-black font-mono uppercase tracking-wider shadow-[inset_0_1px_1px_rgba(52,211,153,0.1)]"
           >
             <Sparkles className="size-4 text-emerald-400" />
-            <span>AI Briefing</span>
+            <span>Tactical Briefing</span>
           </button>
           <button
             type="button"
             onClick={() => {
-              setShowSyntheticCoach(false);
+              setShowTacticalBriefing(false);
               setCoachOpen(true);
             }}
             className="flex min-h-11 w-full items-center gap-3 rounded-xl border border-emerald-500/20 bg-emerald-950/10 px-4 py-3 text-xs font-bold text-zinc-300 transition-all hover:border-emerald-500/40 hover:bg-emerald-950/30 hover:text-emerald-400 font-mono uppercase tracking-wider shadow-[inset_0_1px_1px_rgba(52,211,153,0.1)]"
@@ -901,10 +1041,7 @@ function ApexMission() {
         </button>
         <button
           type="button"
-          onClick={() => {
-            setShowSyntheticCoach(false);
-            setCoachOpen(true);
-          }}
+          onClick={() => setCoachOpen(true)}
           className="flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl border border-transparent px-1 py-2 text-emerald-400 bg-emerald-950/30 hover:bg-emerald-950/50 transition-all"
         >
           <MessageSquare className="size-4 shrink-0" />
@@ -959,12 +1096,15 @@ function ApexMission() {
 
               <button
                 type="button"
-                onClick={() => setShowSyntheticCoach(true)}
-                aria-label="Open AI briefing"
+                onClick={() => {
+                  setCoachOpen(false);
+                  setShowTacticalBriefing(true);
+                }}
+                aria-label="Open tactical briefing"
                 className="flex h-11 shrink-0 items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-950/40 px-3 font-mono text-[10px] font-black uppercase tracking-wider text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.15)] transition-all hover:border-emerald-500/60 hover:bg-emerald-500 hover:text-black md:hidden"
               >
                 <Sparkles className="size-4" />
-                <span>AI</span>
+                <span>SITREP</span>
               </button>
             </div>
 
@@ -988,7 +1128,7 @@ function ApexMission() {
                 onClick={async () => {
                   await supabase.auth.signOut({ scope: "local" });
                   setStorageScope(null);
-                  sessionStorage.removeItem("apex-session-briefing-triggered");
+                  sessionStorage.removeItem(TACTICAL_BRIEFING_SESSION_KEY);
                   navigate({ to: "/auth" });
                 }}
                 title="Disconnect Node"
@@ -1140,6 +1280,7 @@ function ApexMission() {
 
                     <div className="mt-3 flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-black/50 px-4 shadow-[inset_0_1px_3px_rgba(16,185,129,0.1)] transition-colors focus-within:border-emerald-500/50">
                       <input
+                        id={`task-input-${tier.key}`}
                         value={drafts[tier.key]}
                         onChange={(e) => setDrafts((d) => ({ ...d, [tier.key]: e.target.value }))}
                         onKeyDown={(e) => e.key === "Enter" && addTask(tier.key)}
@@ -1467,11 +1608,10 @@ function ApexMission() {
         </div>
       )}
 
-      {/* MISSION COACH COMPONENT WITH ACCESSIBLE MOBILE TOGGLE */}
+      {/* MISSION COACH — user-initiated chat only. No onboarding/login auto-open. */}
       {hydrated && profileHydrated && (
         <MissionCoach
           showLauncher={false}
-          autoOpen={false}
           premium={premium}
           state={{ ...state, failureCount: userFailureCount }}
           userName={userName}
@@ -1479,13 +1619,22 @@ function ApexMission() {
           isOpen={coachOpen}
           onOpenChange={(open) => {
             setCoachOpen(open);
-            if (open) setShowSyntheticCoach(false);
+            if (open) {
+              setShowTacticalBriefing(false);
+              setShowInduction(false);
+            }
           }}
           onClose={() => setCoachOpen(false)}
           onLockedHistory={() => setPaywall("Your full coach history is a premium feature...")}
-          isFirstSignup={isFirstSignup}
           companyId={operatorProfile?.companyId ?? null}
           leaderboard={leaderboardSnapshot}
+          operatorProfile={operatorProfile}
+          appContext={{
+            activeTab,
+            activeTheme: activeLayoutTheme,
+            subscriptionTier: tier,
+            companyName: activeTenant?.companyName ?? null,
+          }}
           onActionPlanGenerated={(plan) => {
             setState((s) => ({
               ...s,
@@ -1505,20 +1654,38 @@ function ApexMission() {
         />
       )}
 
-      {/* SYNTHETIC COACH OVERLAY - Zero-API Interactive Conversation */}
-      <SyntheticCoachOverlay
-        userName={userName}
+      {/* FIRST SESSION — deterministic, non-chat, zero-API induction wizard */}
+      <OperatorInduction
+        open={showInduction && Boolean(operatorProfile && !operatorProfile.onboardingCompleted)}
         operatorName={operatorProfile?.operatorName ?? userName}
+        mission={state.mission}
+        dailyAction={state.daily.text}
+        tasks={state.tasks}
+        isCorporate={Boolean(operatorProfile?.companyId)}
+        companyName={activeTenant?.companyName ?? null}
+        onCommitMission={(mission) => setState((s) => ({ ...s, mission }))}
+        onCommitDailyAction={commitDailyAction}
+        onAddTask={addTaskToMatrix}
+        onComplete={completeInduction}
+        onSkip={completeInduction}
+      />
+
+      {/* RETURNING LOGIN — deterministic, non-chat, zero-API tactical dossier */}
+      <TacticalBriefing
+        open={showTacticalBriefing && Boolean(operatorProfile?.onboardingCompleted)}
+        userName={userName}
+        operatorProfile={operatorProfile}
         userRank={userRankText}
         state={{ ...state, failureCount: userFailureCount }}
         behaviorAnalytics={behaviorAnalytics}
-        isFirstSignup={isFirstSignup}
-        companyId={operatorProfile?.companyId ?? null}
+        companyName={activeTenant?.companyName ?? null}
         leaderboard={leaderboardSnapshot}
-        onOnboardingComplete={handleOnboardingComplete}
-        isOpen={showSyntheticCoach}
-        onClose={() => setShowSyntheticCoach(false)}
-        onToggle={() => setShowSyntheticCoach(!showSyntheticCoach)}
+        subscriptionTier={tier}
+        activeTab={activeTab}
+        activeTheme={activeLayoutTheme}
+        onClose={() => setShowTacticalBriefing(false)}
+        onOpenCoach={openMissionCoach}
+        onExecute={handleBriefingExecute}
       />
 
       {/* SUPPORT MODAL */}
@@ -1572,7 +1739,7 @@ function ApexMission() {
             <div className="mb-5 flex items-start justify-between gap-3 border-b border-emerald-500/20 pb-4 sm:mb-6">
               <div className="min-w-0">
                 <h3 className="text-xs font-black uppercase tracking-wider text-white sm:text-sm">📈 Velocity Consistency Index</h3>
-                <p className="mt-0.5 text-[10px] uppercase tracking-wide text-emerald-400/70">7-Cycle Historical Metric Telemetry</p>
+                <p className="mt-0.5 text-[10px] uppercase tracking-wide text-emerald-400/70">Real Operator Execution Telemetry</p>
               </div>
               <button 
                 type="button" 
@@ -1585,36 +1752,69 @@ function ApexMission() {
             </div>
 
             <div className="space-y-4 sm:space-y-5">
+              {/* VELOCITY CONSISTENCY SCORE — real task closure + streak telemetry */}
+              <div className="rounded-xl border border-emerald-500/25 bg-black/60 p-4 text-center sm:p-5">
+                <p className="font-mono text-[9px] font-black uppercase tracking-[0.25em] text-zinc-500">
+                  Current Velocity Consistency
+                </p>
+                <p className="mt-2 font-mono text-5xl font-black tabular-nums text-emerald-400">
+                  {velocityConsistencyIndex}
+                  <span className="text-base font-bold text-zinc-500">/100</span>
+                </p>
+                <p className="mt-1 font-mono text-[10px] font-bold uppercase tracking-wider text-zinc-300">
+                  {velocityConsistencyLabel}
+                </p>
+                <p className="mt-2 text-[10px] font-medium text-zinc-500">
+                  Blended from task closure discipline ({progress}% of the priority matrix closed) and mission momentum ({currentStreak}-day streak).
+                </p>
+              </div>
+
               <div className="relative flex h-40 w-full items-end justify-between gap-2 rounded-xl border border-emerald-500/20 bg-black/60 p-3 shadow-[inset_0_1px_4px_rgba(16,185,129,0.1)] sm:h-44 sm:gap-2.5 sm:p-4">
                 <div className="absolute left-0 right-0 top-1/4 h-px border-t border-emerald-500/10 border-dashed" />
                 <div className="absolute left-0 right-0 top-2/4 h-px border-t border-emerald-500/10 border-dashed" />
                 <div className="absolute left-0 right-0 top-3/4 h-px border-t border-emerald-500/10 border-dashed" />
 
-                {[
-                  { day: "Mon", val: 40, color: "bg-emerald-950/40 border-emerald-500/20 text-emerald-400" },
-                  { day: "Tue", val: 65, color: "bg-emerald-900/40 border-emerald-400/20 text-emerald-400" },
-                  { day: "Wed", val: 20, color: "bg-rose-950/40 border-rose-500/30 text-rose-400 animate-pulse" },
-                  { day: "Thu", val: 85, color: "bg-emerald-800/40 border-emerald-400/30 text-emerald-300" },
-                  { day: "Fri", val: 100, color: "bg-gradient-to-t from-emerald-600 to-emerald-400 border-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.3)] text-white" },
-                  { day: "Sat", val: 50, color: "bg-emerald-900/30 border-emerald-600/10 text-emerald-500" },
-                  { day: "Sun", val: progress, color: "bg-gradient-to-t from-teal-600 to-teal-400 border-teal-300 shadow-[0_0_15px_rgba(45,212,191,0.2)] text-white" },
-                ].map((bar, i) => (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-2 h-full justify-end relative z-10">
-                    <span className="text-[9px] font-mono font-black tabular-nums text-emerald-400/90">{bar.val}%</span>
-                    <div 
-                      className={`w-full rounded-t-md transition-all duration-1000 border-t ${bar.color}`}
-                      style={{ height: `${Math.max(8, bar.val * 0.72)}%` }}
-                    />
-                    <span className="text-[9px] font-black uppercase text-zinc-500 tracking-wider mt-1">{bar.day}</span>
-                  </div>
-                ))}
+                {velocityHistory.map((bar) => {
+                  const maxCompletions = Math.max(1, ...velocityHistory.map((day) => day.value));
+                  const barHeight = Math.max(4, (bar.value / maxCompletions) * 100);
+                  const isToday = bar.key === todayKey();
+                  return (
+                    <div key={bar.key} className="flex-1 flex flex-col items-center gap-2 h-full justify-end relative z-10">
+                      <span className="text-[9px] font-mono font-black tabular-nums text-emerald-400/90">
+                        {bar.value > 0 ? `${bar.value} Task${bar.value === 1 ? "" : "s"}` : "—"}
+                      </span>
+                      <div 
+                        className={`w-full rounded-t-md transition-all duration-1000 border-t ${
+                          bar.value > 0
+                            ? isToday
+                              ? "bg-gradient-to-t from-teal-600 to-teal-400 border-teal-300 shadow-[0_0_15px_rgba(45,212,191,0.2)] text-white"
+                              : "bg-gradient-to-t from-emerald-600 to-emerald-400 border-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.3)] text-white"
+                            : "bg-emerald-950/40 border-emerald-500/20 text-emerald-400"
+                        }`}
+                        style={{ height: `${barHeight}%` }}
+                      />
+                      <span className="text-[9px] font-black uppercase text-zinc-500 tracking-wider mt-1">{bar.label}</span>
+                    </div>
+                  );
+                })}
               </div>
 
               <div className="space-y-2 rounded-xl border border-emerald-500/20 bg-black/40 p-3.5 text-[11px] leading-relaxed text-zinc-300">
-                <p className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between"><span className="text-[9px] font-bold uppercase text-zinc-500">Calculated Output Vector:</span> <span className="font-bold text-emerald-400">Stable Momentum</span></p>
-                <p className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between"><span className="text-[9px] font-bold uppercase text-zinc-500">Current Cycle Progress:</span> <span className="font-bold tabular-nums text-emerald-400">+{progress}% Velocity</span></p>
+                <p className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between"><span className="text-[9px] font-bold uppercase text-zinc-500">Task Execution Vector:</span> <span className="font-bold text-emerald-400">{progress}% ({done}/{total} objectives closed)</span></p>
+                <p className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between"><span className="text-[9px] font-bold uppercase text-zinc-500">Current Streak:</span> <span className="font-bold tabular-nums text-emerald-400">{currentStreak}d</span></p>
+                <p className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between"><span className="text-[9px] font-bold uppercase text-zinc-500">Tasks Completed:</span> <span className="font-bold tabular-nums text-emerald-400">{behaviorAnalytics.totalTasksCompleted}</span></p>
+                <p className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between"><span className="text-[9px] font-bold uppercase text-zinc-500">Sessions Logged:</span> <span className="font-bold tabular-nums text-emerald-400">{behaviorAnalytics.sessionCount}</span></p>
+                <p className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between"><span className="text-[9px] font-bold uppercase text-zinc-500">Procrastination Events:</span> <span className={`font-bold tabular-nums ${(behaviorAnalytics.procrastinationEvents ?? 0) > 3 ? "text-rose-400" : "text-emerald-400"}`}>{behaviorAnalytics.procrastinationEvents ?? 0}</span></p>
+                <p className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between"><span className="text-[9px] font-bold uppercase text-zinc-500">Daily Action Status:</span> <span className={`font-bold tabular-nums ${state.daily?.done ? "text-emerald-400" : "text-amber-400"}`}>{state.daily?.done ? "Executed" : "Pending"}</span></p>
+                <p className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between"><span className="text-[9px] font-bold uppercase text-zinc-500">Avg Completions / Day:</span> <span className="font-bold tabular-nums text-emerald-400">{computeAverageCompletionsPerDay(taskHistory)}</span></p>
                 <p className="mt-2 border-t border-emerald-500/10 pt-2 text-[10px] italic text-zinc-400">
-                  💡 STRATEGIC ADVISORY: Wednesday parameters registered an unexecuted bottleneck fault deviation loop. Maintain your Friday and Sunday momentum paths to absorb further credit degradation values.
+                  {total === 0
+                    ? "⚠️ VELOCITY SCORING PENDING: Populate the priority matrix to activate the consistency index."
+                    : progress < 40
+                      ? `⚠️ LOW EXECUTION DENSITY: Only ${progress}% of the priority matrix has closed. Deploy a focused recovery block toward your next high-impact objective.`
+                      : state.daily?.done
+                        ? "✅ CONSISTENCY STABLE: Task closures and daily cadence are aligned. Maintain current execution velocity."
+                        : "⚠️ DAILY ACTION PENDING: Close today's action to protect streak integrity and velocity consistency."}
                 </p>
               </div>
             </div>

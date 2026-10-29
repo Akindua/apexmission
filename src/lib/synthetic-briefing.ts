@@ -60,6 +60,23 @@ export interface BehaviorAnalytics {
   totalMessagesExchanged?: number;
   streakConsistency?: number;
   preferredFocusAreas?: string[];
+  /** Real task-closure events: ISO date key + task label, newest last. */
+  taskHistory?: Array<{ date: string; text?: string }>;
+}
+
+export interface OperatorProfileMetadata {
+  id: string;
+  operatorName: string;
+  companyId: string | null;
+  onboardingCompleted: boolean;
+  credits: number;
+  currentStreak: number;
+  maxStreak: number;
+  failureCount: number;
+  operationalStatus: string;
+  lastActionLogged: string;
+  taskHistory?: Array<{ date: string; text?: string }> | null;
+  velocityScore?: number | null;
 }
 
 export interface UserContext {
@@ -79,6 +96,59 @@ export interface BriefingMessage {
   role: "user" | "assistant";
   content: string;
 }
+
+export type DisciplineSeverity = "LOW" | "ELEVATED" | "CRITICAL";
+
+export interface DisciplineAudit {
+  severity: DisciplineSeverity;
+  habits: string[];
+  assessment: string;
+}
+
+export interface TacticalDossier {
+  generatedAt: string;
+  callSign: string;
+  timeGreeting: string;
+  track: "PERSONAL OPERATOR" | "CORPORATE OPERATOR";
+  rank: string;
+  operationalStatus: string;
+  mission: string;
+  missionDeclared: boolean;
+  dailyAction: string;
+  dailyDone: boolean;
+  streak: number;
+  maxStreak: number;
+  credits: number;
+  failures: number;
+  totalTasks: number;
+  completedTasks: number;
+  executionRate: number;
+  pendingHighImpact: number;
+  pendingHighImpactTitles: string[];
+  riskLevel: DisciplineSeverity;
+  riskHabits: string[];
+  riskAssessment: string;
+  reflection: {
+    morningCount: number;
+    nightCount: number;
+    assessment: string;
+    nextVelocity: string;
+  };
+  leaderboard: {
+    rank: number | null;
+    totalOperators: number;
+    leaderName: string;
+    leaderCredits: number;
+    creditGap: number | null;
+  } | null;
+  nextObjective: string;
+  nextFocus: "mission" | "daily" | "high" | "matrix";
+  directive: string[];
+  sections: BriefingMessage[];
+}
+
+/** Session marker used to auto-open the returning-login dossier once. */
+export const TACTICAL_BRIEFING_SESSION_KEY = "apex-session-tactical-briefing";
 
 interface TierSummary {
   total: number;
@@ -142,7 +212,7 @@ export async function fetchOperatorProfileMetadata(
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "id, full_name, email, company_id, onboarding_completed, credits, current_streak, max_streak, failure_count, operational_status, last_action_logged",
+      "id, full_name, email, company_id, onboarding_completed, credits, current_streak, max_streak, failure_count, operational_status, last_action_logged, task_history, velocity_score",
     )
     .eq("id", userId)
     .maybeSingle();
@@ -168,6 +238,8 @@ export async function fetchOperatorProfileMetadata(
     failureCount: Number(data.failure_count ?? 0),
     operationalStatus: data.operational_status || "OPERATIONAL",
     lastActionLogged: data.last_action_logged || "",
+    taskHistory: Array.isArray(data.task_history) ? (data.task_history as Array<{ date: string; text?: string }>) : [],
+    velocityScore: data.velocity_score == null ? null : Number(data.velocity_score),
   };
 }
 
@@ -325,6 +397,158 @@ export function generateSyntheticBriefing(context: UserContext): BriefingMessage
     leaderboard,
     state,
   });
+}
+
+/**
+ * Deterministic discipline audit shared by the tactical dossier and the
+ * API-backed coach. No network calls, no AI keys.
+ */
+export function analyzeOperatorDiscipline(context: {
+  state: any;
+  behaviorAnalytics?: BehaviorAnalytics | null;
+  profile?: OperatorProfileMetadata | null;
+  currentHour?: number;
+}): DisciplineAudit {
+  const currentHour = context.currentHour ?? new Date().getHours();
+  const trends = getTaskTrends(context.state);
+  return getProcrastinationAudit(
+    context.state,
+    context.behaviorAnalytics,
+    context.profile ?? null,
+    trends,
+    currentHour,
+  );
+}
+
+/**
+ * Builds the structured, non-chat dossier used by the returning-login
+ * TacticalBriefing screen. Every field is derived locally from telemetry that
+ * the dashboard has already loaded.
+ */
+export function generateTacticalDossier(context: UserContext): TacticalDossier {
+  const {
+    userName,
+    state,
+    behaviorAnalytics,
+    currentHour,
+    profile = null,
+  } = context;
+
+  const companyId = context.companyId ?? profile?.companyId ?? null;
+  const isCorporate = Boolean(companyId);
+  const operatorName = (
+    context.operatorName ||
+    profile?.operatorName ||
+    userName ||
+    "OPERATOR"
+  ).trim();
+  const callSign = operatorName.toUpperCase();
+  const displayRank = context.userRank || "UNRANKED";
+  const leaderboard = isCorporate ? null : context.leaderboard || null;
+  const taskTrends = getTaskTrends(state);
+  const reflectionDebrief = getReflectionDebrief(state);
+  const procrastinationAudit = getProcrastinationAudit(
+    state,
+    behaviorAnalytics,
+    profile,
+    taskTrends,
+    currentHour,
+  );
+  const mission = cleanText(state?.mission);
+  const dailyAction = cleanText(state?.daily?.text);
+  const dailyDone = Boolean(state?.daily?.done);
+  const streak = Number(state?.streak?.count ?? profile?.currentStreak ?? 0);
+  const maxStreak = Math.max(streak, Number(profile?.maxStreak ?? 0));
+  const credits = Number(profile?.credits ?? state?.points ?? 0);
+  const failures = Number(profile?.failureCount ?? state?.failureCount ?? 0);
+
+  const operationalStatus =
+    profile?.operationalStatus ||
+    (failures >= 5
+      ? "FALLEN"
+      : failures >= 3
+        ? "AT RISK"
+        : "OPERATIONAL");
+
+  const directive = getTacticalDirective(
+    taskTrends,
+    procrastinationAudit,
+    state,
+    isCorporate,
+  )
+    .split("\n")
+    .map((line) => line.replace(/^-\s*/, "").trim())
+    .filter(Boolean);
+
+  const nextObjective = mission
+    ? taskTrends.high.pendingTitles[0] ||
+      (dailyAction && !dailyDone ? dailyAction : "") ||
+      "Plan and execute the next high-impact operation."
+    : "Declare the Master Vision before executing another task.";
+
+  const nextFocus: TacticalDossier["nextFocus"] = !mission
+    ? "mission"
+    : dailyAction && !dailyDone
+      ? "daily"
+      : taskTrends.pendingHighImpact > 0
+        ? "high"
+        : "matrix";
+
+  return {
+    generatedAt: new Date().toISOString(),
+    callSign,
+    timeGreeting: getTimeGreeting(currentHour),
+    track: isCorporate ? "CORPORATE OPERATOR" : "PERSONAL OPERATOR",
+    rank: displayRank,
+    operationalStatus,
+    mission: mission || "NOT DECLARED",
+    missionDeclared: Boolean(mission),
+    dailyAction: dailyAction || "NO DAILY ACTION ASSIGNED",
+    dailyDone,
+    streak,
+    maxStreak,
+    credits,
+    failures,
+    totalTasks: taskTrends.total,
+    completedTasks: taskTrends.completed,
+    executionRate: taskTrends.completionRate,
+    pendingHighImpact: taskTrends.pendingHighImpact,
+    pendingHighImpactTitles: taskTrends.high.pendingTitles,
+    riskLevel: procrastinationAudit.severity,
+    riskHabits: procrastinationAudit.habits,
+    riskAssessment: procrastinationAudit.assessment,
+    reflection: {
+      morningCount: reflectionDebrief.morningCount,
+      nightCount: reflectionDebrief.nightCount,
+      assessment: reflectionDebrief.assessment,
+      nextVelocity: reflectionDebrief.nextVelocity,
+    },
+    leaderboard: leaderboard
+      ? {
+          rank: leaderboard.rank,
+          totalOperators: leaderboard.totalOperators,
+          leaderName: leaderboard.leaderName,
+          leaderCredits: leaderboard.leaderCredits,
+          creditGap:
+            leaderboard.rank === null ? null : Math.max(0, leaderboard.leaderCredits - credits),
+        }
+      : null,
+    nextObjective,
+    nextFocus,
+    directive:
+      directive.length > 0 ? directive : ["All systems green. Continue elite execution."],
+    sections: generateReturningBriefing({
+      callSign,
+      timeGreeting: getTimeGreeting(currentHour),
+      isCorporate,
+      displayRank,
+      taskTrends,
+      reflectionDebrief,
+      procrastinationAudit,
+      leaderboard,
+      state,
+    }),
+  };
 }
 
 interface BriefingParts {
@@ -748,6 +972,41 @@ function summarizeTier(tasks: any[]): TierSummary {
     pending: tasks.length - completed,
     pendingTitles,
   };
+}
+
+/**
+ * Buckets the operator's real task-closure history into per-day completion
+ * averages. Each entry is a task closure stamped with its execution date, so
+ * the returned series is the operator's true daily completion cadence.
+ */
+export function computeDailyCompletions(
+  taskHistory?: Array<{ date?: string; text?: string }> | null,
+): Array<{ date: string; completions: number }> {
+  const history = Array.isArray(taskHistory) ? taskHistory : [];
+  const completionsByDate = new Map<string, number>();
+
+  for (const entry of history) {
+    const date = entry?.date;
+    if (!date) continue;
+    completionsByDate.set(date, (completionsByDate.get(date) ?? 0) + 1);
+  }
+
+  return Array.from(completionsByDate.entries())
+    .map(([date, completions]) => ({ date, completions }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+/**
+ * Average number of task closures per active execution day across the tracked
+ * window. Returns 0 when no closure history exists yet.
+ */
+export function computeAverageCompletionsPerDay(
+  taskHistory?: Array<{ date?: string; text?: string }> | null,
+): number {
+  const daily = computeDailyCompletions(taskHistory);
+  if (daily.length === 0) return 0;
+  const totalCompletions = daily.reduce((sum, day) => sum + day.completions, 0);
+  return Math.round((totalCompletions / daily.length) * 10) / 10;
 }
 
 function getReflectionDebrief(state: any): ReflectionDebrief {

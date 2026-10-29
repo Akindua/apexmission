@@ -3,8 +3,13 @@ import { extractText } from "@/lib/document-parser";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { Lock, MessageCircle, X, Paperclip, Sparkles, Loader2, Target, Flame, Trophy, Activity, Zap, Brain, Shield, AlertTriangle } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
-import { generateSyntheticBriefing, type LeaderboardSnapshot } from "@/lib/synthetic-briefing";
-import { loadState, saveState } from "@/lib/mission-store";
+import {
+  analyzeOperatorDiscipline,
+  computeAverageCompletionsPerDay,
+  type LeaderboardSnapshot,
+  type OperatorProfileMetadata,
+} from "@/lib/synthetic-briefing";
+import { loadState, saveState, todayKey } from "@/lib/mission-store";
 import { getScopedItem, setScopedItem } from "@/lib/user-storage";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -43,43 +48,28 @@ interface BehaviorAnalytics {
   totalMessagesExchanged: number;
   streakConsistency: number;
   preferredFocusAreas: string[];
+  taskHistory?: Array<{ date: string; text?: string }>;
 }
 
-function loadMessages(userName: string, userRank: string, state: any, behaviorAnalytics: any, isFirstSignup: boolean, companyId: string | null = null, leaderboard: LeaderboardSnapshot | null = null): UIMessage[] {
+/**
+ * The coach chat is user-initiated only. Onboarding and login briefings are
+ * deterministic screens, so this loader never seeds a synthetic tutorial into
+ * the conversation. It only restores the operator's own saved history.
+ */
+function loadMessages(): UIMessage[] {
   if (typeof window === "undefined") return [];
-  
+
   try {
     const raw = getScopedItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as UIMessage[];
-      if (parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     }
-  } catch {}
+  } catch {
+    // A corrupt cache should not block the coach from opening.
+  }
 
-  // Generate clean conversational synthetic briefing items with $0 API cost
-  const syntheticItems = generateSyntheticBriefing({
-    userName,
-    userRank,
-    state,
-    behaviorAnalytics,
-    isFirstSignup,
-    currentHour: new Date().getHours(),
-    companyId,
-    leaderboard,
-  });
-
-  // Convert to UIMessage format so they render natively as clean chat bubbles
-  const initialUIMessages: UIMessage[] = syntheticItems.map((item, idx) => ({
-    id: `synthetic-seed-${idx}-${Date.now()}`,
-    role: item.role,
-    parts: [{ type: "text", text: item.content }]
-  }));
-
-  try {
-    setScopedItem(STORAGE_KEY, JSON.stringify(initialUIMessages));
-  } catch {}
-
-  return initialUIMessages;
+  return [];
 }
 
 function loadBehaviorAnalytics(): BehaviorAnalytics {
@@ -94,7 +84,8 @@ function loadBehaviorAnalytics(): BehaviorAnalytics {
       peakProductivityHour: 12,
       totalMessagesExchanged: 0,
       streakConsistency: 0,
-      preferredFocusAreas: []
+      preferredFocusAreas: [],
+      taskHistory: []
     };
   } catch {
     return {
@@ -106,7 +97,8 @@ function loadBehaviorAnalytics(): BehaviorAnalytics {
       peakProductivityHour: 12,
       totalMessagesExchanged: 0,
       streakConsistency: 0,
-      preferredFocusAreas: []
+      preferredFocusAreas: [],
+      taskHistory: []
     };
   }
 }
@@ -249,6 +241,13 @@ function playSoundEffect(type: "success" | "warning" | "alert" | "message" | "op
   }
 }
 
+export interface CoachAppContext {
+  activeTab: string;
+  activeTheme: string;
+  subscriptionTier: string;
+  companyName?: string | null;
+}
+
 export function MissionCoach({
   premium = false,
   state,
@@ -259,11 +258,11 @@ export function MissionCoach({
   isOpen,
   onClose,
   onOpenChange,
-  isFirstSignup = false,
   companyId = null,
   leaderboard = null,
+  operatorProfile = null,
+  appContext = null,
   showLauncher = true,
-  autoOpen = true,
 }: {
   premium?: boolean;
   state: any;
@@ -274,11 +273,11 @@ export function MissionCoach({
   isOpen?: boolean;
   onClose?: () => void;
   onOpenChange?: (open: boolean) => void;
-  isFirstSignup?: boolean;
   companyId?: string | null;
   leaderboard?: LeaderboardSnapshot | null;
+  operatorProfile?: OperatorProfileMetadata | null;
+  appContext?: CoachAppContext | null;
   showLauncher?: boolean;
-  autoOpen?: boolean;
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [initial, setInitial] = useState<UIMessage[]>([]);
@@ -291,7 +290,8 @@ export function MissionCoach({
     peakProductivityHour: 12,
     totalMessagesExchanged: 0,
     streakConsistency: 0,
-    preferredFocusAreas: []
+    preferredFocusAreas: [],
+    taskHistory: []
   });
   const [mounted, setMounted] = useState(false);
 
@@ -310,17 +310,8 @@ export function MissionCoach({
 
   useEffect(() => {
     setMounted(true);
-    const messages = loadMessages(
-      userName,
-      userRank,
-      state,
-      behaviorAnalytics,
-      isFirstSignup,
-      companyId,
-      leaderboard,
-    );
-    setInitial(messages);
-  }, [userName, userRank, state, isFirstSignup, companyId, leaderboard]);
+    setInitial(loadMessages());
+  }, []);
 
   useEffect(() => {
     if (!mounted || !open) return;
@@ -348,7 +339,6 @@ export function MissionCoach({
       open={open}
       setOpen={setOpen}
       showLauncher={showLauncher}
-      autoOpen={autoOpen}
       initialMessages={initial}
       premium={premium}
       onLockedHistory={onLockedHistory}
@@ -358,7 +348,10 @@ export function MissionCoach({
       onActionPlanGenerated={onActionPlanGenerated}
       behaviorAnalytics={behaviorAnalytics}
       setBehaviorAnalytics={setBehaviorAnalytics}
-      isFirstSignup={isFirstSignup}
+      companyId={companyId}
+      leaderboard={leaderboard}
+      operatorProfile={operatorProfile}
+      appContext={appContext}
     />
   );
 }
@@ -382,7 +375,6 @@ function CoachPanel({
   open,
   setOpen,
   showLauncher,
-  autoOpen,
   initialMessages,
   premium,
   onLockedHistory,
@@ -392,12 +384,14 @@ function CoachPanel({
   onActionPlanGenerated,
   behaviorAnalytics,
   setBehaviorAnalytics,
-  isFirstSignup,
+  companyId,
+  leaderboard,
+  operatorProfile,
+  appContext,
 }: {
   open: boolean;
   setOpen: (v: boolean) => void;
   showLauncher: boolean;
-  autoOpen: boolean;
   initialMessages: UIMessage[];
   premium: boolean;
   onLockedHistory?: (() => void) | undefined;
@@ -407,7 +401,10 @@ function CoachPanel({
   onActionPlanGenerated?: ((plan: any) => void) | undefined;
   behaviorAnalytics: BehaviorAnalytics;
   setBehaviorAnalytics: Dispatch<SetStateAction<BehaviorAnalytics>>;
-  isFirstSignup?: boolean | undefined;
+  companyId: string | null;
+  leaderboard: LeaderboardSnapshot | null;
+  operatorProfile: OperatorProfileMetadata | null;
+  appContext: CoachAppContext | null;
 }) {
   const transport = useMemo(() => new DefaultChatTransport({ api: "/api/chat" }), []);
   const [input, setInput] = useState("");
@@ -434,7 +431,6 @@ function CoachPanel({
     onError: (e) => setError(e.message || "The coach could not respond. Try again."),
   });
 
-  const hasTriggeredThisSession = useRef(false);
   const userNameRef = useRef(userName);
   const userRankRef = useRef(userRank);
 
@@ -443,52 +439,26 @@ function CoachPanel({
     userRankRef.current = userRank;
   }, [userName, userRank]);
 
-  function send(text: string, isSystemTrigger = false) {
-    const trimmed = text.trim(); 
+  function send(text: string) {
+    const trimmed = text.trim();
     if (!trimmed) return;
 
     const currentName = userNameRef.current || userName || "User";
     const currentRank = userRankRef.current || userRank || "Global Operator Node";
-    
-    let humanInputString = trimmed;
-    let explicitOnboardingDirective = "";
-
-    if (isSystemTrigger) {
-      if (trimmed === "[SYSTEM_AUTO_TRIGGER_SIGNUP_ONBOARDING_GUIDE]") {
-        humanInputString = "Initiate my operational onboarding command briefing. Break down how to get started on ApexMission.";
-        explicitOnboardingDirective = `
-          [CRITICAL COMMAND OVERRIDE: BRAND NEW SIGNUP OPERATOR ONBOARDING INITIALIZATION]
-          The operator has JUST CREATED THEIR ACCOUNT. Address the operator by their exact name "${currentName}" immediately in your greeting.
-          State their rank standing "${currentRank}" directly to them.
-        `;
-      } else {
-        humanInputString = `Initialize my operational briefing for session start. Review my current metrics, streak, and dashboard components.`;
-        
-        const operationalStatus = (() => {
-          const failureCount = state?.failureCount || 0;
-          if (failureCount > 5) return "FALLEN - Critical Intervention Required";
-          if (failureCount > 2) return "AT RISK - Performance Degraded";
-          return "OPERATIONAL - Elite Execution Mode";
-        })();
-        
-        explicitOnboardingDirective = `
-          [CRITICAL SESSION BRIEFING OVERRIDE: LOGIN ACTIVE REPORT]
-          The operator (${currentName}) has just logged into the session.
-          
-          === IMMEDIATE STATUS BRIEFING ===
-          Leaderboard Standing: ${currentRank}
-          Operational Status: ${operationalStatus}
-          Failure Count: ${state?.failureCount || 0}
-          Streak: ${state?.streak?.count || 0} Days
-          Credits: ${state?.points || 1000} Credits
-          
-          MISSION DIRECTIVE: Greet the operator by name, acknowledge their operational status, call out their failures if any, and provide a comprehensive analysis of their current mission, daily action, and task matrix. Hold them accountable for their performance.
-        `;
-      }
-    }
 
     const textLower = trimmed.toLowerCase();
-    const indicatesSlacking = textLower.includes("procrastinate") || textLower.includes("gave up") || textLower.includes("lazy") || textLower.includes("didn't do");
+    const slackingSignals = [
+      "i procrastinated",
+      "i gave up",
+      "i was lazy",
+      "i didn't do",
+      "i did not do",
+      "i skipped",
+      "i wasted",
+    ];
+    const indicatesSlacking = slackingSignals.some((signal) =>
+      textLower.includes(signal),
+    );
     const fallbackPoints = state?.points || 1000;
   
     if (indicatesSlacking) {
@@ -568,104 +538,172 @@ function CoachPanel({
     })();
 
     const currentHour = new Date().getHours();
-    const productivityPhase = currentHour < 12 ? "Morning Peak" : currentHour < 17 ? "Afternoon Execution" : "Evening Review";
+    const productivityPhase =
+      currentHour < 12
+        ? "Morning Peak"
+        : currentHour < 17
+          ? "Afternoon Execution"
+          : "Evening Review";
+
+    const allTasks = [
+      ...(state?.tasks?.high || []),
+      ...(state?.tasks?.medium || []),
+      ...(state?.tasks?.low || []),
+    ];
+    const completedTasks = allTasks.filter((task: any) => task?.done).length;
+    const pendingHighImpact = (state?.tasks?.high || []).filter(
+      (task: any) => !task?.done,
+    ).length;
+
+    const streak = Number(state?.streak?.count ?? 0);
+    const maxStreak = Math.max(streak, Number(operatorProfile?.maxStreak ?? 0));
+    const credits = Number(operatorProfile?.credits ?? state?.points ?? 0);
+    const failures = Number(operatorProfile?.failureCount ?? state?.failureCount ?? 0);
+    const dailyDone = Boolean(state?.daily?.done);
+    const dailyText = String(state?.daily?.text || "").trim();
+    const missionText = String(state?.mission || "").trim();
 
     const streakHealth = (() => {
-      const streak = state?.streak?.count || 0;
-      if (streak === 0) return "Inactive - Immediate Attention Required";
-      if (streak < 3) return "Emerging - Fragile Momentum";
-      if (streak < 7) return "Building - Consistent Velocity";
-      if (streak < 14) return "Strong - Elite Trajectory";
-      return "Legendary - Apex Mastery";
+      if (streak === 0) return "INACTIVE — immediate attention required";
+      if (streak < 3) return "EMERGING — fragile momentum";
+      if (streak < 7) return "BUILDING — consistent velocity";
+      if (streak < 14) return "STRONG — elite trajectory";
+      return "LEGENDARY — apex mastery";
     })();
 
-    const operationalStatus = (() => {
-      const failureCount = state?.failureCount || 0;
-      if (failureCount > 5) return "FALLEN - Critical Intervention Required";
-      if (failureCount > 2) return "AT RISK - Performance Degraded";
-      return "OPERATIONAL - Elite Execution Mode";
-    })();
+    const operationalStatus =
+      operatorProfile?.operationalStatus ||
+      (failures >= 5
+        ? "FALLEN — critical intervention required"
+        : failures >= 3
+          ? "AT RISK — performance degraded"
+          : "OPERATIONAL — elite execution mode");
 
-    const behaviorInsight = (() => {
-      if (behaviorAnalytics.procrastinationEvents > 5) return "CRITICAL ALERT: Operator shows high procrastination patterns. Immediate intervention required.";
-      if (behaviorAnalytics.sessionCount < 3) return "Operator in early integration phase. Focus on habit formation.";
-      if (taskCompletionRate > 80) return "Excellent execution velocity. Recommend escalating mission complexity.";
-      if (taskCompletionRate < 40) return "Execution metrics below optimal threshold. Investigate blockers.";
-      return "Maintaining standard operational parameters.";
-    })();
+    const disciplineAudit = analyzeOperatorDiscipline({
+      state,
+      behaviorAnalytics,
+      profile: operatorProfile,
+      currentHour,
+    });
 
-    const SocraticContext = `
-      [ELITE MILITARY-GRADE OPERATOR TELEMETRY & BEHAVIORAL ANALYSIS SYSTEM]
-      
-      === OPERATOR IDENTITY MATRIX ===
-      OPERATOR NAME: ${currentName}
-      DESIGNATION: ${currentRank}
+    const reflectionHistory = Array.isArray(state?.reflectionHistory)
+      ? state.reflectionHistory
+      : [];
+    const latestReflection = reflectionHistory[0] ?? null;
+    const latestWins =
+      String(state?.reflection?.wins || latestReflection?.wins || "").trim() ||
+      "No night closeout recorded.";
+    const latestBlockers =
+      String(state?.reflection?.blockers || latestReflection?.blockers || "").trim() ||
+      "No blockers recorded.";
+    const nextVelocity =
+      String(
+        state?.reflection?.tomorrowAction || latestReflection?.tomorrowAction || "",
+      ).trim() || "No next action recorded.";
+
+    const rankTelemetry = companyId
+      ? "REDACTED — corporate tenant scope. Public ranking is not exposed."
+      : leaderboard
+        ? `${leaderboard.rank === null ? "UNRANKED" : `#${leaderboard.rank} of ${leaderboard.totalOperators}`}; leader ${leaderboard.leaderName} (${leaderboard.leaderCredits} credits, ${leaderboard.leaderStreak}-day streak); gap ${Math.max(0, leaderboard.leaderCredits - credits)} credits.`
+        : `${currentRank} — snapshot unavailable; resync the ledger.`;
+
+    const tenantLabel = companyId
+      ? `${appContext?.companyName || "Corporate tenant"} (${companyId})`
+      : "Personal workspace (no tenant)";
+
+    const focusAreas =
+      behaviorAnalytics.preferredFocusAreas.length > 0
+        ? behaviorAnalytics.preferredFocusAreas.join(", ")
+        : "Not recorded";
+
+    const telemetryContext = `
+      [APEXMISSION OPERATOR TELEMETRY — READ EVERY FIELD BEFORE RESPONDING]
+
+      === IDENTITY & SCOPE ===
+      OPERATOR: ${currentName}
+      RANK: ${currentRank}
+      TRACK: ${companyId ? "CORPORATE OPERATOR" : "PERSONAL OPERATOR"}
+      TENANT: ${tenantLabel}
+      ONBOARDING STATE: ${operatorProfile?.onboardingCompleted ? "COMPLETE" : "INDUCTION PENDING"}
+      ACTIVE MODULE: ${appContext?.activeTab ?? "workspace"}
+      ACTIVE THEME: ${appContext?.activeTheme ?? "layout-default"}
+      SUBSCRIPTION TIER: ${appContext?.subscriptionTier ?? "unknown"}
       OPERATIONAL STATUS: ${operationalStatus}
-      STREAK HEALTH: ${streakHealth}
-      TOTAL SESSIONS LOGGED: ${behaviorAnalytics.sessionCount}
-      SESSION FREQUENCY: ${behaviorAnalytics.sessionCount > 10 ? "High Engagement" : "Building Consistency"}
-      
-      === PERFORMANCE METRICS ===
-      CURRENT STREAK: ${state?.streak?.count || 0} Days (Health: ${streakHealth})
-      CREDIT BALANCE: ${state?.points || 1000} Credits
-      LEADERBOARD PLACEMENT: ${currentRank}
-      FAILURE COUNT: ${state?.failureCount || 0}
-      TASK COMPLETION RATE: ${taskCompletionRate}%
-      TOTAL TASKS COMPLETED: ${behaviorAnalytics.totalTasksCompleted}
-      AVERAGE COMPLETION TIME: ${behaviorAnalytics.averageCompletionTime > 0 ? `${Math.round(behaviorAnalytics.averageCompletionTime)} min/task` : "Insufficient Data"}
-      PEAK PRODUCTIVITY HOUR: ${behaviorAnalytics.peakProductivityHour}:00
-      CURRENT TIME PHASE: ${productivityPhase}
-      
-      === BEHAVIORAL TELEMETRY ===
-      PROCRASTINATION EVENTS: ${behaviorAnalytics.procrastinationEvents}
-      STREAK CONSISTENCY SCORE: ${behaviorAnalytics.streakConsistency}%
-      TOTAL COACH INTERACTIONS: ${behaviorAnalytics.totalMessagesExchanged}
-      FAILURE ANALYSIS: ${state?.failureCount > 0 ? `${state?.failureCount} failures detected - Pattern analysis required` : "Zero failures - Elite execution maintained"}
-      AI BEHAVIORAL ASSESSMENT: ${behaviorInsight}
-      
-      === MISSION EXECUTION MATRIX ===
-      MASTER VISION STATEMENT: "${state?.mission || "No overall mission statement declared."}"
-      TODAY'S MASTER FOCUS ACTION: "${state?.daily?.text || "No single master action scheduled."}"
-      DAILY ACTION STATUS: ${state?.daily?.done ? "✓ COMPLETED" : "⚠ PENDING / AT RISK"}
-      
-      === TASK VECTOR BREAKDOWN ===
-      HIGH IMPACT LEVERAGE TASKS (${(state?.tasks?.high || []).length} total):
+      LAST LOGGED ACTION: ${operatorProfile?.lastActionLogged || "None recorded"}
+
+      === MISSION EXECUTION ===
+      MASTER VISION: "${missionText || "NOT DECLARED"}"
+      MISSION DECLARED: ${missionText ? "YES" : "NO — critical gap"}
+      DAILY ACTION: "${dailyText || "NO DAILY ACTION ASSIGNED"}"
+      DAILY STATUS: ${dailyDone ? "EXECUTED" : "PENDING"}
+      CURRENT STREAK: ${streak} days (${streakHealth})
+      MAX STREAK: ${maxStreak} days
+      CREDITS: ${credits}
+      FAILURE COUNT: ${failures}
+
+      === TASK MATRIX ===
+      HIGH IMPACT (${(state?.tasks?.high || []).length} total, ${pendingHighImpact} pending):
       ${highImpactTasks}
-      
-      MEDIUM IMPACT ALIGNMENT TASKS (${(state?.tasks?.medium || []).length} total):
+
+      MEDIUM IMPACT (${(state?.tasks?.medium || []).length} total):
       ${mediumImpactTasks}
-      
-      LOW IMPACT MAINTENANCE TASKS (${(state?.tasks?.low || []).length} total):
+
+      LOW IMPACT (${(state?.tasks?.low || []).length} total):
       ${lowImpactTasks}
-      
-      === REFLECTION & INTELLIGENCE LOGS ===
-      MORNING CHECK-IN: Synchronized
-      NIGHT REFLECTION DATA: "${state?.reflection?.wins || "No evening closeout logged yet."}"
-      IDENTIFIED BLOCKERS: "${state?.reflection?.blockers || "None reported."}"
-      TOMORROW'S TACTICAL DIRECTIVE: "${state?.reflection?.tomorrowAction || "Not defined."}"
-      
-      === SLACKING / DISCIPLINE ANALYSIS ===
-      CURRENT DISCIPLINE METRIC: ${indicatesSlacking ? "⚠ DEGRADED - Penalty Audited" : "✓ OPTIMAL - Maintaining Elite Velocity"}
-      RECENT BEHAVIORAL PATTERNS: ${behaviorAnalytics.procrastinationEvents > 2 ? "Warning: Recurring procrastination detected" : "Disciplined execution patterns observed"}
-      
-      === MILITARY COACH DIRECTIVE ===
-      You are an elite, unyielding Socratic performance coach with military-grade precision. Your mission:
-      
-      1. ANALYZE: Deeply analyze all user metrics, task completion rates, goal proximity, work ethic, leaderboard standing, and behavioral patterns.
-      2. HOLD ACCOUNTABLE: Strictly enforce discipline. Acknowledge wins but ruthlessly expose failures and procrastination.
-      3. STRATEGIZE: Provide tactical, actionable recommendations based on behavioral data and time of day.
-      4. MOTIVATE: Use military-inspired language that balances respect with uncompromising standards.
-      5. PERSONALIZE: Reference the operator's name, rank, streak, and specific tasks in your responses.
-      6. BE ELITE: Your responses should reflect the highest standards of coaching - concise, impactful, and brutally honest.
-      
-      ${explicitOnboardingDirective}
-      
+
+      EXECUTION RATE: ${taskCompletionRate}% (${completedTasks}/${allTasks.length} objectives closed)
+      PENDING HIGH-IMPACT: ${pendingHighImpact}
+
+      === VELOCITY TELEMETRY ===
+      VELOCITY CONSISTENCY INDEX: ${operatorProfile?.velocityScore ?? "NO SCORE RECORDED"}
+      AVERAGE COMPLETIONS PER DAY: ${computeAverageCompletionsPerDay(behaviorAnalytics.taskHistory)}
+      PERSISTED TASK CLOSURES: ${behaviorAnalytics.taskHistory?.length ?? 0}
+
+      === BEHAVIOR TELEMETRY ===
+      SESSIONS LOGGED: ${behaviorAnalytics.sessionCount}
+      TASKS COMPLETED (LOCAL): ${behaviorAnalytics.totalTasksCompleted}
+      PROCRASTINATION EVENTS: ${behaviorAnalytics.procrastinationEvents}
+      AVERAGE COMPLETION TIME: ${behaviorAnalytics.averageCompletionTime > 0 ? `${Math.round(behaviorAnalytics.averageCompletionTime)} min/task` : "Insufficient data"}
+      PEAK PRODUCTIVITY HOUR: ${behaviorAnalytics.peakProductivityHour}:00
+      STREAK CONSISTENCY: ${behaviorAnalytics.streakConsistency}%
+      COACH INTERACTIONS: ${behaviorAnalytics.totalMessagesExchanged}
+      PREFERRED FOCUS AREAS: ${focusAreas}
+      CURRENT TIME PHASE: ${productivityPhase}
+
+      === REFLECTION LOOP ===
+      MORNING LOGS: ${String(state?.daily?.text || "").trim() ? "1+ declaration on file" : "No morning declaration"}
+      NIGHT LOGS: ${reflectionHistory.filter((entry: any) => entry?.phase === "night").length}
+      LATEST WINS: "${latestWins}"
+      LATEST BLOCKERS: "${latestBlockers}"
+      NEXT VELOCITY BLOCK: "${nextVelocity}"
+
+      === RANK LEDGER ===
+      ${rankTelemetry}
+
+      === DISCIPLINE AUDIT (LOCAL, DETERMINISTIC) ===
+      THREAT LEVEL: ${disciplineAudit.severity}
+      ACTIVE BAD HABITS:
+      ${disciplineAudit.habits.length > 0 ? disciplineAudit.habits.map((habit) => `- ${habit}`).join("\n      ") : "- None detected in local telemetry."}
+      AUDIT ASSESSMENT: ${disciplineAudit.assessment}
+      THIS MESSAGE TRIGGERED A PENALTY: ${indicatesSlacking ? "YES — operator admitted avoidance" : "NO"}
+
+      === COMMAND STANDARD ===
+      You are MISSION COACH: a military-style performance operator, not a friend and not a therapist.
+      1. Open with a one-line SITREP using exact telemetry numbers. Do not invent data.
+      2. Name the specific bad habit or avoidance pattern visible in the audit, or state that none is present.
+      3. Issue one next action the operator can execute in the next 10 minutes, tied to the Master Vision and the highest-impact objective.
+      4. If the request is off-mission or a distraction, say so in one line and return to the next objective.
+      5. If the operator admits slacking, acknowledge the debit, state the corrective action, and move on. Do not shame for sport.
+      6. Praise only measurable execution. Never flatter. Never pad.
+      7. Keep the response under 180 words unless the operator explicitly asks for a lesson or document analysis.
+      8. End with a single accountability question or order. No closing pleasantries.
+
       [END TELEMETRY TRANSMISSION]
     `;
 
     const activePayload = uploadedText.trim()
-      ? `${humanInputString}\n\n${SocraticContext}\n\n[PARSED DOCUMENT FILE CONTEXT]:\n\n${uploadedText}`
-      : `${humanInputString}\n\n${SocraticContext}`;
+      ? `${trimmed}\n\n${telemetryContext}\n\n[PARSED DOCUMENT FILE CONTEXT]:\n\n${uploadedText}`
+      : `${trimmed}\n\n${telemetryContext}`;
 
     void sendMessage({ text: activePayload });
     setInput("");
@@ -674,15 +712,14 @@ function CoachPanel({
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      (window as any).__apex_coach_trigger = (triggerText: string) => {
-        send(triggerText, true);
-        setOpen(true);
-      };
-      
       (window as any).__apex_task_completed = (taskText: string) => {
         const analytics = loadBehaviorAnalytics();
         analytics.totalTasksCompleted += 1;
-        
+        analytics.taskHistory = [
+          ...(Array.isArray(analytics.taskHistory) ? analytics.taskHistory : []),
+          { date: todayKey(), text: taskText },
+        ].slice(-30);
+
         const currentHour = new Date().getHours();
         if (analytics.totalTasksCompleted === 1) {
           analytics.peakProductivityHour = currentHour;
@@ -705,28 +742,10 @@ function CoachPanel({
     }
     return () => {
       if (typeof window !== "undefined") {
-        delete (window as any).__apex_coach_trigger;
         delete (window as any).__apex_task_completed;
       }
     };
   }, [state]);
-
-  useEffect(() => {
-    if (!autoOpen) return;
-    if (typeof window === "undefined") return;
-
-    const sessionKey = "apex-session-briefing-triggered";
-    const sessionAlreadyTriggered = sessionStorage.getItem(sessionKey);
-    const isUserLoaded = userName && userName !== "User" && state && state.points !== undefined;
-
-    if (!sessionAlreadyTriggered && !hasTriggeredThisSession.current && isUserLoaded) {
-      hasTriggeredThisSession.current = true;
-      sessionStorage.setItem(sessionKey, "true");
-      setOpen(true);
-    }
-
-    return undefined;
-  }, [userName, state, setOpen, behaviorAnalytics, isFirstSignup, userRank, autoOpen]);
 
   useEffect(() => {
     try {

@@ -6,6 +6,7 @@ export interface CoachInput {
   mission: string;
   note: string;
   tasks: Array<{ text: string; tier: string; done: boolean }>;
+  velocityScore?: number | null;
 }
 
 /** Recommends the single next highest-impact action from today's progress note. */
@@ -18,6 +19,7 @@ export const recommendNextAction = createServerFn({ method: "POST" })
       mission: String(data.mission ?? "").slice(0, 500),
       note: data.note.slice(0, 2000),
       tasks: Array.isArray(data.tasks) ? data.tasks.slice(0, 30) : [],
+      velocityScore: typeof data?.velocityScore === "number" ? data.velocityScore : null,
     };
   })
   .handler(async ({ data }) => {
@@ -38,8 +40,17 @@ export const recommendNextAction = createServerFn({ method: "POST" })
     const result = streamText({
       model: lovable.responses("openai/gpt-6-sol"),
       system:
-        "You are a sharp, concise execution coach. Given a mission, a task list and today's progress note, recommend exactly ONE next highest-impact action. Reply in at most 55 words: one bold-free sentence naming the action, then one short sentence on why it is the highest leverage right now. No lists, no preamble.",
-      prompt: `Mission: ${data.mission || "(not set)"}\n\nTasks:\n${taskList}\n\nToday's progress note:\n${data.note}`,
+        "You are a sharp, concise execution coach. Given a mission, a task list, today's progress note, and the operator's persisted velocity consistency score, recommend exactly ONE next highest-impact action. If the velocity score is low, prioritize repairing execution discipline before launching new initiatives. Reply in at most 55 words: one bold-free sentence naming the action, then one short sentence on why it is the highest leverage right now. No lists, no preamble.",
+      prompt: `Mission: ${data.mission || "(not set)"}
+
+Tasks:
+${taskList}
+
+Today's progress note:
+${data.note}
+
+Operator velocity consistency score:
+${data.velocityScore ?? "NO SCORE RECORDED"}`,
       providerOptions: {
         openai: {
           forceReasoning: true,

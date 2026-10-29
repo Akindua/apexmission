@@ -4,6 +4,7 @@ import { Building2, KeyRound, Loader2, ShieldCheck, User, UserPlus } from "lucid
 import { supabase } from "@/integrations/supabase/client";
 import { PrivacyShieldBanner } from "@/components/PrivacyShieldBanner";
 import { setStorageScope } from "@/lib/user-storage";
+import { TACTICAL_BRIEFING_SESSION_KEY } from "@/lib/synthetic-briefing";
 
 export const Route = createFileRoute("/onboarding")({
   component: OnboardingPage,
@@ -63,7 +64,7 @@ function OnboardingPage() {
     } finally {
       setStorageScope(null);
       if (typeof window !== "undefined") {
-        sessionStorage.removeItem("apex-session-briefing-triggered");
+        sessionStorage.removeItem(TACTICAL_BRIEFING_SESSION_KEY);
       }
       setSessionEmail(null);
       setSwitching(false);
