@@ -1042,7 +1042,7 @@ function CoachPanel({
               event.preventDefault();
               send(input);
             }}
-            className="relative flex flex-col w-full rounded-xl border border-zinc-800 bg-[#050507] p-3 focus-within:border-emerald-500/50 focus-within:shadow-[0_0_15px_rgba(16,185,129,0.08)] transition-all duration-300"
+            className="relative flex flex-col w-full rounded-xl border border-zinc-800 bg-[#050507] p-4 focus-within:border-emerald-500/50 focus-within:shadow-[0_0_15px_rgba(16,185,129,0.08)] transition-all duration-300"
           >
             <textarea
               id="coach-brief"
@@ -1053,7 +1053,7 @@ function CoachPanel({
               onKeyDown={handleKeyDown}
               placeholder={isRateLimited ? "Quota cap reached..." : "Brief your execution mentor... (Press Enter)"}
               disabled={isRateLimited || busy}
-              className="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-700 outline-none resize-none min-h-[48px] max-h-32 disabled:opacity-30 leading-relaxed"
+              className="field-flush w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-700 outline-none resize-none min-h-[48px] max-h-32 disabled:opacity-30 leading-relaxed"
             />
             <div className="flex justify-end pt-2 border-t border-zinc-900/50 mt-2">
               <button

@@ -88,6 +88,10 @@
   --glass-input-border: rgba(52, 211, 153, 0.14);
   --glass-input-border-focus: rgba(52, 211, 153, 0.48);
   --glass-input-bg-focus: rgba(16, 185, 129, 0.04);
+
+  /* Consistent inset between a field border and its typed characters */
+  --field-inset-x: 1rem;
+  --field-inset-y: 0.75rem;
 }
 
 @layer base {
@@ -101,12 +105,30 @@
   }
 
   body {
+    min-height: 100vh;
+    min-height: 100dvh;
     background-color: var(--color-background);
     background-image: var(--app-bg-image);
-    background-attachment: fixed;
+    background-attachment: scroll;
+    background-position: center top;
+    background-repeat: no-repeat;
+    background-size: cover;
     color: var(--color-foreground);
     font-family: var(--font-sans-family);
     -webkit-font-smoothing: antialiased;
+  }
+
+  /*
+   * Guarantee breathing room between the border and the first glyph on every
+   * text-entry control. Utility classes can still override this deliberately,
+   * and the glass wrapper opts out so its shared padding is not doubled.
+   */
+  :where(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="hidden"]),
+    textarea,
+    select
+  ):not(.glass-input-field) {
+    padding-inline: var(--field-inset-x);
   }
 
   /* Global ambient scan line effect */
@@ -127,11 +149,13 @@
      GLASSMORPHISM CORE UTILITIES
      ========================================================================== */
 
-  /* Emerald canvas — shared app background */
+  /* Emerald canvas — shared app background (mobile-safe, no fixed attachment) */
   .app-emerald-canvas {
     background-color: var(--color-background);
     background-image: var(--app-bg-image);
-    background-attachment: fixed;
+    background-attachment: scroll;
+    background-position: center top;
+    background-repeat: no-repeat;
     background-size: cover;
   }
 
@@ -473,9 +497,13 @@
   /* Page container */
   .page-shell {
     @apply min-h-screen relative;
+    min-height: 100vh;
+    min-height: 100dvh;
     background-color: var(--color-background);
     background-image: var(--app-bg-image);
-    background-attachment: fixed;
+    background-attachment: scroll;
+    background-position: center top;
+    background-repeat: no-repeat;
     background-size: cover;
   }
 
@@ -569,7 +597,8 @@
   }
 
   .glass-input-wrapper {
-    @apply relative flex items-center gap-2.5 rounded-xl;
+    @apply relative flex min-h-11 items-center gap-2.5 rounded-xl;
+    padding-inline: var(--field-inset-x);
     background: var(--glass-input-bg);
     border: 1px solid var(--glass-input-border);
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -586,7 +615,16 @@
   }
 
   .glass-input-field {
-    @apply h-11 w-full bg-transparent text-sm text-white placeholder-zinc-700 outline-none;
+    @apply h-11 min-w-0 w-full flex-1 bg-transparent text-sm text-white placeholder-zinc-700 outline-none;
+  }
+
+  /*
+   * Borderless inline editors (dashboard vision, task drafts, coach composer)
+   * sit inside an already padded surface, so they opt out of the global field
+   * inset to stay aligned with their section labels.
+   */
+  .field-flush {
+    padding-inline: 0;
   }
 
   /* Badge */

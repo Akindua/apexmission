@@ -1027,7 +1027,7 @@ function ApexMission() {
                   value={state.mission}
                   onChange={(e) => setState((s) => ({ ...s, mission: e.target.value }))}
                   placeholder="Define your core vision…"
-                  className="mt-3 min-h-11 w-full truncate bg-transparent font-display text-xl font-black tracking-tight text-white outline-none placeholder:text-zinc-700 sm:text-4xl"
+                  className="field-flush mt-3 min-h-11 w-full truncate bg-transparent font-display text-xl font-black tracking-tight text-white outline-none placeholder:text-zinc-700 sm:text-4xl"
                 />
                 
                 <div className="mt-5 flex flex-col gap-4 border-t border-emerald-500/15 pt-5 sm:mt-6 sm:flex-row sm:items-center sm:justify-between">
@@ -1088,7 +1088,7 @@ function ApexMission() {
                       alert("🚀 ARCHITECTURE MATRIX LOADED: Baseline task sequences injected cleanly.");
                     }
                   }}
-                  className="h-11 w-full cursor-pointer rounded-xl border border-emerald-500/20 bg-black/60 px-3 text-xs font-bold text-emerald-400 shadow-[inset_0_1px_3px_rgba(16,185,129,0.1)] outline-none focus:border-emerald-500/50 sm:flex-1"
+                  className="h-11 w-full cursor-pointer rounded-xl border border-emerald-500/20 bg-black/60 px-4 text-xs font-bold text-emerald-400 shadow-[inset_0_1px_3px_rgba(16,185,129,0.1)] outline-none focus:border-emerald-500/50 sm:flex-1"
                 >
                   <option value="general">💼 Professional Standard Track</option>
                   <option value="ceo">🚀 Chief Executive Officer (CEO)</option>
@@ -1138,13 +1138,13 @@ function ApexMission() {
                       )}
                     </ul>
 
-                    <div className="mt-3 flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-black/50 px-3 shadow-[inset_0_1px_3px_rgba(16,185,129,0.1)] transition-colors focus-within:border-emerald-500/50">
+                    <div className="mt-3 flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-black/50 px-4 shadow-[inset_0_1px_3px_rgba(16,185,129,0.1)] transition-colors focus-within:border-emerald-500/50">
                       <input
                         value={drafts[tier.key]}
                         onChange={(e) => setDrafts((d) => ({ ...d, [tier.key]: e.target.value }))}
                         onKeyDown={(e) => e.key === "Enter" && addTask(tier.key)}
                         placeholder={tier.placeholder}
-                        className="h-11 min-w-0 flex-1 bg-transparent text-sm text-white placeholder-zinc-700 outline-none"
+                        className="field-flush h-11 min-w-0 flex-1 bg-transparent text-sm text-white placeholder-zinc-700 outline-none"
                       />
                       <button
                         type="button"
@@ -1193,7 +1193,7 @@ function ApexMission() {
                     onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
                     placeholder="Set today's top action…"
                     disabled={state.daily.done}
-                    className={`min-h-11 min-w-0 w-full truncate bg-transparent font-display text-lg font-bold tracking-tight outline-none transition-all duration-300 placeholder:text-zinc-700 sm:text-2xl ${
+                    className={`field-flush min-h-11 min-w-0 w-full truncate bg-transparent font-display text-lg font-bold tracking-tight outline-none transition-all duration-300 placeholder:text-zinc-700 sm:text-2xl ${
                       state.daily.done ? "text-zinc-500 line-through decoration-emerald-500/50 decoration-2" : "text-white"
                     }`}
                   />

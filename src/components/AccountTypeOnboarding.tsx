@@ -214,7 +214,7 @@ export function AccountTypeOnboarding({
               onChange={(event) => setCompanyCode(event.target.value)}
               placeholder="e.g. acme-team or 5f2a..."
               disabled={loading}
-              className="w-full rounded-xl border border-emerald-500/20 bg-[#04100b] px-3 py-3 text-sm text-white placeholder:text-zinc-500 focus:border-emerald-500/60 focus:outline-none"
+              className="min-h-11 w-full rounded-xl border border-emerald-500/20 bg-[#04100b] px-4 py-3 text-sm text-white placeholder:text-zinc-500 focus:border-emerald-500/60 focus:outline-none"
             />
           </label>
 
