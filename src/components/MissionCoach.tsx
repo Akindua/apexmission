@@ -406,7 +406,16 @@ function CoachPanel({
   operatorProfile: OperatorProfileMetadata | null;
   appContext: CoachAppContext | null;
 }) {
-  const transport = useMemo(() => new DefaultChatTransport({ api: "/api/chat" }), []);
+  // Session token is resolved per request so refreshed tokens stay valid.
+  const transport = useMemo(() => new DefaultChatTransport({
+    api: "/api/chat",
+    headers: async () => {
+      const { supabase: client } = await import("@/integrations/supabase/client");
+      const { data } = await client.auth.getSession();
+      const token = data.session?.access_token;
+      return token ? { Authorization: `Bearer ${token}` } : {};
+    },
+  }), []);
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [files, setFiles] = useState<File[]>([]);
@@ -780,7 +789,11 @@ function CoachPanel({
     try {
       const response = await fetch("/api/mission-plan", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          // Server requires a verified Supabase session on every planner call.
+          ...(await (await import("@/lib/api-auth")).authHeaders()),
+        },
         body: JSON.stringify({ mission: uploadedText }),
       });
       if (!response.ok) throw new Error(`Mission Planner processing failure: ${response.status}`);

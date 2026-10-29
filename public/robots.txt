@@ -1,14 +1,89 @@
-User-agent: Googlebot
-Allow: /
+# robots.txt — ApexMission
+# © 2026 ApexMissions. All rights reserved.
+#
+# AI training, scraping, and model-distillation crawlers are explicitly
+# prohibited from accessing this site or its APIs. See LICENSE and the
+# Terms section of the repository for the full intellectual-property notice.
 
-User-agent: Bingbot
-Allow: /
+User-agent: GPTBot
+Disallow: /
 
-User-agent: Twitterbot
-Allow: /
+User-agent: OAI-SearchBot
+Disallow: /
 
-User-agent: facebookexternalhit
-Allow: /
+User-agent: ChatGPT-User
+Disallow: /
 
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: Claude-Web
+Disallow: /
+
+User-agent: Claude-SearchBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: cohere-ai
+Disallow: /
+
+User-agent: PerplexityBot
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: Amazonbot
+Disallow: /
+
+User-agent: Meta-ExternalAgent
+Disallow: /
+
+User-agent: Applebot-Extended
+Disallow: /
+
+User-agent: YouBot
+Disallow: /
+
+User-agent: Diffbot
+Disallow: /
+
+User-agent: PetalBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DataForSeoBot
+Disallow: /
+
+# Standard crawlers: indexing of public marketing pages is welcome,
+# but application surfaces and APIs are off-limits.
 User-agent: *
-Allow: /
+
+Disallow: /api/
+Disallow: /app
+Disallow: /onboarding
+Disallow: /auth
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /verify-email
+Disallow: /workspace-billing
+Disallow: /welcome
+
+# No AI-generated derivatives, ever.
+# X-Robots-Tag: noai, noimageindex, noarchive

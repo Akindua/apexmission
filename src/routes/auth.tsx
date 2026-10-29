@@ -82,6 +82,14 @@ function AuthConsolePage() {
       return;
     }
 
+    if (password.trim().length < 8) {
+      setErrorMessage(
+        "🔒 WEAK ACCESS KEY: Password parameters must be at least 8 characters in length.",
+      );
+      setBusy(false);
+      return;
+    }
+
     try {
       if (isSignUp) {
         if (!fullName.trim()) {
@@ -366,6 +374,10 @@ function AuthConsolePage() {
               : "Need authorization? Register fresh console coordinates"}
           </button>
         </div>
+
+        <p className="mt-4 text-center font-mono text-[9px] font-black uppercase tracking-[0.2em] text-zinc-600">
+          © 2026 ApexMissions. All rights reserved.
+        </p>
       </div>
     </div>
   );

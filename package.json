@@ -1,6 +1,8 @@
 {
   "name": "tanstack_start_ts",
   "private": true,
+  "license": "UNLICENSED",
+  "copyright": "Copyright (c) 2026 ApexMissions. All rights reserved.",
   "sideEffects": false,
   "type": "module",
   "scripts": {

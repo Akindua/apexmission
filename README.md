@@ -53,3 +53,51 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+## 🔐 Security Architecture
+
+Hardening layers implemented across the stack (see `src/lib/security.server.ts`):
+
+**API layer (`/api/chat`, `/api/mission-plan`, `/api/pdf-plan`, `/api/-welcome-email`)**
+- Verified Supabase JWT required on every AI endpoint — none are publicly callable.
+- Same-origin enforcement (CSRF / drive-by defense) via `Origin`/`Host` matching.
+- Per-user + per-IP sliding-window rate limits (burst and hourly budgets).
+- Strict payload validation with length caps; model JSON responses are normalized
+  and size-capped before reaching the client.
+- Prompt-injection containment: uploaded documents are sanitized, capped, and
+  fenced inside explicit untrusted-data delimiters with anti-override directives.
+- Webhook endpoints use constant-time shared-secret comparison; error details are
+  logged server-side and never echoed to callers.
+
+**Global request middleware (`src/server.ts`)**
+- Security headers on every response: HSTS, CSP, `X-Frame-Options: DENY`,
+  `X-Content-Type-Options: nosniff`, COOP/CORP, `X-Robots-Tag: noai`.
+- Known AI training/scraping crawlers (GPTBot, ClaudeBot, CCBot, PerplexityBot,
+  Google-Extended, Bytespider, …) receive `403` on every path.
+- Headless automation (Puppeteer, Playwright, curl, wget) is refused on HTML page
+  loads; authenticated API clients still work.
+- Vulnerability-scanner probe paths (`/.env`, `/.git`, `/wp-admin`, …) are refused.
+
+**Server functions**
+- All billing, tenant, and coach server functions run behind `requireSupabaseAuth`;
+  the AI coach adds a per-operator hourly budget.
+
+**Database (Supabase migrations)**
+- Row-Level Security on every table with tenant-scoped policies; `anon` table
+  privileges revoked (deny-by-default); SECURITY DEFINER RPCs are
+  authenticated-only with locked `search_path`.
+
+**Client**
+- Text-field hard caps (mission 500, task 300, daily action 300 chars, 25 tasks
+  per tier); minimum 8-character passwords.
+
+## © Copyright & Intellectual Property
+
+Copyright (c) 2026 ApexMissions. All rights reserved — see [`LICENSE`](./LICENSE).
+
+- The source code is **proprietary and unlicensed** (`"license": "UNLICENSED"`).
+  No right to copy, clone, scrape, reverse-engineer, or train models on this
+  software or its output is granted.
+- `robots.txt` + server-side UA screening prohibit AI crawlers and bulk scrapers.
+- Every page ships `copyright` and `robots: noai` meta tags, plus an in-app
+  copyright footer on the auth console and dashboard.

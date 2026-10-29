@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { streamText } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export interface CoachInput {
   mission: string;
@@ -11,6 +12,8 @@ export interface CoachInput {
 
 /** Recommends the single next highest-impact action from today's progress note. */
 export const recommendNextAction = createServerFn({ method: "POST" })
+  // 🛡️ Authenticated operators only — this endpoint spends AI credits.
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: CoachInput) => {
     if (typeof data?.note !== "string" || !data.note.trim()) {
       throw new Error("Write a short progress note first.");
@@ -22,7 +25,16 @@ export const recommendNextAction = createServerFn({ method: "POST" })
       velocityScore: typeof data?.velocityScore === "number" ? data.velocityScore : null,
     };
   })
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    // Per-operator budget on the AI coach (in-memory fixed window).
+    const { rateLimit } = await import("@/lib/security.server");
+    const budget = rateLimit(`coach:${context.userId}`, 30, 60 * 60_000);
+    if (!budget.ok) {
+      throw Object.assign(new Error("Coach is at capacity — retry in a few minutes."), {
+        statusCode: 429,
+      });
+    }
+
     const apiKey = process.env["LOVABLE_API_KEY"];
     if (!apiKey) throw new Error("AI is not configured for this project.");
 
@@ -34,7 +46,9 @@ export const recommendNextAction = createServerFn({ method: "POST" })
 
     const taskList =
       data.tasks.length > 0
-        ? data.tasks.map((t) => `- [${t.done ? "done" : "open"}] (${t.tier} impact) ${t.text}`).join("\n")
+        ? data.tasks
+            .map((t) => `- [${t.done ? "done" : "open"}] (${t.tier} impact) ${t.text}`)
+            .join("\n")
         : "(no tasks listed)";
 
     const result = streamText({
@@ -63,5 +77,7 @@ ${data.velocityScore ?? "NO SCORE RECORDED"}`,
     });
 
     const text = (await result.text).trim();
-    return { recommendation: text || "No recommendation came back — try adding more detail to your note." };
+    return {
+      recommendation: text || "No recommendation came back — try adding more detail to your note.",
+    };
   });

@@ -23,6 +23,11 @@ import {
   defaultState,
   FREE_TASK_LIMIT,
   loadState,
+  MAX_DAILY_ACTION_LENGTH,
+  MAX_GENERATED_TASKS_PER_TIER,
+  MAX_MISSION_TEXT_LENGTH,
+  MAX_TASK_TEXT_LENGTH,
+  MAX_TASKS_PER_TIER,
   msUntilReset,
   saveState,
   todayKey,
@@ -642,6 +647,18 @@ function ApexMission() {
   function addTaskToMatrix(tier: ImpactTier, rawText: string): boolean {
     const text = rawText.trim();
     if (!text) return false;
+    if (text.length > MAX_TASK_TEXT_LENGTH) {
+      setPaywall(
+        "⚠️ SECURITY FILTER: Task fields are capped at 300 characters. Shorten the directive and retry.",
+      );
+      return false;
+    }
+    if ((state.tasks[tier]?.length ?? 0) >= MAX_TASKS_PER_TIER) {
+      setPaywall(
+        "⚠️ SECURITY FILTER: Task matrix per tier is capped at 25 directives. Consolidate and retry.",
+      );
+      return false;
+    }
     if (!premium && total >= FREE_TASK_LIMIT) {
       setPaywall(`The free plan tracks up to ${FREE_TASK_LIMIT} priority tasks. Upgrade to map out your full mission without limits.`);
       return false;
@@ -784,7 +801,7 @@ function ApexMission() {
   }
 
   function commitDailyAction(text: string) {
-    const trimmed = text.trim();
+    const trimmed = text.trim().slice(0, MAX_DAILY_ACTION_LENGTH);
     setState((s) => ({ ...s, daily: { ...s.daily, text: trimmed, date: todayKey() } }));
     setDailyDraft(trimmed);
   }
@@ -1165,7 +1182,12 @@ function ApexMission() {
                 <input
                   id="mission"
                   value={state.mission}
-                  onChange={(e) => setState((s) => ({ ...s, mission: e.target.value }))}
+                  onChange={(e) =>
+                    setState((s) => ({
+                      ...s,
+                      mission: e.target.value.slice(0, MAX_MISSION_TEXT_LENGTH),
+                    }))
+                  }
                   placeholder="Define your core vision…"
                   className="field-flush mt-3 min-h-11 w-full truncate bg-transparent font-display text-xl font-black tracking-tight text-white outline-none placeholder:text-zinc-700 sm:text-4xl"
                 />
@@ -1329,7 +1351,10 @@ function ApexMission() {
                   <input
                     id="daily-action"
                     value={dailyDraft}
-                    onChange={(e) => setDailyDraft(e.target.value)}
+                    onChange={(e) =>
+                      setDailyDraft(e.target.value.slice(0, MAX_DAILY_ACTION_LENGTH))
+                    }
+                    maxLength={MAX_DAILY_ACTION_LENGTH}
                     onBlur={commitDailyText}
                     onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
                     placeholder="Set today's top action…"
@@ -1542,6 +1567,15 @@ function ApexMission() {
 
         </div>
       </main>
+
+      {/* COPYRIGHT / IP NOTICE */}
+      <footer className="px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-1 text-center md:pl-[calc(15rem+1rem)]">
+        <p className="font-mono text-[9px] font-black uppercase tracking-[0.2em] text-zinc-700">
+          © 2026 ApexMissions. All rights reserved. Unauthorized copying, scraping,
+          reverse-engineering, or reproduction of this software or its content is strictly
+          prohibited.
+        </p>
+      </footer>
 
       {/* OVERLAY MODALS & COMPONENTS */}
       {surpriseLoot && (

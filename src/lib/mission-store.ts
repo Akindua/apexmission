@@ -47,6 +47,15 @@ export interface MissionState {
 /** Free tier allows at most this many tasks across the whole matrix. */
 export const FREE_TASK_LIMIT = 3;
 
+/** Hard caps so operator-authored mission text cannot be abused downstream. */
+export const MAX_TASK_TEXT_LENGTH = 300;
+export const MAX_MISSION_TEXT_LENGTH = 500;
+export const MAX_DAILY_ACTION_LENGTH = 300;
+export const MAX_TASKS_PER_TIER = 25;
+
+/** Hard cap for AI-generated task lists coming back from the planner. */
+export const MAX_GENERATED_TASKS_PER_TIER = 10;
+
 /** Simulated AI breakdown of a mission into 3 concrete high-impact tasks. */
 export function aiBreakdown(mission: string): string[] {
   const m = mission.trim().replace(/[.!]$/, "") || "your mission";

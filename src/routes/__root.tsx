@@ -98,6 +98,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-title", content: "ApexMission" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      {
+        name: "copyright",
+        content:
+          "© 2026 ApexMissions. All rights reserved. Unauthorized copying, scraping, reverse-engineering, or reproduction is prohibited.",
+      },
+      {
+        name: "robots",
+        content: "index, follow, noai, noimageindex, noarchive",
+      },
     ],
     links: [
       {
