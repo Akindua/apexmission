@@ -1686,6 +1686,12 @@ function ApexMission() {
         onClose={() => setShowTacticalBriefing(false)}
         onOpenCoach={openMissionCoach}
         onExecute={handleBriefingExecute}
+        onUpdateMission={(mission) => {
+          setState((s) => ({ ...s, mission }));
+        }}
+        onUpdateDailyAction={(action) => {
+          commitDailyAction(action);
+        }}
       />
 
       {/* SUPPORT MODAL */}

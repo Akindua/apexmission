@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -38,6 +38,8 @@ export interface TacticalBriefingProps {
   onClose: () => void;
   onOpenCoach: () => void;
   onExecute: (focus: "mission" | "daily" | "high" | "matrix") => void;
+  onUpdateMission?: (mission: string) => void;
+  onUpdateDailyAction?: (action: string) => void;
 }
 
 export function TacticalBriefing({
@@ -55,6 +57,8 @@ export function TacticalBriefing({
   onClose,
   onOpenCoach,
   onExecute,
+  onUpdateMission,
+  onUpdateDailyAction,
 }: TacticalBriefingProps) {
   const dossier = useMemo(
     () =>
@@ -79,6 +83,18 @@ export function TacticalBriefing({
       leaderboard,
     ],
   );
+
+  const [missionDraft, setMissionDraft] = useState(dossier.mission);
+  const [dailyDraft, setDailyDraft] = useState(dossier.dailyAction);
+
+  useEffect(() => {
+    if (open) {
+      setMissionDraft(dossier.mission);
+      setDailyDraft(dossier.dailyAction);
+    }
+    // Reset drafts only when the briefing opens, not on every dossier recompute.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   if (!open) return null;
 
@@ -227,9 +243,28 @@ export function TacticalBriefing({
               <p className="font-mono text-[9px] font-black uppercase tracking-[0.2em] text-emerald-400/70">
                 Master Vision
               </p>
-              <p className={`mt-1.5 break-words text-sm font-bold ${dossier.missionDeclared ? "text-white" : "text-amber-400"}`}>
-                {dossier.mission}
-              </p>
+              {onUpdateMission ? (
+                <div className="mt-1 flex items-center gap-2">
+                  <input
+                    id="tactical-mission-draft"
+                    value={missionDraft}
+                    onChange={(event) => setMissionDraft(event.target.value)}
+                    placeholder="Define your core vision…"
+                    className="field-flush min-h-11 w-full rounded-xl bg-black/40 px-4 py-2 text-sm text-white placeholder:text-zinc-700 outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => onUpdateMission(missionDraft)}
+                    className="shrink-0 rounded-xl border border-emerald-500/30 bg-emerald-950/50 px-4 py-2 font-mono text-[9px] font-black uppercase tracking-wider text-emerald-300 transition-colors hover:border-emerald-500/60 hover:bg-emerald-500 hover:text-black"
+                  >
+                    Update
+                  </button>
+                </div>
+              ) : (
+                <p className={`mt-1.5 break-words text-sm font-bold ${dossier.missionDeclared ? "text-white" : "text-amber-400"}`}>
+                  {dossier.mission}
+                </p>
+              )}
             </div>
             <div className="rounded-xl border border-emerald-500/15 bg-black/30 p-4 text-left">
               <div className="flex items-center justify-between gap-2">
@@ -246,9 +281,28 @@ export function TacticalBriefing({
                   {dossier.dailyDone ? "Executed" : "Pending"}
                 </span>
               </div>
-              <p className="mt-1.5 break-words text-sm font-bold text-white">
-                {dossier.dailyAction}
-              </p>
+              {onUpdateDailyAction ? (
+                <div className="mt-1 flex items-center gap-2">
+                  <input
+                    id="tactical-daily-draft"
+                    value={dailyDraft}
+                    onChange={(event) => setDailyDraft(event.target.value)}
+                    placeholder="Today's master focus action…"
+                    className="field-flush min-h-11 w-full rounded-xl bg-black/40 px-4 py-2 text-sm text-white placeholder:text-zinc-700 outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => onUpdateDailyAction(dailyDraft)}
+                    className="shrink-0 rounded-xl border border-emerald-500/30 bg-emerald-950/50 px-4 py-2 font-mono text-[9px] font-black uppercase tracking-wider text-emerald-300 transition-colors hover:border-emerald-500/60 hover:bg-emerald-500 hover:text-black"
+                  >
+                    Update
+                  </button>
+                </div>
+              ) : (
+                <p className="mt-1.5 break-words text-sm font-bold text-white">
+                  {dossier.dailyAction}
+                </p>
+              )}
             </div>
           </div>
 
