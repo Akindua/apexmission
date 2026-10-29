@@ -81,6 +81,30 @@ Hardening layers implemented across the stack (see `src/lib/security.server.ts`)
 **Server functions**
 - All billing, tenant, and coach server functions run behind `requireSupabaseAuth`;
   the AI coach adds a per-operator hourly budget.
+- Stripe checkout URLs are derived from the **actual request origin** (never from
+  client input), closing the forged-`origin` redirect hole.
+
+**Persistent rate limiting (Supabase `rate_limits` + `consume_rate_limit` RPC)**
+- AI budgets are enforced twice: a fast per-instance in-memory limiter, then a
+  shared database limiter that survives deploys/restarts and spans instances.
+
+**Privilege-escalation fixes (migration 20261029140000)**
+- `profiles.subscription_tier` / `profiles.email` are **no longer client-writable**
+  (column-level `REVOKE UPDATE` + a trigger guard). Previously any signed-in user
+  could PATCH their own row to `lifetime` and unlock paid features.
+- Gamified counters (`credits`, `beta_points`, streaks…) stay client-managed but
+  are clamped to sane bounds; ledger amounts are bounded.
+
+**Bot protection (optional, Cloudflare Turnstile)**
+- Set `VITE_TURNSTILE_SITE_KEY` (public) and enable **Bot protection** with the
+  Turnstile secret under Supabase Auth → Settings in the dashboard. The auth
+  console then requires a live human-verification token on sign-in/sign-up.
+- Password policy: 8–128 chars, breach-list blocklist, cannot equal email.
+
+**Dependency hygiene**
+- `npm audit` maintained: critical DOMPurify XSS bypass, seroval code injection,
+  and undici advisories patched. Remaining known items: `katex` (no upstream fix;
+  renders math client-side only) and `zod@3` (fix requires a breaking v4 major).
 
 **Database (Supabase migrations)**
 - Row-Level Security on every table with tenant-scoped policies; `anon` table

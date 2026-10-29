@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { convertToModelMessages, streamText, type UIMessage } from "ai";
 
 import {
+  enforceRateLimit,
   fenceUntrustedContent,
   getClientIp,
   isSameOriginRequest,
@@ -44,17 +45,21 @@ export const Route = createFileRoute("/api/chat")({
         const actor = await requireApiAuth(request);
         if (actor instanceof Response) return actor;
 
-        // Rate limit per verified user (identity), backed by a per-IP burst cap.
-        const burst = rateLimit(
-          `chat:burst:${actor.userId}`,
-          CHAT_BURST_LIMIT,
-          CHAT_BURST_WINDOW_MS,
-        );
-        const hourly = rateLimit(
-          `chat:hour:${actor.userId}`,
-          CHAT_HOURLY_LIMIT,
-          CHAT_HOURLY_WINDOW_MS,
-        );
+        // Rate limit per verified user (identity): fast in-memory burst cap
+        // plus a shared database budget that survives restarts/instances,
+        // backed by a per-IP burst limit.
+        const burst = await enforceRateLimit({
+          actor,
+          key: "chat:burst",
+          limit: CHAT_BURST_LIMIT,
+          windowMs: CHAT_BURST_WINDOW_MS,
+        });
+        const hourly = await enforceRateLimit({
+          actor,
+          key: "chat:hour",
+          limit: CHAT_HOURLY_LIMIT,
+          windowMs: CHAT_HOURLY_WINDOW_MS,
+        });
         const ipBurst = rateLimit(`chat:ip:${getClientIp(request)}`, 20, CHAT_BURST_WINDOW_MS);
         if (!burst.ok || !hourly.ok || !ipBurst.ok) {
           return rateLimitedResponse(

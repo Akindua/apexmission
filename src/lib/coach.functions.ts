@@ -26,10 +26,28 @@ export const recommendNextAction = createServerFn({ method: "POST" })
     };
   })
   .handler(async ({ data, context }) => {
-    // Per-operator budget on the AI coach (in-memory fixed window).
+    // Per-operator budget on the AI coach: fast in-memory window plus the
+    // shared database limiter (survives restarts, spans instances).
     const { rateLimit } = await import("@/lib/security.server");
     const budget = rateLimit(`coach:${context.userId}`, 30, 60 * 60_000);
-    if (!budget.ok) {
+    let sharedOk = true;
+    try {
+      // The generated Database types predate the consume_rate_limit RPC, so
+      // widen the call site instead of regenerating types mid-deploy.
+      const rpc = context.supabase.rpc as unknown as (
+        fn: string,
+        args: Record<string, unknown>,
+      ) => PromiseLike<{ data: unknown; error: unknown }>;
+      const { data: allowed, error } = await rpc("consume_rate_limit", {
+        p_key: `coach:hour:${context.userId}`,
+        p_limit: 30,
+        p_window_seconds: 3600,
+      });
+      if (!error) sharedOk = allowed === true;
+    } catch {
+      // RPC unavailable (migration not applied) — memory limit still applies.
+    }
+    if (!budget.ok || !sharedOk) {
       throw Object.assign(new Error("Coach is at capacity — retry in a few minutes."), {
         statusCode: 429,
       });

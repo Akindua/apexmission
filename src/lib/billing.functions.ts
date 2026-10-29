@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequestHeader } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export type PlanId = "monthly" | "annual" | "lifetime";
@@ -56,11 +57,7 @@ export const PLANS: Record<
   },
 };
 
-function isActive(row: {
-  status: string;
-  plan: string;
-  current_period_end: string | null;
-}) {
+function isActive(row: { status: string; plan: string; current_period_end: string | null }) {
   if (row.status !== "active") return false;
 
   // Lifetime access never expires.
@@ -74,8 +71,7 @@ function isActive(row: {
 }
 
 async function readEntitlement(userId: string): Promise<BillingInfo> {
-  const { supabaseAdmin } =
-    await import("@/integrations/supabase/client.server");
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
   const { data, error } = await supabaseAdmin
     .from("entitlements")
@@ -144,15 +140,14 @@ export const restorePremium = createServerFn({ method: "POST" })
  */
 export const startCheckout = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { plan: PlanId; origin: string }) => {
+  .inputValidator((data: { plan: PlanId; origin?: string }) => {
     if (!data || !(data.plan in PLANS)) {
       throw new Error("Unknown plan");
     }
 
-    if (!data.origin) {
-      throw new Error("Missing application origin");
-    }
-
+    // `origin` is optional and advisory only — the handler derives the real
+    // trusted origin from the incoming request and rejects mismatches, so a
+    // forged value can never redirect Stripe success/cancel URLs off-site.
     return data;
   })
   .handler(async ({ data, context }) => {
@@ -173,7 +168,28 @@ export const startCheckout = createServerFn({ method: "POST" })
       throw new Error(`Stripe Price ID is missing for ${data.plan}`);
     }
 
-    const origin = data.origin.replace(/\/$/, "");
+    // 🔒 Trust only the origin this request actually arrived on (the CSRF
+    // middleware already proved it is same-site). Never echo client input
+    // into Stripe redirect URLs.
+    const requestOrigin = getRequestHeader("origin");
+    const requestHost = getRequestHeader("x-forwarded-host") ?? getRequestHeader("host") ?? "";
+    const forwardedProto = getRequestHeader("x-forwarded-proto");
+    const derivedOrigin = requestOrigin
+      ? new URL(requestOrigin).origin
+      : requestHost
+        ? `${forwardedProto === "http" ? "http" : "https"}://${requestHost}`
+        : null;
+
+    if (!derivedOrigin) {
+      throw new Error("Could not resolve a trusted application origin");
+    }
+
+    const claimedOrigin = typeof data.origin === "string" ? data.origin.replace(/\/$/, "") : "";
+    if (claimedOrigin && claimedOrigin !== derivedOrigin) {
+      throw new Error("Origin mismatch");
+    }
+
+    const origin = derivedOrigin;
 
     /**
      * Stripe Checkout supports:
@@ -184,8 +200,7 @@ export const startCheckout = createServerFn({ method: "POST" })
     const body = new URLSearchParams({
       mode: plan.recurring ? "subscription" : "payment",
 
-      success_url:
-        `${origin}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${origin}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
 
       cancel_url: `${origin}/pricing`,
 
@@ -203,24 +218,16 @@ export const startCheckout = createServerFn({ method: "POST" })
      * Stripe subscriptions as well.
      */
     if (plan.recurring) {
-      body.set(
-        "subscription_data[metadata][user_id]",
-        context.userId,
-      );
+      body.set("subscription_data[metadata][user_id]", context.userId);
 
-      body.set(
-        "subscription_data[metadata][plan]",
-        data.plan,
-      );
+      body.set("subscription_data[metadata][plan]", data.plan);
     }
 
     /**
      * Passing the authenticated email allows Stripe Checkout
      * to pre-populate the customer's email address.
      */
-    const email = (
-      context.claims as { email?: string } | undefined
-    )?.email;
+    const email = (context.claims as { email?: string } | undefined)?.email;
 
     if (email) {
       body.set("customer_email", email);
@@ -231,17 +238,14 @@ export const startCheckout = createServerFn({ method: "POST" })
      *
      * The Stripe secret key NEVER reaches the browser.
      */
-    const response = await fetch(
-      "https://api.stripe.com/v1/checkout/sessions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${stripeSecretKey}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body,
+    const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${stripeSecretKey}`,
+        "Content-Type": "application/x-www-form-urlencoded",
       },
-    );
+      body,
+    });
 
     const json = (await response.json()) as {
       id?: string;
@@ -254,10 +258,7 @@ export const startCheckout = createServerFn({ method: "POST" })
     };
 
     if (!response.ok || !json.url) {
-      throw new Error(
-        json.error?.message ??
-          `Stripe checkout failed (${response.status})`,
-      );
+      throw new Error(json.error?.message ?? `Stripe checkout failed (${response.status})`);
     }
 
     return {
@@ -290,9 +291,7 @@ export const confirmCheckout = createServerFn({ method: "POST" })
     }
 
     const response = await fetch(
-      `https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(
-        data.sessionId,
-      )}`,
+      `https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(data.sessionId)}`,
       {
         headers: {
           Authorization: `Bearer ${stripeSecretKey}`,
@@ -318,18 +317,12 @@ export const confirmCheckout = createServerFn({ method: "POST" })
      * Verify that this Checkout Session belongs to
      * the currently authenticated user.
      */
-    const owner =
-      session.client_reference_id ??
-      session.metadata?.["user_id"];
+    const owner = session.client_reference_id ?? session.metadata?.["user_id"];
 
-    const paid =
-      session.payment_status === "paid" ||
-      session.status === "complete";
+    const paid = session.payment_status === "paid" || session.status === "complete";
 
     if (paid && owner === context.userId) {
-      const plan =
-        (session.metadata?.["plan"] as PlanId) ??
-        "monthly";
+      const plan = (session.metadata?.["plan"] as PlanId) ?? "monthly";
 
       /**
        * Never trust an arbitrary metadata value as a PlanId.
@@ -338,8 +331,7 @@ export const confirmCheckout = createServerFn({ method: "POST" })
         throw new Error("Invalid plan in Stripe session metadata");
       }
 
-      const { supabaseAdmin } =
-        await import("@/integrations/supabase/client.server");
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
       await supabaseAdmin.from("entitlements").upsert(
         {
@@ -353,22 +345,14 @@ export const confirmCheckout = createServerFn({ method: "POST" })
             plan === "lifetime"
               ? null
               : new Date(
-                  Date.now() +
-                    (plan === "annual" ? 366 : 31) *
-                      24 *
-                      60 *
-                      60 *
-                      1000,
+                  Date.now() + (plan === "annual" ? 366 : 31) * 24 * 60 * 60 * 1000,
                 ).toISOString(),
 
-          stripe_customer_id:
-            session.customer ?? null,
+          stripe_customer_id: session.customer ?? null,
 
-          stripe_subscription_id:
-            session.subscription ?? null,
+          stripe_subscription_id: session.subscription ?? null,
 
-          stripe_session_id:
-            session.id ?? data.sessionId,
+          stripe_session_id: session.id ?? data.sessionId,
 
           updated_at: new Date().toISOString(),
         },
@@ -379,4 +363,4 @@ export const confirmCheckout = createServerFn({ method: "POST" })
     }
 
     return readEntitlement(context.userId);
-  }); 
+  });

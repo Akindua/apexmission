@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { generateText } from "ai";
 
 import {
+  enforceRateLimit,
   fenceUntrustedContent,
   getClientIp,
   isSameOriginRequest,
@@ -63,16 +64,18 @@ export const Route = createFileRoute("/api/pdf-plan")({
         const actor = await requireApiAuth(request);
         if (actor instanceof Response) return actor;
 
-        const burst = rateLimit(
-          `pdf:burst:${actor.userId}`,
-          PLAN_BURST_LIMIT,
-          PLAN_BURST_WINDOW_MS,
-        );
-        const hourly = rateLimit(
-          `pdf:hour:${actor.userId}`,
-          PLAN_HOURLY_LIMIT,
-          PLAN_HOURLY_WINDOW_MS,
-        );
+        const burst = await enforceRateLimit({
+          actor,
+          key: "pdf:burst",
+          limit: PLAN_BURST_LIMIT,
+          windowMs: PLAN_BURST_WINDOW_MS,
+        });
+        const hourly = await enforceRateLimit({
+          actor,
+          key: "pdf:hour",
+          limit: PLAN_HOURLY_LIMIT,
+          windowMs: PLAN_HOURLY_WINDOW_MS,
+        });
         const ipBurst = rateLimit(`pdf:ip:${getClientIp(request)}`, 10, PLAN_BURST_WINDOW_MS);
         if (!burst.ok || !hourly.ok || !ipBurst.ok) {
           return rateLimitedResponse(

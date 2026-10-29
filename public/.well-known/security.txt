@@ -1,0 +1,8 @@
+Contact: mailto:security@apexmissions.app
+Policy: https://apexmissions.app
+Preferred-Languages: en
+Expires: 2027-10-29T00:00:00.000Z
+# © 2026 ApexMissions. All rights reserved.
+# Responsible disclosure: report vulnerabilities to security@apexmissions.app.
+# Do not access other users' data, disrupt the service, or publicly disclose
+# before a reasonable remediation window (90 days).

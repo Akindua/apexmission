@@ -39,6 +39,12 @@ export function withSecurityHeaders(response: Response): Response {
   for (const [key, value] of Object.entries(BASE_SECURITY_HEADERS)) {
     if (!hardened.headers.has(key)) hardened.headers.set(key, value);
   }
+  // SSR pages embed live operator data — never allow any cache (browser or
+  // intermediary) to store them.
+  const contentType = hardened.headers.get("content-type") ?? "";
+  if (contentType.includes("text/html") && !hardened.headers.has("cache-control")) {
+    hardened.headers.set("cache-control", "no-store, no-cache, must-revalidate, private");
+  }
   return hardened;
 }
 
@@ -129,12 +135,77 @@ export function rateLimit(key: string, limit: number, windowMs: number): RateLim
   };
 }
 
+/**
+ * Database-backed rate limiter (Supabase `consume_rate_limit` RPC). Unlike
+ * the in-memory limiter these budgets survive deploys/restarts and are shared
+ * across server instances. Returns `null` when the RPC is unavailable (e.g.
+ * migration not applied yet) so callers can fall back to memory-only limits.
+ */
+export async function persistentRateLimit(
+  actor: ApiActor,
+  key: string,
+  limit: number,
+  windowSeconds: number,
+): Promise<RateLimitResult | null> {
+  try {
+    const supabaseUrl = process.env["SUPABASE_URL"];
+    const supabaseKey =
+      process.env["SUPABASE_PUBLISHABLE_KEY"] ?? process.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
+    if (!supabaseUrl || !supabaseKey) return null;
+
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      global: { headers: { Authorization: `Bearer ${actor.token}` } },
+      auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+    });
+
+    const { data, error } = await supabase.rpc("consume_rate_limit", {
+      p_key: `${key}:${actor.userId}`,
+      p_limit: limit,
+      p_window_seconds: windowSeconds,
+    });
+
+    if (error) return null; // RPC missing/failed — degrade to memory-only
+    const ok = data === true;
+    return {
+      ok,
+      retryAfterSeconds: ok ? 0 : windowSeconds,
+      remaining: ok ? 1 : 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Dual-layer enforcement: fast per-instance memory limit first, then the
+ * shared database budget. Use for expensive endpoints (LLM calls) where a
+ * restart must not hand out a fresh allowance.
+ */
+export async function enforceRateLimit(opts: {
+  actor: ApiActor;
+  /** Logical budget name, e.g. "chat". Combined with the user id for the key. */
+  key: string;
+  limit: number;
+  windowMs: number;
+}): Promise<RateLimitResult> {
+  const { actor, key, limit, windowMs } = opts;
+
+  const memory = rateLimit(`mem:${key}:${actor.userId}`, limit, windowMs);
+  if (!memory.ok) return memory;
+
+  const shared = await persistentRateLimit(actor, key, limit, Math.ceil(windowMs / 1000));
+  return shared ?? memory;
+}
+
 // ---------------------------------------------------------------------------
 // Authentication for raw file routes
 // ---------------------------------------------------------------------------
 
 export interface ApiActor {
   userId: string;
+  /** Raw JWT presented by the caller — reused for authenticated RPC calls. */
+  token: string;
 }
 
 const unauthorized = () =>
@@ -176,7 +247,7 @@ export async function requireApiAuth(request: Request): Promise<ApiActor | Respo
     });
     const { data, error } = await supabase.auth.getClaims(token);
     if (error || !data?.claims?.sub) return unauthorized();
-    return { userId: String(data.claims.sub) };
+    return { userId: String(data.claims.sub), token };
   } catch {
     return unauthorized();
   }

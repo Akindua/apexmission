@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { supabase } from "@/integrations/supabase/client";
 import { setStorageScope } from "@/lib/user-storage";
 import { TACTICAL_BRIEFING_SESSION_KEY } from "@/lib/synthetic-briefing";
@@ -7,6 +8,67 @@ import { ShieldAlert, ShieldCheck, Loader2, KeyRound, Mail, ArrowRight } from "l
 
 type AuthMode = "signin" | "signup";
 type AuthSearch = { mode?: AuthMode | undefined; next?: string | undefined };
+
+/**
+ * Cloudflare Turnstile bot protection. Renders only when this public key is
+ * configured; pair it with Supabase Auth → Bot protection (secret key) in the
+ * dashboard. Until the dashboard is configured the widget is simply inert.
+ */
+const TURNSTILE_SITE_KEY = import.meta.env["VITE_TURNSTILE_SITE_KEY"] as string | undefined;
+
+const PASSWORD_MAX_LENGTH = 128;
+
+/** Top common/leaked passwords rejected outright (case-insensitive). */
+const COMMON_PASSWORDS = new Set([
+  "password",
+  "password1",
+  "password123",
+  "12345678",
+  "123456789",
+  "1234567890",
+  "qwerty123",
+  "letmein1",
+  "iloveyou",
+  "admin123",
+  "welcome1",
+  "welcome123",
+  "abc12345",
+  "passw0rd",
+  "p@ssw0rd",
+  "football",
+  "baseball",
+  "superman",
+  "trustno1",
+  "starwars",
+  "whatever",
+  "freedom1",
+  "master123",
+  "qwertyuiop",
+  "1q2w3e4r",
+  "zaq12wsx",
+  "sunshine",
+  "princess",
+  "dragon123",
+  "monkey123",
+]);
+
+/** Returns an error message when the password fails policy, else null. */
+function validatePassword(pw: string, emailAddr: string): string | null {
+  const trimmed = pw.trim();
+  if (trimmed.length < 8) {
+    return "🔒 WEAK ACCESS KEY: Password parameters must be at least 8 characters in length.";
+  }
+  if (trimmed.length > PASSWORD_MAX_LENGTH) {
+    return `🔒 ACCESS KEY TOO LONG: Password parameters are capped at ${PASSWORD_MAX_LENGTH} characters.`;
+  }
+  if (COMMON_PASSWORDS.has(trimmed.toLowerCase())) {
+    return "🔒 COMPROMISED ACCESS KEY: This password appears in public breach lists. Choose a unique passphrase.";
+  }
+  if (emailAddr && trimmed.toLowerCase() === emailAddr.trim().toLowerCase()) {
+    return "🔒 WEAK ACCESS KEY: Password cannot match your email address.";
+  }
+  return null;
+}
 
 function sanitizeNext(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
@@ -35,6 +97,14 @@ function AuthConsolePage() {
   const [busy, setBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [currentEmail, setCurrentEmail] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileInstance | null>(null);
+
+  /** Turnstile tokens are single-use — clear and re-challenge after each attempt. */
+  function resetChallenge() {
+    setTurnstileToken(null);
+    turnstileRef.current?.reset();
+  }
 
   useEffect(() => {
     setIsSignUp(mode === "signup");
@@ -82,10 +152,16 @@ function AuthConsolePage() {
       return;
     }
 
-    if (password.trim().length < 8) {
-      setErrorMessage(
-        "🔒 WEAK ACCESS KEY: Password parameters must be at least 8 characters in length.",
-      );
+    const passwordIssue = validatePassword(password, email);
+    if (passwordIssue) {
+      setErrorMessage(passwordIssue);
+      setBusy(false);
+      return;
+    }
+
+    // Bot protection: when Turnstile is configured, require a live token.
+    if (TURNSTILE_SITE_KEY && !turnstileToken) {
+      setErrorMessage("🔒 HUMAN VERIFICATION REQUIRED: Complete the security challenge and retry.");
       setBusy(false);
       return;
     }
@@ -137,6 +213,7 @@ function AuthConsolePage() {
           password: password.trim(),
           options: {
             emailRedirectTo: redirectUrl.toString(),
+            ...(TURNSTILE_SITE_KEY && turnstileToken ? { captchaToken: turnstileToken } : {}),
             data: {
               full_name: fullName.trim(),
             },
@@ -169,6 +246,9 @@ function AuthConsolePage() {
         const { data: authData, error } = await supabase.auth.signInWithPassword({
           email: email.trim(),
           password: password.trim(),
+          ...(TURNSTILE_SITE_KEY && turnstileToken
+            ? { options: { captchaToken: turnstileToken } }
+            : {}),
         });
 
         if (error) throw error;
@@ -216,6 +296,8 @@ function AuthConsolePage() {
       }
     } finally {
       setBusy(false);
+      // Single-use token consumed (or attempt failed) — re-challenge.
+      resetChallenge();
     }
   };
 
@@ -347,6 +429,19 @@ function AuthConsolePage() {
                 only logs manually submitted milestones. We never monitor your device background,
                 screen time, or location parameters.
               </p>
+            </div>
+          )}
+
+          {TURNSTILE_SITE_KEY && (
+            <div className="flex justify-center">
+              <Turnstile
+                ref={turnstileRef}
+                siteKey={TURNSTILE_SITE_KEY}
+                onSuccess={setTurnstileToken}
+                onExpire={() => setTurnstileToken(null)}
+                onError={() => setTurnstileToken(null)}
+                options={{ theme: "dark", size: "flexible" }}
+              />
             </div>
           )}
 

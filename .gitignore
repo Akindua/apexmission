@@ -19,6 +19,18 @@ dist-ssr
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars
+.dev.vars.*
+
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.pfx
+secrets/
+credentials.json
+service-account*.json
 
 # Editor directories and files
 .vscode/*
