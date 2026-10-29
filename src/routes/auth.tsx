@@ -4,7 +4,15 @@ import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { supabase } from "@/integrations/supabase/client";
 import { setStorageScope } from "@/lib/user-storage";
 import { TACTICAL_BRIEFING_SESSION_KEY } from "@/lib/synthetic-briefing";
-import { ShieldAlert, ShieldCheck, Loader2, KeyRound, Mail, ArrowRight } from "lucide-react";
+import {
+  ShieldAlert,
+  ShieldCheck,
+  Loader2,
+  KeyRound,
+  Mail,
+  ArrowRight,
+  Fingerprint,
+} from "lucide-react";
 
 type AuthMode = "signin" | "signup";
 type AuthSearch = { mode?: AuthMode | undefined; next?: string | undefined };
@@ -98,6 +106,7 @@ function AuthConsolePage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [currentEmail, setCurrentEmail] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [passkeyBusy, setPasskeyBusy] = useState(false);
   const turnstileRef = useRef<TurnstileInstance | null>(null);
 
   /** Turnstile tokens are single-use — clear and re-challenge after each attempt. */
@@ -301,6 +310,43 @@ function AuthConsolePage() {
     }
   };
 
+  /**
+   * Passwordless sign-in via a device passkey (WebAuthn). Supabase handles the
+   * ceremony server-side; no shared secret ever leaves the device. Requires
+   * WebAuthn to be enabled in the Supabase Auth dashboard.
+   */
+  const handlePasskeySignIn = async () => {
+    if (passkeyBusy) return;
+    setPasskeyBusy(true);
+    setErrorMessage(null);
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPasskey();
+      if (error) throw error;
+
+      const userId = data.user?.id;
+      if (userId) {
+        setStorageScope(userId);
+        if (typeof window !== "undefined") {
+          sessionStorage.removeItem(TACTICAL_BRIEFING_SESSION_KEY);
+        }
+      }
+
+      navigate({ to: next || "/app" });
+    } catch (err) {
+      console.error("Passkey authentication fault:", err);
+      setErrorMessage(
+        err instanceof Error && err.message.toLowerCase().includes("webauthn")
+          ? "🔑 PASSKEYS NOT CONFIGURED: Enable WebAuthn in the Supabase Auth dashboard to use hardware-key sign-in."
+          : err instanceof Error
+            ? err.message
+            : "Passkey sign-in failed. Use your access key instead.",
+      );
+    } finally {
+      setPasskeyBusy(false);
+    }
+  };
+
   return (
     <div className="page-shell flex items-center justify-center px-6 py-12">
       <div className="ambient-emerald-glow" />
@@ -455,6 +501,35 @@ function AuthConsolePage() {
               </>
             )}
           </button>
+
+          {!isSignUp && (
+            <>
+              <div className="relative my-1 py-1">
+                <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                  <span className="w-full border-t border-zinc-800/80" />
+                </div>
+                <div className="relative flex justify-center">
+                  <span className="bg-transparent px-3 font-mono text-[9px] font-black uppercase tracking-[0.2em] text-zinc-600">
+                    or authenticate with a passkey
+                  </span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handlePasskeySignIn}
+                disabled={passkeyBusy}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-zinc-700/70 bg-zinc-900/40 font-mono text-[11px] font-black uppercase tracking-wider text-zinc-300 transition-all hover:border-emerald-500/40 hover:text-emerald-400 disabled:opacity-60"
+              >
+                {passkeyBusy ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Fingerprint className="h-4 w-4" />
+                )}
+                <span>{passkeyBusy ? "Verifying device…" : "Sign in with passkey"}</span>
+              </button>
+            </>
+          )}
         </form>
 
         {/* Mode switch */}

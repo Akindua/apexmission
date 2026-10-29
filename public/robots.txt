@@ -77,6 +77,7 @@ User-agent: *
 
 Disallow: /api/
 Disallow: /app
+Disallow: /demo
 Disallow: /onboarding
 Disallow: /auth
 Disallow: /forgot-password

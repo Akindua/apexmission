@@ -2,7 +2,7 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
-import { withTenantSubdomainHeader } from "./lib/tenant-host";
+import { withTenantSubdomainHeader, withDemoShowcaseRewrite } from "./lib/tenant-host";
 import {
   agentBlockedResponse,
   isBlockedAgent,
@@ -101,9 +101,12 @@ export default {
       process.env["TENANT_ROOT_DOMAIN"] ?? undefined,
     );
 
+    // demo.apexmissions.app → instant read-only team-grid showcase (pitch mode).
+    const routedRequest = withDemoShowcaseRewrite(scopedRequest);
+
     try {
       const handler = await getServerEntry();
-      const response = await handler.fetch(scopedRequest, env, ctx);
+      const response = await handler.fetch(routedRequest, env, ctx);
       return withSecurityHeaders(await normalizeCatastrophicSsrResponse(response));
     } catch (error) {
       console.error(error);

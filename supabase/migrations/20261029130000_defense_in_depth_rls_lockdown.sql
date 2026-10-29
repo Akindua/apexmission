@@ -23,6 +23,15 @@ REVOKE ALL ON public.tasks         FROM anon;
 REVOKE ALL ON public.companies     FROM anon;
 REVOKE ALL ON public.points_ledger FROM anon;
 
+-- daily_task_logs may exist only on deployments created after this migration
+-- was first published. Guard so the migration never aborts on a missing table.
+DO $$
+BEGIN
+  IF to_regclass('public.daily_task_logs') IS NOT NULL THEN
+    EXECUTE 'REVOKE ALL ON public.daily_task_logs FROM anon';
+  END IF;
+END $$;
+
 -- ============================================================================
 -- 🔑 SECURITY DEFINER RPCs: re-assert authenticated-only execution
 -- (defense-in-depth in case a later migration re-granted PUBLIC/anon execute)

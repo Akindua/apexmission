@@ -95,11 +95,19 @@ Hardening layers implemented across the stack (see `src/lib/security.server.ts`)
 - Gamified counters (`credits`, `beta_points`, streaks…) stay client-managed but
   are clamped to sane bounds; ledger amounts are bounded.
 
-**Bot protection (optional, Cloudflare Turnstile)**
+**Bot protection (Cloudflare Turnstile on every auth form)**
 - Set `VITE_TURNSTILE_SITE_KEY` (public) and enable **Bot protection** with the
-  Turnstile secret under Supabase Auth → Settings in the dashboard. The auth
-  console then requires a live human-verification token on sign-in/sign-up.
+  Turnstile secret under Supabase Auth → Settings in the dashboard. Every auth
+  surface — sign-in, sign-up, forgot-password, and password reset — then
+  requires a live human-verification token (single-use, re-challenged after
+  each attempt).
 - Password policy: 8–128 chars, breach-list blocklist, cannot equal email.
+
+**Passwordless sign-in (WebAuthn passkeys)**
+- The sign-in console offers "Sign in with passkey" (`supabase.auth.signInWithPasskey`).
+  Phishing-resistant hardware/device-key authentication with no shared secret.
+  Enable **WebAuthn** under Supabase Auth → Settings; until then the button
+  surfaces a clear configuration error and password sign-in keeps working.
 
 **Dependency hygiene**
 - `npm audit` maintained: critical DOMPurify XSS bypass, seroval code injection,
@@ -125,3 +133,22 @@ Copyright (c) 2026 ApexMissions. All rights reserved — see [`LICENSE`](./LICEN
 - `robots.txt` + server-side UA screening prohibit AI crawlers and bulk scrapers.
 - Every page ships `copyright` and `robots: noai` meta tags, plus an in-app
   copyright footer on the auth console and dashboard.
+
+## 🎬 Showcase Demo Tenant (`demo.apexmissions.app`)
+
+A pitch-ready, read-only workspace for live sales walkthroughs:
+
+- **Seed**: `supabase/migrations/20261029150000_showcase_demo_seed.sql` creates
+  the `Showcase Demo Corp` tenant (fixed UUID, `slug = 'demo'`, invite code
+  `DEMO-PREVIEW-99`), 4 display-only operators (Operator Alpha…Delta), and 5
+  completed tasks dated today across all impact tiers.
+- **Routing**: requests to `demo.<root-domain>` are rewritten server-side
+  (`withDemoShowcaseRewrite` in `src/lib/tenant-host.ts`) to the public
+  `/demo` showcase route — the live team grid renders immediately, no login.
+- **Security**: the showcase reads exclusively through the service-role client
+  (`getDemoShowcase`) with strict slug validation; no anon REST grants are
+  added. Seeded operator accounts can never authenticate (empty password hash +
+  `banned_until = '2999-12-31'`). The route is `noindex, nofollow, noai` and
+  disallowed in `robots.txt`.
+- **Hosting**: point the `demo` subdomain (CNAME/redirect) at the same
+  deployment as `www`. Apply migrations via Lovable sync or `supabase db push`.

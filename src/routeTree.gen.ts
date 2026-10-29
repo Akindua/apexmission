@@ -14,6 +14,7 @@ import { Route as MorningCheckInRouteImport } from './routes/MorningCheckIn'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BillingRouteImport } from './routes/billing'
+import { Route as DemoRouteImport } from './routes/demo'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as NightReflectionRouteImport } from './routes/night-reflection'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
@@ -52,6 +53,11 @@ const AuthRoute = AuthRouteImport.update({
 const BillingRoute = BillingRouteImport.update({
   id: '/billing',
   path: '/billing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoRoute = DemoRouteImport.update({
+  id: '/demo',
+  path: '/demo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
@@ -131,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRoute
   '/auth': typeof AuthRoute
   '/billing': typeof BillingRoute
+  '/demo': typeof DemoRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/night-reflection': typeof NightReflectionRoute
   '/onboarding': typeof OnboardingRoute
@@ -152,6 +159,7 @@ export interface FileRoutesByTo {
   '/app': typeof AppRoute
   '/auth': typeof AuthRoute
   '/billing': typeof BillingRoute
+  '/demo': typeof DemoRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/night-reflection': typeof NightReflectionRoute
   '/onboarding': typeof OnboardingRoute
@@ -174,6 +182,7 @@ export interface FileRoutesById {
   '/app': typeof AppRoute
   '/auth': typeof AuthRoute
   '/billing': typeof BillingRoute
+  '/demo': typeof DemoRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/night-reflection': typeof NightReflectionRoute
   '/onboarding': typeof OnboardingRoute
@@ -197,6 +206,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/auth'
     | '/billing'
+    | '/demo'
     | '/forgot-password'
     | '/night-reflection'
     | '/onboarding'
@@ -218,6 +228,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/auth'
     | '/billing'
+    | '/demo'
     | '/forgot-password'
     | '/night-reflection'
     | '/onboarding'
@@ -239,6 +250,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/auth'
     | '/billing'
+    | '/demo'
     | '/forgot-password'
     | '/night-reflection'
     | '/onboarding'
@@ -261,6 +273,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRoute
   AuthRoute: typeof AuthRoute
   BillingRoute: typeof BillingRoute
+  DemoRoute: typeof DemoRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   NightReflectionRoute: typeof NightReflectionRoute
   OnboardingRoute: typeof OnboardingRoute
@@ -312,6 +325,13 @@ declare module '@tanstack/react-router' {
       path: '/billing'
       fullPath: '/billing'
       preLoaderRoute: typeof BillingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo': {
+      id: '/demo'
+      path: '/demo'
+      fullPath: '/demo'
+      preLoaderRoute: typeof DemoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forgot-password': {
@@ -421,6 +441,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRoute,
   AuthRoute: AuthRoute,
   BillingRoute: BillingRoute,
+  DemoRoute: DemoRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   NightReflectionRoute: NightReflectionRoute,
   OnboardingRoute: OnboardingRoute,

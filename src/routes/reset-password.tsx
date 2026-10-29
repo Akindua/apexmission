@@ -1,8 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ArrowRight, CheckCircle, KeyRound, Loader2, ShieldAlert } from "lucide-react";
+import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { supabase } from "@/integrations/supabase/client";
 import { setStorageScope } from "@/lib/user-storage";
+
+/** Renders only when configured — pairs with Supabase Auth bot protection. */
+const TURNSTILE_SITE_KEY = import.meta.env["VITE_TURNSTILE_SITE_KEY"] as string | undefined;
 
 export const Route = createFileRoute("/reset-password")({
   component: ResetPasswordPage,
@@ -16,6 +20,8 @@ function ResetPasswordPage() {
   const [ready, setReady] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileInstance | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -51,15 +57,29 @@ function ResetPasswordPage() {
       return;
     }
 
+    if (password.length > 128) {
+      setErrorMessage("Your new access key must be at most 128 characters long.");
+      return;
+    }
+
     if (password !== confirmPassword) {
       setErrorMessage("The access keys do not match. Re-enter the same key twice.");
+      return;
+    }
+
+    // Bot protection: when Turnstile is configured, require a live token.
+    if (TURNSTILE_SITE_KEY && !turnstileToken) {
+      setErrorMessage("🔒 HUMAN VERIFICATION REQUIRED: Complete the security challenge and retry.");
       return;
     }
 
     setBusy(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({ password });
+      const { error } = await supabase.auth.updateUser({
+        password,
+        ...(TURNSTILE_SITE_KEY && turnstileToken ? { captchaToken: turnstileToken } : {}),
+      });
       if (error) throw error;
 
       // Force a fresh sign-in with the new credential.
@@ -72,6 +92,9 @@ function ResetPasswordPage() {
       );
     } finally {
       setBusy(false);
+      // Single-use token consumed (or attempt failed) — re-challenge.
+      setTurnstileToken(null);
+      turnstileRef.current?.reset();
     }
   }
 
@@ -169,6 +192,19 @@ function ResetPasswordPage() {
                     />
                   </div>
                 </div>
+
+                {TURNSTILE_SITE_KEY && (
+                  <div className="flex justify-center">
+                    <Turnstile
+                      ref={turnstileRef}
+                      siteKey={TURNSTILE_SITE_KEY}
+                      onSuccess={setTurnstileToken}
+                      onExpire={() => setTurnstileToken(null)}
+                      onError={() => setTurnstileToken(null)}
+                      options={{ theme: "dark", size: "flexible" }}
+                    />
+                  </div>
+                )}
 
                 <button
                   type="submit"

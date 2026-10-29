@@ -1,7 +1,11 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { supabase } from "@/integrations/supabase/client";
 import { Mail, ArrowRight, Loader2, ShieldAlert, KeyRound } from "lucide-react";
+
+/** Renders only when configured — pairs with Supabase Auth bot protection. */
+const TURNSTILE_SITE_KEY = import.meta.env["VITE_TURNSTILE_SITE_KEY"] as string | undefined;
 
 export const Route = createFileRoute("/forgot-password")({
   component: ForgotPasswordPage,
@@ -13,6 +17,8 @@ function ForgotPasswordPage() {
   const [busy, setBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successTransmission, setSuccessTransmission] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileInstance | null>(null);
 
   const handlePasswordRecovery = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,9 +26,16 @@ function ForgotPasswordPage() {
     setBusy(true);
     setErrorMessage(null);
 
+    if (TURNSTILE_SITE_KEY && !turnstileToken) {
+      setErrorMessage("🔒 HUMAN VERIFICATION REQUIRED: Complete the security challenge and retry.");
+      setBusy(false);
+      return;
+    }
+
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo: `${window.location.origin}/reset-password`,
+        ...(TURNSTILE_SITE_KEY && turnstileToken ? { captchaToken: turnstileToken } : {}),
       });
       if (error) throw error;
       setSuccessTransmission(true);
@@ -33,6 +46,9 @@ function ForgotPasswordPage() {
       );
     } finally {
       setBusy(false);
+      // Single-use token consumed — re-challenge.
+      setTurnstileToken(null);
+      turnstileRef.current?.reset();
     }
   };
 

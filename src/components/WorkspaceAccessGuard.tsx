@@ -22,6 +22,8 @@ const PUBLIC_ROUTES = new Set([
   "/pricing",
   "/plans",
   "/welcome",
+  // Read-only pitch-demo team grid (public by design; demo tenant only).
+  "/demo",
 ]);
 
 function isPublicRoute(pathname: string): boolean {

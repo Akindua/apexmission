@@ -122,6 +122,37 @@ function getRequestHost(request: Request): string {
   return request.headers.get("host") ?? new URL(request.url).host;
 }
 
+/** Subdomain label reserved for the seeded pitch-demo tenant. */
+export const DEMO_TENANT_SLUG = "demo";
+/** The showcase route the demo host rewrites to. */
+export const DEMO_SHOWCASE_PATH = "/demo";
+
+/**
+ * When `demo.<root-domain>` receives a root-page request, rewrite it to the
+ * showcase route so managers land on the live team grid immediately — no
+ * navigation, no login. The slug is derived from the Host header only (never
+ * client input), and the showcase itself re-validates the slug against the
+ * seeded `companies` row server-side before rendering anything.
+ */
+export function withDemoShowcaseRewrite(request: Request): Request {
+  const slug = extractSubdomainSlug(getRequestHost(request));
+  if (slug !== DEMO_TENANT_SLUG) return request;
+  if (request.method !== "GET" && request.method !== "HEAD") return request;
+
+  const url = new URL(request.url);
+  if (url.pathname !== "/" && url.pathname !== DEMO_SHOWCASE_PATH) return request;
+  url.pathname = DEMO_SHOWCASE_PATH;
+
+  const headers = new Headers(request.headers);
+  const init: RequestInit & { duplex?: "half" } = {
+    method: request.method,
+    headers,
+    redirect: request.redirect,
+    signal: request.signal,
+  };
+  return new Request(url, init);
+}
+
 /**
  * Clones the request with a trusted `x-subdomain-slug` header.
  *
