@@ -144,7 +144,7 @@ function WorkspaceGateScreen({ blocked }: { blocked: boolean }) {
     <div
       role="status"
       aria-live="polite"
-      className="fixed inset-0 z-[100] flex min-h-dvh flex-col items-center justify-center bg-[#07070A] px-6 text-center"
+      className="app-emerald-canvas fixed inset-0 z-[100] flex min-h-dvh flex-col items-center justify-center px-6 text-center"
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,rgba(16,185,129,0.10),transparent_55%)]" />
       <div className="relative flex size-12 items-center justify-center rounded-2xl border border-emerald-500/25 bg-emerald-950/30 text-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.18)]">

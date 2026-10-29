@@ -553,7 +553,7 @@ function SupportFooter() {
 
 function StatusCell({ label, value, icon }: { label: string; value: string; icon?: ReactNode }) {
   return (
-    <div className="min-w-0 rounded-xl border border-zinc-800/70 bg-black/30 px-3.5 py-3">
+    <div className="min-w-0 rounded-xl border border-emerald-500/15 bg-[#07130f]/40 px-3.5 py-3">
       <dt className="flex items-center gap-1.5 font-mono text-[9px] font-black uppercase tracking-wider text-zinc-500">
         {icon}
         {label}

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { setStorageScope } from "@/lib/user-storage";
-import { ShieldAlert, Loader2, KeyRound, Mail, ArrowRight } from "lucide-react";
+import { ShieldAlert, ShieldCheck, Loader2, KeyRound, Mail, ArrowRight } from "lucide-react";
 
 type AuthMode = "signin" | "signup";
 type AuthSearch = { mode?: AuthMode | undefined; next?: string | undefined };
@@ -295,12 +295,12 @@ function AuthConsolePage() {
               </div>
 
               {/* Age attestation */}
-              <div className="flex items-start gap-3 rounded-xl border border-zinc-900/30 bg-black/20 p-3 mt-1">
+              <div className="flex items-start gap-3 rounded-xl border border-emerald-500/15 bg-[#04100b]/40 p-3 mt-1">
                 <input
                   id="ageCheck"
                   type="checkbox"
                   required={isSignUp}
-                  className="mt-1 size-4 shrink-0 rounded border-zinc-800 bg-zinc-950 text-emerald-500 focus:ring-emerald-500/30 accent-emerald-500"
+                  className="mt-1 size-4 shrink-0 rounded border-emerald-500/30 bg-[#04100b] text-emerald-500 focus:ring-emerald-500/30 accent-emerald-500"
                 />
                 <label
                   htmlFor="ageCheck"
@@ -350,6 +350,17 @@ function AuthConsolePage() {
             </div>
           </div>
 
+          {isSignUp && (
+            <div className="flex items-start gap-2.5 rounded-xl border border-emerald-500/15 bg-emerald-950/15 px-3.5 py-3 text-left">
+              <ShieldCheck className="mt-0.5 size-4 shrink-0 text-emerald-400" />
+              <p className="text-[11px] leading-relaxed text-zinc-500">
+                <span className="font-bold text-zinc-300">Privacy Guarantee.</span> ApexMissions
+                only logs manually submitted milestones. We never monitor your device background,
+                screen time, or location parameters.
+              </p>
+            </div>
+          )}
+
           <button type="submit" disabled={busy} className="btn-glass-primary w-full h-12 mt-2">
             {busy ? (
               <Loader2 className="h-4 w-4 animate-spin text-black" />
@@ -367,7 +378,7 @@ function AuthConsolePage() {
           <button
             type="button"
             onClick={switchMode}
-            className="text-xs font-semibold text-zinc-500 hover:text-emerald-400 transition-colors"
+            className="inline-flex min-h-11 items-center justify-center rounded-lg px-3 py-2 text-xs font-semibold text-zinc-500 transition-colors hover:text-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50"
           >
             {isSignUp
               ? "Already registered? Access command deck"

@@ -94,7 +94,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "A distraction-free dashboard to lock in your mission, prioritize tasks by impact, and complete one daily action step.",
       },
-      { name: "theme-color", content: "#0D0D11" },
+      { name: "theme-color", content: "#07110d" },
       { name: "apple-mobile-web-app-title", content: "ApexMission" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },

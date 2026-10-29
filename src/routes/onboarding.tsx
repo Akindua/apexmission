@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Building2, KeyRound, Loader2, ShieldCheck, User, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { PrivacyShieldBanner } from "@/components/PrivacyShieldBanner";
 import { setStorageScope } from "@/lib/user-storage";
 
 export const Route = createFileRoute("/onboarding")({
@@ -209,6 +210,14 @@ function OnboardingPage() {
           <p className="mx-auto mt-3 max-w-xs text-xs font-medium leading-relaxed text-zinc-500">
             Choose your command path. Operate solo or plug into an enterprise tenant.
           </p>
+          <p className="mx-auto mt-4 flex max-w-sm items-start gap-2 text-left text-[10px] leading-relaxed text-zinc-600">
+            <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-emerald-400/80" />
+            <span>
+              <span className="font-bold text-zinc-500">Privacy Guarantee.</span> ApexMissions only
+              logs manually submitted milestones. We never monitor your device background, screen
+              time, or location parameters.
+            </span>
+          </p>
         </div>
 
         {sessionChecked && sessionEmail && (
@@ -344,6 +353,8 @@ function OnboardingPage() {
               </p>
             </div>
           </div>
+
+          <PrivacyShieldBanner className="mt-4" />
 
           <div className="mt-4 glass-input-group">
             <label htmlFor="invite-token" className="glass-input-label">

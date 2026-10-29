@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import { PrivacyShieldBanner } from "@/components/PrivacyShieldBanner";
 
 type AccountMode = "personal" | "company";
 
@@ -124,7 +125,7 @@ export function AccountTypeOnboarding({
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl rounded-2xl border border-zinc-800 bg-[#0b0b0d] p-6 shadow-2xl shadow-black/30">
+    <div className="mx-auto w-full max-w-3xl rounded-2xl border border-emerald-500/20 bg-[#08130f]/90 p-6 shadow-2xl shadow-black/30 backdrop-blur-xl">
       <div className="mb-6 text-center">
         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-400/80">
           Account Setup
@@ -201,6 +202,8 @@ export function AccountTypeOnboarding({
 
       {selectedMode === "company" && (
         <form onSubmit={handleCompanyJoin} className="mt-6 space-y-4">
+          <PrivacyShieldBanner />
+
           <label className="block text-left">
             <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-zinc-400">
               Company Invitation Code
@@ -211,7 +214,7 @@ export function AccountTypeOnboarding({
               onChange={(event) => setCompanyCode(event.target.value)}
               placeholder="e.g. acme-team or 5f2a..."
               disabled={loading}
-              className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-3 text-sm text-white placeholder:text-zinc-500 focus:border-sky-500 focus:outline-none"
+              className="w-full rounded-xl border border-emerald-500/20 bg-[#04100b] px-3 py-3 text-sm text-white placeholder:text-zinc-500 focus:border-emerald-500/60 focus:outline-none"
             />
           </label>
 

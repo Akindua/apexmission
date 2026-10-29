@@ -451,8 +451,8 @@ function ApexMission() {
     switch (activeLayoutTheme) {
       case "theme-midnight":
         return {
-          bg: "bg-[#040406] text-zinc-100",
-          card: "bg-[#09090D]/80 border-emerald-500/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.5),inset_0_0_20px_rgba(16,185,129,0.03)] backdrop-blur-xl",
+          bg: "bg-[#04100b] text-zinc-100",
+          card: "bg-[#09150f]/80 border-emerald-500/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.5),inset_0_0_20px_rgba(16,185,129,0.03)] backdrop-blur-xl",
           border: "border-emerald-500/20",
           accent: "text-emerald-400 bg-emerald-950/30 border-emerald-500/30",
           glow: "shadow-[0_0_20px_rgba(16,185,129,0.2)] bg-emerald-400"
@@ -467,8 +467,8 @@ function ApexMission() {
         };
       default:
         return {
-          bg: "bg-black text-zinc-100",
-          card: "bg-[#0D0D11]/80 border-emerald-500/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.6),inset_0_0_25px_rgba(16,185,129,0.04)] backdrop-blur-2xl",
+          bg: "app-emerald-canvas text-zinc-100",
+          card: "bg-[#0B1511]/80 border-emerald-500/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.6),inset_0_0_25px_rgba(16,185,129,0.04)] backdrop-blur-2xl",
           border: "border-emerald-500/20",
           accent: "text-emerald-400 bg-emerald-950/30 border-emerald-500/20",
           glow: "shadow-[0_0_15px_rgba(52,211,153,0.3)] bg-emerald-400"
@@ -735,7 +735,7 @@ function ApexMission() {
   // A company subdomain must never render the dashboard for a non-member.
   if (activeTenant && !activeTenant.isMember) {
     return (
-      <div className="min-h-screen bg-black text-zinc-100 flex items-center justify-center px-6 py-12 relative overflow-hidden">
+      <div className="app-emerald-canvas min-h-screen text-zinc-100 flex items-center justify-center px-6 py-12 relative overflow-hidden">
         <div className="ambient-emerald-glow" />
         <div className="grid-pattern-overlay" />
         <div className="relative w-full max-w-md rounded-2xl border border-amber-500/25 bg-[#0D0D11]/90 p-8 text-center backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.6)]">
@@ -773,7 +773,7 @@ function ApexMission() {
     <div className={`min-h-dvh md:h-dvh transition-all duration-500 ease-in-out ${themeClasses.bg} text-zinc-100 flex overflow-hidden animate-scan-line relative`}>
       
       {/* 🧭 DESKTOP / TABLET SIDEBAR NAVIGATION BAR */}
-      <aside className="hidden md:flex w-56 lg:w-64 border-r border-emerald-500/20 bg-[#07070A]/90 backdrop-blur-xl flex-col justify-between overflow-y-auto p-3 lg:p-4 shrink-0 z-20">
+      <aside className="hidden md:flex w-56 lg:w-64 border-r border-emerald-500/20 bg-[#07130f]/90 backdrop-blur-xl flex-col justify-between overflow-y-auto p-3 lg:p-4 shrink-0 z-20">
         <div className="flex flex-col gap-6">
           {/* Brand Logo Header */}
           <div className="flex items-center gap-3 px-2 py-2">
@@ -864,7 +864,7 @@ function ApexMission() {
       {/* 📱 MOBILE BOTTOM NAVIGATION BAR */}
       <nav
         aria-label="Primary navigation"
-        className="md:hidden fixed inset-x-0 bottom-0 z-30 bg-[#07070A]/95 border-t border-emerald-500/30 backdrop-blur-xl px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] flex items-stretch justify-around gap-1 font-mono text-[10px] font-black uppercase tracking-wider shadow-[0_-10px_30px_rgba(0,0,0,0.8)]"
+        className="md:hidden fixed inset-x-0 bottom-0 z-30 bg-[#07130f]/95 border-t border-emerald-500/30 backdrop-blur-xl px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] flex items-stretch justify-around gap-1 font-mono text-[10px] font-black uppercase tracking-wider shadow-[0_-10px_30px_rgba(0,0,0,0.8)]"
       >
         <button
           type="button"
