@@ -41,7 +41,13 @@ export interface DemoShowcase {
 /** Public, read-only, demo-tenant-only projection. Safe for anonymous SSR. */
 export const getDemoShowcase = createServerFn({ method: "GET" }).handler(
   async (): Promise<DemoShowcase | null> => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let supabaseAdmin;
+    try {
+      ({ supabaseAdmin } = await import("@/integrations/supabase/client.server"));
+    } catch (err) {
+      console.error("[Demo] Supabase admin client unavailable:", err);
+      return null;
+    }
 
     // 🔒 Strict tenant validation: exactly one row, slug must be 'demo'.
     const { data: company, error: companyError } = await supabaseAdmin

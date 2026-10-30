@@ -1,6 +1,6 @@
 # Mission Control Hub
 
-Build a highly optimized single-page web app called "Mission Control" that helps users prioritize goals and take daily action. Use a clean, modern, dark-mode minimalist interface designed to prevent user distraction. 
+Build a highly optimized single-page web app called "Mission Control" that helps users prioritize goals and take daily action. Use a clean, modern, dark-mode minimalist interface designed to prevent user distraction.
 
 The dashboard layout must feature these three core sections arranged cleanly on a single screen:
 
@@ -59,6 +59,7 @@ npm run dev
 Hardening layers implemented across the stack (see `src/lib/security.server.ts`):
 
 **API layer (`/api/chat`, `/api/mission-plan`, `/api/pdf-plan`, `/api/-welcome-email`)**
+
 - Verified Supabase JWT required on every AI endpoint — none are publicly callable.
 - Same-origin enforcement (CSRF / drive-by defense) via `Origin`/`Host` matching.
 - Per-user + per-IP sliding-window rate limits (burst and hourly budgets).
@@ -70,6 +71,7 @@ Hardening layers implemented across the stack (see `src/lib/security.server.ts`)
   logged server-side and never echoed to callers.
 
 **Global request middleware (`src/server.ts`)**
+
 - Security headers on every response: HSTS, CSP, `X-Frame-Options: DENY`,
   `X-Content-Type-Options: nosniff`, COOP/CORP, `X-Robots-Tag: noai`.
 - Known AI training/scraping crawlers (GPTBot, ClaudeBot, CCBot, PerplexityBot,
@@ -79,16 +81,19 @@ Hardening layers implemented across the stack (see `src/lib/security.server.ts`)
 - Vulnerability-scanner probe paths (`/.env`, `/.git`, `/wp-admin`, …) are refused.
 
 **Server functions**
+
 - All billing, tenant, and coach server functions run behind `requireSupabaseAuth`;
   the AI coach adds a per-operator hourly budget.
 - Stripe checkout URLs are derived from the **actual request origin** (never from
   client input), closing the forged-`origin` redirect hole.
 
 **Persistent rate limiting (Supabase `rate_limits` + `consume_rate_limit` RPC)**
+
 - AI budgets are enforced twice: a fast per-instance in-memory limiter, then a
   shared database limiter that survives deploys/restarts and spans instances.
 
 **Privilege-escalation fixes (migration 20261029140000)**
+
 - `profiles.subscription_tier` / `profiles.email` are **no longer client-writable**
   (column-level `REVOKE UPDATE` + a trigger guard). Previously any signed-in user
   could PATCH their own row to `lifetime` and unlock paid features.
@@ -96,6 +101,7 @@ Hardening layers implemented across the stack (see `src/lib/security.server.ts`)
   are clamped to sane bounds; ledger amounts are bounded.
 
 **Bot protection (Cloudflare Turnstile on every auth form)**
+
 - Set `VITE_TURNSTILE_SITE_KEY` (public) and enable **Bot protection** with the
   Turnstile secret under Supabase Auth → Settings in the dashboard. Every auth
   surface — sign-in, sign-up, forgot-password, and password reset — then
@@ -104,22 +110,26 @@ Hardening layers implemented across the stack (see `src/lib/security.server.ts`)
 - Password policy: 8–128 chars, breach-list blocklist, cannot equal email.
 
 **Passwordless sign-in (WebAuthn passkeys)**
+
 - The sign-in console offers "Sign in with passkey" (`supabase.auth.signInWithPasskey`).
   Phishing-resistant hardware/device-key authentication with no shared secret.
   Enable **WebAuthn** under Supabase Auth → Settings; until then the button
   surfaces a clear configuration error and password sign-in keeps working.
 
 **Dependency hygiene**
+
 - `npm audit` maintained: critical DOMPurify XSS bypass, seroval code injection,
   and undici advisories patched. Remaining known items: `katex` (no upstream fix;
   renders math client-side only) and `zod@3` (fix requires a breaking v4 major).
 
 **Database (Supabase migrations)**
+
 - Row-Level Security on every table with tenant-scoped policies; `anon` table
   privileges revoked (deny-by-default); SECURITY DEFINER RPCs are
   authenticated-only with locked `search_path`.
 
 **Client**
+
 - Text-field hard caps (mission 500, task 300, daily action 300 chars, 25 tasks
   per tier); minimum 8-character passwords.
 
@@ -152,3 +162,8 @@ A pitch-ready, read-only workspace for live sales walkthroughs:
   disallowed in `robots.txt`.
 - **Hosting**: point the `demo` subdomain (CNAME/redirect) at the same
   deployment as `www`. Apply migrations via Lovable sync or `supabase db push`.
+- **Server env vars**: `demo.apexmissions.app` renders via `supabaseAdmin`
+  (service role). Add `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` to your
+  Lovable / Vercel environment variables — without them the showcase route
+  renders a clear "dataset not configured" page instead of crashing. See
+  `.env.example`.

@@ -85,7 +85,7 @@ export function AccountTypeOnboarding({
     setErrorMessage(null);
 
     try {
-      const token = normalizedCode.toLowerCase();
+      const token = normalizedCode.trim();
 
       const { data: companyId, error: companyLookupError } = await supabase.rpc(
         "get_company_id_by_invite_token",
