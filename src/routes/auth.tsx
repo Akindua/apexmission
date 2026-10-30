@@ -107,6 +107,7 @@ function AuthConsolePage() {
   const [currentEmail, setCurrentEmail] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [passkeyBusy, setPasskeyBusy] = useState(false);
+  const [agreeTerms, setAgreeTerms] = useState(false);
   const turnstileRef = useRef<TurnstileInstance | null>(null);
 
   /** Turnstile tokens are single-use — clear and re-challenge after each attempt. */
@@ -487,7 +488,46 @@ function AuthConsolePage() {
             </div>
           )}
 
-          <button type="submit" disabled={busy} className="btn-glass-primary w-full h-12 mt-2">
+          <label
+            htmlFor="terms-agree"
+            className="flex cursor-pointer items-start gap-3 rounded-xl border border-emerald-500/20 bg-emerald-950/15 px-4 py-3 text-left transition-colors hover:border-emerald-500/30"
+          >
+            <input
+              id="terms-agree"
+              type="checkbox"
+              required
+              checked={agreeTerms}
+              onChange={(e) => setAgreeTerms(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-emerald-500/40 bg-[#04100b] text-emerald-400 focus:ring-emerald-500/30 accent-emerald-400"
+            />
+            <span className="text-[11px] leading-normal text-zinc-400">
+              I agree to the{" "}
+              <a
+                href="/TERMS_POLICY.md"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-emerald-400 hover:underline"
+              >
+                Terms of Service
+              </a>{" "}
+              and{" "}
+              <a
+                href="/TERMS_POLICY.md"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-emerald-400 hover:underline"
+              >
+                Privacy Policy
+              </a>
+              .
+            </span>
+          </label>
+
+          <button
+            type="submit"
+            disabled={busy || (isSignUp && !agreeTerms)}
+            className="btn-glass-primary w-full h-12 mt-2"
+          >
             {busy ? (
               <Loader2 className="h-4 w-4 animate-spin text-black" />
             ) : (
