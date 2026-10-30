@@ -475,18 +475,29 @@ function AuthConsolePage() {
             </div>
           )}
 
-          {TURNSTILE_SITE_KEY && (
-            <div className="flex justify-center">
-              <Turnstile
-                ref={turnstileRef}
-                siteKey={TURNSTILE_SITE_KEY}
-                onSuccess={setTurnstileToken}
-                onExpire={() => setTurnstileToken(null)}
-                onError={() => setTurnstileToken(null)}
-                options={{ theme: "dark", size: "flexible" }}
-              />
+          {TURNSTILE_SITE_KEY ? (
+            <div className="w-full space-y-2">
+              <label
+                htmlFor="turnstile-widget"
+                className="block text-center font-mono text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400"
+              >
+                Security Challenge — Complete to proceed
+              </label>
+              <div
+                id="turnstile-widget"
+                className="flex justify-center rounded-xl border border-emerald-500/20 bg-[#04100b]/60 p-3"
+              >
+                <Turnstile
+                  ref={turnstileRef}
+                  siteKey={TURNSTILE_SITE_KEY}
+                  onSuccess={setTurnstileToken}
+                  onExpire={() => setTurnstileToken(null)}
+                  onError={() => setTurnstileToken(null)}
+                  options={{ theme: "dark", size: "flexible" }}
+                />
+              </div>
             </div>
-          )}
+          ) : null}
 
           <label
             htmlFor="terms-agree"
