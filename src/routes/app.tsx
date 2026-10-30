@@ -1,7 +1,23 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, Flame, Plus, Sparkles, Loader2, Target, TimerReset, Shield, Trophy, LayoutDashboard, Award, HardDrive, HelpCircle, MessageSquare, Building2 } from "lucide-react";
+import {
+  Check,
+  Flame,
+  Plus,
+  Sparkles,
+  Loader2,
+  Target,
+  TimerReset,
+  Shield,
+  Trophy,
+  LayoutDashboard,
+  Award,
+  HardDrive,
+  HelpCircle,
+  MessageSquare,
+  Building2,
+} from "lucide-react";
 import { PaywallModal } from "@/components/PaywallModal";
 import { MissionCoach } from "@/components/MissionCoach";
 import { OperatorInduction } from "@/components/OperatorInduction";
@@ -52,7 +68,11 @@ export const Route = createFileRoute("/app")({
 function ApexMission() {
   const [state, setState] = useState<MissionState>(() => defaultState());
   const [hydrated, setHydrated] = useState(false);
-  const [drafts, setDrafts] = useState<Record<ImpactTier, string>>({ high: "", medium: "", low: "" });
+  const [drafts, setDrafts] = useState<Record<ImpactTier, string>>({
+    high: "",
+    medium: "",
+    low: "",
+  });
   const [dailyDraft, setDailyDraft] = useState("");
   const [justCompleted, setJustCompleted] = useState(false);
   const [resetMs, setResetMs] = useState<number | null>(null);
@@ -68,7 +88,11 @@ function ApexMission() {
   const [coachOpen, setCoachOpen] = useState(false);
   const [showInduction, setShowInduction] = useState(false);
   const [showTacticalBriefing, setShowTacticalBriefing] = useState(false);
-  const [surpriseLoot, setSurpriseLoot] = useState<{ active: boolean; msg: string; points: number } | null>(null);
+  const [surpriseLoot, setSurpriseLoot] = useState<{
+    active: boolean;
+    msg: string;
+    points: number;
+  } | null>(null);
   const [showSupport, setShowSupport] = useState(false);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -105,16 +129,16 @@ function ApexMission() {
     };
   }, []);
 
-  const userRankIndex = leaderboardOperators.findIndex(op => op.id === currentUserId);
+  const userRankIndex = leaderboardOperators.findIndex((op) => op.id === currentUserId);
   const userRankText = useMemo(() => {
     if (leaderboardOperators.length === 0) return "Global Operator Node";
-    return userRankIndex !== -1 
-      ? `#${userRankIndex + 1} of ${leaderboardOperators.length} Operators` 
+    return userRankIndex !== -1
+      ? `#${userRankIndex + 1} of ${leaderboardOperators.length} Operators`
       : `Unranked (${leaderboardOperators.length} Active Operators)`;
   }, [userRankIndex, leaderboardOperators]);
 
   const userFailureCount = useMemo(() => {
-    const currentUser = leaderboardOperators.find(op => op.id === currentUserId);
+    const currentUser = leaderboardOperators.find((op) => op.id === currentUserId);
     return currentUser?.failure_count || 0;
   }, [leaderboardOperators, currentUserId]);
 
@@ -130,9 +154,7 @@ function ApexMission() {
         points: operator.credits,
       }));
       setLeaderboardOperators(normalizedData);
-      setLeaderboardSnapshot(
-        operatorProfile?.companyId === null ? snapshot : null,
-      );
+      setLeaderboardSnapshot(operatorProfile?.companyId === null ? snapshot : null);
       setScopedItem("apexmission-leaderboard-cache", JSON.stringify(normalizedData));
     } catch (err) {
       console.error("Failed to map dynamic roster profiles ledger:", err);
@@ -149,7 +171,9 @@ function ApexMission() {
       try {
         // getSession reads/refreshes the local session without a network round
         // trip, so a transient getUser failure cannot bounce a valid user.
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         const user = session?.user ?? null;
         if (cancelled) return;
 
@@ -171,9 +195,7 @@ function ApexMission() {
         if (cancelled) return;
         setState(localState);
         setDailyDraft(localState.daily.text);
-        setHasGeneratedMissionPlan(
-          getScopedItem("apexmission-mission-plan-generated") === "true",
-        );
+        setHasGeneratedMissionPlan(getScopedItem("apexmission-mission-plan-generated") === "true");
         setActiveLayoutTheme(getScopedItem("apexmission-active-theme") || "layout-default");
 
         const rawAnalytics = getScopedItem("apexmission-behavior-analytics");
@@ -225,9 +247,7 @@ function ApexMission() {
         // Wildcard host -> company tenant. Only reached on tenant subdomains;
         // the server function reads the trusted x-subdomain-slug header.
         const hostSlug =
-          typeof window !== "undefined"
-            ? extractSubdomainSlug(window.location.hostname)
-            : null;
+          typeof window !== "undefined" ? extractSubdomainSlug(window.location.hostname) : null;
 
         if (hostSlug) {
           try {
@@ -249,9 +269,7 @@ function ApexMission() {
         setLeaderboardOperators(normalizedData);
         // Personal operators receive live rank intelligence. Corporate
         // operators never receive leaderboard telemetry in the engine.
-        setLeaderboardSnapshot(
-          effectiveProfile.companyId === null ? snapshot : null,
-        );
+        setLeaderboardSnapshot(effectiveProfile.companyId === null ? snapshot : null);
         setScopedItem("apexmission-leaderboard-cache", JSON.stringify(normalizedData));
       } catch (err) {
         console.error("Failed to map dynamic operator telemetry:", err);
@@ -314,11 +332,41 @@ function ApexMission() {
 
   // 🛠️ Hardware Store Inventory Matrix
   const HARDWARE_STORE_INVENTORY = [
-    { id: "theme-midnight", name: "Midnight Core Glass", cost: 700, type: "Aesthetic UI Overlay", desc: "Forces deep obsidian color calibrations across grid panels." },
-    { id: "theme-cyber", name: "Cyber Amber HUD", cost: 1200, type: "HUD Matrix Tint", desc: "Swaps command panel text layers into pure high-contrast performance amber." },
-    { id: "streak-shield-1", name: "Streak Freeze Matrix", cost: 3000, type: "Loss Prevention Parameter", desc: "Automated streak defense. Absorbs a single calendar deadline breach event." },
-    { id: "badge-alpha-founder", name: "⚡ FOUNDING OPERATOR EMBLEM", cost: 2000, type: "Cosmetic Alpha Badge", desc: "Mounts a luminous neon alpha insignia directly next to your signature monogram inside the network standings leaderboard grid." },
-    { id: "badge-apex-sentinel", name: "🛡️ APEX SENTINEL VECTOR", cost: 3200, type: "Cosmetic Alpha Badge", desc: "Unlocks an animated emerald shielding shroud aura that glows behind your user canopy parameters." }
+    {
+      id: "theme-midnight",
+      name: "Midnight Core Glass",
+      cost: 700,
+      type: "Aesthetic UI Overlay",
+      desc: "Forces deep obsidian color calibrations across grid panels.",
+    },
+    {
+      id: "theme-cyber",
+      name: "Cyber Amber HUD",
+      cost: 1200,
+      type: "HUD Matrix Tint",
+      desc: "Swaps command panel text layers into pure high-contrast performance amber.",
+    },
+    {
+      id: "streak-shield-1",
+      name: "Streak Freeze Matrix",
+      cost: 3000,
+      type: "Loss Prevention Parameter",
+      desc: "Automated streak defense. Absorbs a single calendar deadline breach event.",
+    },
+    {
+      id: "badge-alpha-founder",
+      name: "⚡ FOUNDING OPERATOR EMBLEM",
+      cost: 2000,
+      type: "Cosmetic Alpha Badge",
+      desc: "Mounts a luminous neon alpha insignia directly next to your signature monogram inside the network standings leaderboard grid.",
+    },
+    {
+      id: "badge-apex-sentinel",
+      name: "🛡️ APEX SENTINEL VECTOR",
+      cost: 3200,
+      type: "Cosmetic Alpha Badge",
+      desc: "Unlocks an animated emerald shielding shroud aura that glows behind your user canopy parameters.",
+    },
   ];
 
   const [isGeneratingMissionPlan, setIsGeneratingMissionPlan] = useState(false);
@@ -336,39 +384,43 @@ function ApexMission() {
   const premium = BETA_MODE || subscriptionPremium;
 
   const getOrdinalSuffix = (day: number) => {
-    if (day > 3 && day < 21) return 'th';
+    if (day > 3 && day < 21) return "th";
     switch (day % 10) {
-      case 1:  return "st";
-      case 2:  return "nd";
-      case 3:  return "rd";
-      default: return "th";
+      case 1:
+        return "st";
+      case 2:
+        return "nd";
+      case 3:
+        return "rd";
+      default:
+        return "th";
     }
   };
 
- // ☀️ MORNING CHECK-IN TRIGGER ENGINE (SIGN-IN & TIME WINDOW VERIFIED)
- useEffect(() => {
-  if (!hydrated || !profileHydrated) return;
+  // ☀️ MORNING CHECK-IN TRIGGER ENGINE (SIGN-IN & TIME WINDOW VERIFIED)
+  useEffect(() => {
+    if (!hydrated || !profileHydrated) return;
 
-  const checkMorningCheckinEligibility = async () => {
-    if (typeof window !== "undefined") {
-      // The database onboarding flag is authoritative. Never interrupt the
-      // first-ever session with the morning check-in ritual.
-      if (!operatorProfile?.onboardingCompleted) return;
+    const checkMorningCheckinEligibility = async () => {
+      if (typeof window !== "undefined") {
+        // The database onboarding flag is authoritative. Never interrupt the
+        // first-ever session with the morning check-in ritual.
+        if (!operatorProfile?.onboardingCompleted) return;
 
-      const today = todayKey();
-      const lastSeen = getScopedItem("apexmission-morning-checkin");
-      
-      const currentHour = new Date().getHours();
-      const isMorningWindow = currentHour >= 5 && currentHour < 12;
-      
-      if (lastSeen !== today && isMorningWindow) {
-        navigate({ to: "/MorningCheckIn" });
+        const today = todayKey();
+        const lastSeen = getScopedItem("apexmission-morning-checkin");
+
+        const currentHour = new Date().getHours();
+        const isMorningWindow = currentHour >= 5 && currentHour < 12;
+
+        if (lastSeen !== today && isMorningWindow) {
+          navigate({ to: "/MorningCheckIn" });
+        }
       }
-    }
-  };
+    };
 
-  checkMorningCheckinEligibility();
-}, [hydrated, profileHydrated, operatorProfile, navigate]);
+    checkMorningCheckinEligibility();
+  }, [hydrated, profileHydrated, operatorProfile, navigate]);
 
   useEffect(() => {
     const applyEvening = () => {
@@ -391,7 +443,7 @@ function ApexMission() {
 
     const executePenaltyAudit = async () => {
       const highImpactTasks = state.tasks?.high || [];
-      const pendingHighCount = highImpactTasks.filter(t => !t.done).length;
+      const pendingHighCount = highImpactTasks.filter((t) => !t.done).length;
 
       if (pendingHighCount > 0) {
         const penaltyAmount = pendingHighCount * 15;
@@ -400,14 +452,16 @@ function ApexMission() {
 
         setState((s) => ({ ...s, points: optimizedPoints }));
 
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (user) {
           await supabase
             .from("profiles")
             .update({
               credits: optimizedPoints,
               operational_status: "FALLEN",
-              last_action_logged: `Deducted ${penaltyAmount} credits due to active operational slacking metrics.`
+              last_action_logged: `Deducted ${penaltyAmount} credits due to active operational slacking metrics.`,
             })
             .eq("id", user.id);
         }
@@ -415,7 +469,7 @@ function ApexMission() {
         setSurpriseLoot({
           active: true,
           msg: `📉 COGNITIVE PENALTY ENFORCED: Lost ${penaltyAmount} credits. AI tracking flagged sustained slacking parameters. Leaderboard synced.`,
-          points: -penaltyAmount
+          points: -penaltyAmount,
         });
         setTimeout(() => setSurpriseLoot(null), 4500);
       }
@@ -424,7 +478,7 @@ function ApexMission() {
     const penaltyTimer = setInterval(executePenaltyAudit, 3600000);
     return () => clearInterval(penaltyTimer);
   }, [hydrated, state.tasks?.high, setState]);
-  
+
   // 🎯 DETERMINISTIC SESSION ENTRY — LOCAL INDUCTION OR TACTICAL DOSSIER
   useEffect(() => {
     if (!hydrated || !profileHydrated || !operatorProfile) return;
@@ -440,8 +494,7 @@ function ApexMission() {
     // browser session. No AI request is made.
     let alreadyShown = false;
     try {
-      alreadyShown =
-        sessionStorage.getItem(TACTICAL_BRIEFING_SESSION_KEY) === "true";
+      alreadyShown = sessionStorage.getItem(TACTICAL_BRIEFING_SESSION_KEY) === "true";
       if (!alreadyShown) {
         sessionStorage.setItem(TACTICAL_BRIEFING_SESSION_KEY, "true");
       }
@@ -470,7 +523,7 @@ function ApexMission() {
 
   useEffect(() => {
     const now = new Date();
-    const month = now.toLocaleDateString('en-US', { month: 'short' });
+    const month = now.toLocaleDateString("en-US", { month: "short" });
     const dayNum = now.getDate();
     const suffix = getOrdinalSuffix(dayNum);
     const year = now.getFullYear();
@@ -485,7 +538,7 @@ function ApexMission() {
           card: "bg-[#09150f]/80 border-emerald-500/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.5),inset_0_0_20px_rgba(16,185,129,0.03)] backdrop-blur-xl",
           border: "border-emerald-500/20",
           accent: "text-emerald-400 bg-emerald-950/30 border-emerald-500/30",
-          glow: "shadow-[0_0_20px_rgba(16,185,129,0.2)] bg-emerald-400"
+          glow: "shadow-[0_0_20px_rgba(16,185,129,0.2)] bg-emerald-400",
         };
       case "theme-cyber":
         return {
@@ -493,7 +546,7 @@ function ApexMission() {
           card: "bg-[#140D00]/80 border-amber-500/30 shadow-[0_8px_32px_0_rgba(0,0,0,0.5),inset_0_0_20px_rgba(245,158,11,0.03)] backdrop-blur-xl border-dashed",
           border: "border-amber-500/30",
           accent: "text-amber-500 bg-amber-950/40 border-amber-500/30 font-black",
-          glow: "shadow-[0_0_20px_rgba(245,158,11,0.25)] bg-amber-500"
+          glow: "shadow-[0_0_20px_rgba(245,158,11,0.25)] bg-amber-500",
         };
       default:
         return {
@@ -501,10 +554,10 @@ function ApexMission() {
           card: "bg-[#0B1511]/80 border-emerald-500/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.6),inset_0_0_25px_rgba(16,185,129,0.04)] backdrop-blur-2xl",
           border: "border-emerald-500/20",
           accent: "text-emerald-400 bg-emerald-950/30 border-emerald-500/20",
-          glow: "shadow-[0_0_15px_rgba(52,211,153,0.3)] bg-emerald-400"
+          glow: "shadow-[0_0_15px_rgba(52,211,153,0.3)] bg-emerald-400",
         };
     }
-  }, [activeLayoutTheme]);  
+  }, [activeLayoutTheme]);
 
   const [userName, setUserName] = useState("User");
 
@@ -579,10 +632,7 @@ function ApexMission() {
     const points = state.points ?? 0;
     const streak = state.streak?.count ?? 0;
 
-    if (
-      points === operatorProfile.credits &&
-      streak === operatorProfile.currentStreak
-    ) {
+    if (points === operatorProfile.credits && streak === operatorProfile.currentStreak) {
       return;
     }
 
@@ -618,7 +668,8 @@ function ApexMission() {
   // reloads (sign-out -> sign-in) instead of resetting with the local cache.
   useEffect(() => {
     if (!hydrated || !profileHydrated || !currentUserId || !operatorProfile) return;
-    if (!Array.isArray(behaviorAnalytics.taskHistory) || behaviorAnalytics.taskHistory.length === 0) return;
+    if (!Array.isArray(behaviorAnalytics.taskHistory) || behaviorAnalytics.taskHistory.length === 0)
+      return;
 
     const timer = window.setTimeout(async () => {
       const { error } = await supabase
@@ -660,12 +711,17 @@ function ApexMission() {
       return false;
     }
     if (!premium && total >= FREE_TASK_LIMIT) {
-      setPaywall(`The free plan tracks up to ${FREE_TASK_LIMIT} priority tasks. Upgrade to map out your full mission without limits.`);
+      setPaywall(
+        `The free plan tracks up to ${FREE_TASK_LIMIT} priority tasks. Upgrade to map out your full mission without limits.`,
+      );
       return false;
     }
     setState((s) => ({
       ...s,
-      tasks: { ...s.tasks, [tier]: [...(s.tasks[tier] || []), { id: nextId(), text, done: false }] },
+      tasks: {
+        ...s.tasks,
+        [tier]: [...(s.tasks[tier] || []), { id: nextId(), text, done: false }],
+      },
     }));
     return true;
   }
@@ -678,7 +734,9 @@ function ApexMission() {
 
   async function generateActionPlan() {
     if (!premium) {
-      setPaywall("AI Mission Breakdown is a premium feature. Upgrade to turn any mission into concrete priorities instantly.");
+      setPaywall(
+        "AI Mission Breakdown is a premium feature. Upgrade to turn any mission into concrete priorities instantly.",
+      );
       return;
     }
     if (isGeneratingMissionPlan) return;
@@ -730,17 +788,17 @@ function ApexMission() {
     setState((s) => {
       const currentTasks = s.tasks[tier] || [];
       const taskId = (task: Task) => task.id ?? `${tier}-${task.text}`;
-      const targetTask = currentTasks.find(t => taskId(t) === id);
+      const targetTask = currentTasks.find((t) => taskId(t) === id);
       const targetCompleting = targetTask ? !targetTask.done : false;
 
       let scoreBonus = 0;
       let rewardNotice = "";
-      
+
       if (targetCompleting) {
         const activeStreak = s.streak?.count || 0;
-        const streakMultiplier = 1 + (activeStreak * 0.1); 
+        const streakMultiplier = 1 + activeStreak * 0.1;
         const baseTaskPoints = 50;
-        
+
         const totalMultipliedPoints = Math.round(baseTaskPoints * streakMultiplier);
         scoreBonus += totalMultipliedPoints;
 
@@ -793,9 +851,7 @@ function ApexMission() {
       ...s,
       tasks: {
         ...s.tasks,
-        [tier]: (s.tasks[tier] || []).filter(
-          (t) => (t.id ?? `${tier}-${t.text}`) !== id,
-        ),
+        [tier]: (s.tasks[tier] || []).filter((t) => (t.id ?? `${tier}-${t.text}`) !== id),
       },
     }));
   }
@@ -812,26 +868,26 @@ function ApexMission() {
 
   function toggleDaily() {
     if (!state.daily.text.trim()) return;
-    
+
     const wasDone = state.daily.done;
     const nextDone = !wasDone;
-    
+
     setState((s) => {
       const updatedStreak = nextDone ? completeDailyToday(s.streak) : s.streak;
       let scoreBonus = nextDone ? 200 : 0;
 
       if (nextDone) {
         const currentCount = updatedStreak.count;
-        
+
         if (currentCount > 0 && currentCount % 7 === 0) {
           const dynamicMilestonePayoff = (currentCount / 7) * 1000;
           scoreBonus += dynamicMilestonePayoff;
-          
+
           setTimeout(() => {
             setSurpriseLoot({
               active: true,
               msg: `🏆 ELITE ${currentCount}-DAY CONSISTENCY ACHIEVEMENT SECURED! Your console node has been infused with an advanced +${dynamicMilestonePayoff.toLocaleString()} credit milestone payoff bundle.`,
-              points: dynamicMilestonePayoff
+              points: dynamicMilestonePayoff,
             });
           }, 300);
         }
@@ -843,11 +899,9 @@ function ApexMission() {
         ...s,
         points: Math.max(0, ((s as any).points || 0) + scoreBonus),
         daily: { ...s.daily, done: nextDone, date: todayKey() },
-        streak: updatedStreak
+        streak: updatedStreak,
       };
     });
-
-
 
     if (nextDone) {
       setJustCompleted(true);
@@ -924,8 +978,9 @@ function ApexMission() {
   }
 
   return (
-    <div className={`min-h-dvh md:h-dvh transition-all duration-500 ease-in-out ${themeClasses.bg} text-zinc-100 flex overflow-hidden animate-scan-line relative`}>
-      
+    <div
+      className={`min-h-dvh md:h-dvh transition-all duration-500 ease-in-out ${themeClasses.bg} text-zinc-100 flex overflow-hidden animate-scan-line relative`}
+    >
       {/* 🧭 DESKTOP / TABLET SIDEBAR NAVIGATION BAR */}
       <aside className="hidden md:flex w-56 lg:w-64 border-r border-emerald-500/20 bg-[#07130f]/90 backdrop-blur-xl flex-col justify-between overflow-y-auto p-3 lg:p-4 shrink-0 z-20">
         <div className="flex flex-col gap-6">
@@ -935,13 +990,20 @@ function ApexMission() {
               <Target className="size-5 animate-pulse" />
             </div>
             <div className="text-left">
-              <span className="font-black text-sm font-display tracking-[0.2em] text-white uppercase block">ApexMission</span>
-              <span className="text-[10px] font-bold text-emerald-400/70 uppercase tracking-wider block mt-0.5">Command Terminal</span>
+              <span className="font-black text-sm font-display tracking-[0.2em] text-white uppercase block">
+                ApexMission
+              </span>
+              <span className="text-[10px] font-bold text-emerald-400/70 uppercase tracking-wider block mt-0.5">
+                Command Terminal
+              </span>
             </div>
           </div>
 
           {/* Navigation Links List */}
-          <nav aria-label="Sidebar navigation" className="flex flex-col gap-1.5 font-mono text-xs font-black uppercase tracking-wider">
+          <nav
+            aria-label="Sidebar navigation"
+            className="flex flex-col gap-1.5 font-mono text-xs font-black uppercase tracking-wider"
+          >
             <button
               type="button"
               onClick={() => setActiveTab("workspace")}
@@ -1028,7 +1090,9 @@ function ApexMission() {
           onClick={() => setActiveTab("workspace")}
           aria-current={activeTab === "workspace" ? "page" : undefined}
           className={`flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl border px-1 py-2 transition-all ${
-            activeTab === "workspace" ? "text-emerald-400 bg-emerald-950/40 border-emerald-500/30 font-black shadow-[0_0_15px_rgba(16,185,129,0.2)]" : "text-zinc-500 border-transparent hover:text-zinc-300"
+            activeTab === "workspace"
+              ? "text-emerald-400 bg-emerald-950/40 border-emerald-500/30 font-black shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+              : "text-zinc-500 border-transparent hover:text-zinc-300"
           }`}
         >
           <LayoutDashboard className="size-4 shrink-0" />
@@ -1039,7 +1103,9 @@ function ApexMission() {
           onClick={() => setActiveTab("leaderboard")}
           aria-current={activeTab === "leaderboard" ? "page" : undefined}
           className={`flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl border px-1 py-2 transition-all ${
-            activeTab === "leaderboard" ? "text-emerald-400 bg-emerald-950/40 border-emerald-500/30 font-black shadow-[0_0_15px_rgba(16,185,129,0.2)]" : "text-zinc-500 border-transparent hover:text-zinc-300"
+            activeTab === "leaderboard"
+              ? "text-emerald-400 bg-emerald-950/40 border-emerald-500/30 font-black shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+              : "text-zinc-500 border-transparent hover:text-zinc-300"
           }`}
         >
           <Award className="size-4 shrink-0" />
@@ -1050,7 +1116,9 @@ function ApexMission() {
           onClick={() => setActiveTab("hardware")}
           aria-current={activeTab === "hardware" ? "page" : undefined}
           className={`flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl border px-1 py-2 transition-all ${
-            activeTab === "hardware" ? "text-emerald-400 bg-emerald-950/40 border-emerald-500/30 font-black shadow-[0_0_15px_rgba(16,185,129,0.2)]" : "text-zinc-500 border-transparent hover:text-zinc-300"
+            activeTab === "hardware"
+              ? "text-emerald-400 bg-emerald-950/40 border-emerald-500/30 font-black shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+              : "text-zinc-500 border-transparent hover:text-zinc-300"
           }`}
         >
           <HardDrive className="size-4 shrink-0" />
@@ -1075,9 +1143,11 @@ function ApexMission() {
       </nav>
 
       {/* 🚀 MAIN CONTENT AREA */}
-      <main ref={mainRef} className="flex-1 overflow-y-auto relative z-10 px-4 pt-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:px-6 lg:px-10 md:pb-8">
+      <main
+        ref={mainRef}
+        className="flex-1 overflow-y-auto relative z-10 px-4 pt-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:px-6 lg:px-10 md:pb-8"
+      >
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 sm:gap-6">
-
           {/* ⚡ FLOATING EMERALD NOTIFICATION BANNER */}
           {showPlanSuccessAlert && (
             <div
@@ -1088,19 +1158,24 @@ function ApexMission() {
                 <Check className="size-4 stroke-[3]" />
               </div>
               <div className="min-w-0 text-left">
-                <h4 className="text-xs font-black uppercase tracking-wider text-white">Blueprint Initialized</h4>
-                <p className="mt-0.5 text-[11px] font-medium text-zinc-400">Mission parameter metrics, tasks, and daily actions extracted perfectly.</p>
+                <h4 className="text-xs font-black uppercase tracking-wider text-white">
+                  Blueprint Initialized
+                </h4>
+                <p className="mt-0.5 text-[11px] font-medium text-zinc-400">
+                  Mission parameter metrics, tasks, and daily actions extracted perfectly.
+                </p>
               </div>
             </div>
           )}
 
           {/* 🖥️ TOP DASHBOARD HEADER WITH GLASS EFFECT */}
           <header className="flex flex-col gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-950/10 p-4 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.5),inset_0_0_20px_rgba(16,185,129,0.03)] lg:flex-row lg:items-center lg:justify-between lg:gap-4">
-            
             {/* Operator Node Badge + AI briefing shortcut */}
             <div className="flex min-w-0 items-start justify-between gap-3">
               <div className="min-w-0 text-left">
-                <span className="block truncate text-xs font-black uppercase text-white">Operator: {userName}</span>
+                <span className="block truncate text-xs font-black uppercase text-white">
+                  Operator: {userName}
+                </span>
                 <span className="mt-0.5 block text-[10px] font-bold uppercase tracking-wider text-emerald-400 font-mono">
                   📅 {formattedDate}
                 </span>
@@ -1157,7 +1232,11 @@ function ApexMission() {
               <button
                 type="button"
                 onClick={() => {
-                  if (window.confirm("⚠️ SYSTEM FLASH RESET: Wipe this account's local operational data?")) {
+                  if (
+                    window.confirm(
+                      "⚠️ SYSTEM FLASH RESET: Wipe this account's local operational data?",
+                    )
+                  ) {
                     clearCurrentUserStorage();
                     window.location.reload();
                   }
@@ -1176,7 +1255,10 @@ function ApexMission() {
               {/* Vision Card with Emerald Glassmorphism */}
               <section className="relative overflow-hidden rounded-2xl border border-emerald-500/25 p-5 sm:p-8 bg-[#0D0D11]/80 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.6),inset_0_0_25px_rgba(16,185,129,0.04)]">
                 <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400 to-transparent" />
-                <label htmlFor="mission" className="block text-[10px] font-black uppercase tracking-widest text-emerald-400/80">
+                <label
+                  htmlFor="mission"
+                  className="block text-[10px] font-black uppercase tracking-widest text-emerald-400/80"
+                >
                   Core Vision Statement
                 </label>
                 <input
@@ -1191,7 +1273,7 @@ function ApexMission() {
                   placeholder="Define your core vision…"
                   className="field-flush mt-3 min-h-11 w-full truncate bg-transparent font-display text-xl font-black tracking-tight text-white outline-none placeholder:text-zinc-700 sm:text-4xl"
                 />
-                
+
                 <div className="mt-5 flex flex-col gap-4 border-t border-emerald-500/15 pt-5 sm:mt-6 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex w-full items-center gap-3 sm:w-auto sm:flex-1">
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-black border border-emerald-500/20">
@@ -1217,9 +1299,13 @@ function ApexMission() {
                       ) : (
                         <Sparkles className="size-3.5 shrink-0 text-emerald-400 transition-transform duration-300 group-hover:rotate-12" />
                       )}
-                      {isGeneratingMissionPlan ? "Analyzing Mission..." : hasGeneratedMissionPlan ? "Regenerate AI Plan" : "Generate AI Plan"}
+                      {isGeneratingMissionPlan
+                        ? "Analyzing Mission..."
+                        : hasGeneratedMissionPlan
+                          ? "Regenerate AI Plan"
+                          : "Generate AI Plan"}
                     </button>
-                    
+
                     {premium && (
                       <span className="self-center rounded-lg border border-emerald-500/30 bg-emerald-950/60 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.2)] sm:self-auto">
                         {tier === "lifetime" ? "Lifetime" : "Premium"}
@@ -1231,23 +1317,37 @@ function ApexMission() {
 
               {/* Profile Selector with Emerald Glass */}
               <div className="flex flex-col gap-2 rounded-2xl border border-emerald-500/20 bg-[#0D0D11]/80 p-3.5 text-left backdrop-blur-xl shadow-[0_8px_25px_0_rgba(0,0,0,0.5)] sm:flex-row sm:items-center sm:gap-3">
-                <span className="shrink-0 pl-1 text-[10px] font-black uppercase tracking-wider text-emerald-400/80 sm:whitespace-nowrap">Audience Track:</span>
-                <select 
+                <span className="shrink-0 pl-1 text-[10px] font-black uppercase tracking-wider text-emerald-400/80 sm:whitespace-nowrap">
+                  Audience Track:
+                </span>
+                <select
                   defaultValue="general"
                   onChange={(e) => {
                     const selectedTrack = e.target.value as keyof typeof AUDIENCE_PROFILES;
                     const profileDefaults = AUDIENCE_PROFILES[selectedTrack];
-                    
-                    if (window.confirm(`⚡ SYNCHRONIZE TRACK PROFILE: Clear current workspace grids and auto-load baseline execution rows for the ${e.target.options[e.target.selectedIndex]?.text ?? "selected"} matrix?`)) {
+
+                    if (
+                      window.confirm(
+                        `⚡ SYNCHRONIZE TRACK PROFILE: Clear current workspace grids and auto-load baseline execution rows for the ${e.target.options[e.target.selectedIndex]?.text ?? "selected"} matrix?`,
+                      )
+                    ) {
                       setState((s) => ({
                         ...s,
                         tasks: {
-                          high: [{ id: `t-${Date.now()}-h`, text: profileDefaults.high, done: false }],
-                          medium: [{ id: `t-${Date.now()}-m`, text: profileDefaults.medium, done: false }],
-                          low: [{ id: `t-${Date.now()}-l`, text: profileDefaults.low, done: false }]
-                        }
+                          high: [
+                            { id: `t-${Date.now()}-h`, text: profileDefaults.high, done: false },
+                          ],
+                          medium: [
+                            { id: `t-${Date.now()}-m`, text: profileDefaults.medium, done: false },
+                          ],
+                          low: [
+                            { id: `t-${Date.now()}-l`, text: profileDefaults.low, done: false },
+                          ],
+                        },
                       }));
-                      alert("🚀 ARCHITECTURE MATRIX LOADED: Baseline task sequences injected cleanly.");
+                      alert(
+                        "🚀 ARCHITECTURE MATRIX LOADED: Baseline task sequences injected cleanly.",
+                      );
                     }
                   }}
                   className="h-11 w-full cursor-pointer rounded-xl border border-emerald-500/20 bg-black/60 px-4 text-xs font-bold text-emerald-400 shadow-[inset_0_1px_3px_rgba(16,185,129,0.1)] outline-none focus:border-emerald-500/50 sm:flex-1"
@@ -1263,15 +1363,21 @@ function ApexMission() {
               {/* Task Columns */}
               <section className="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {TIERS.map((tier) => (
-                  <div key={tier.key} className="flex flex-col rounded-2xl p-4 bg-[#0D0D11]/80 border border-emerald-500/20 backdrop-blur-xl shadow-[0_8px_30px_0_rgba(0,0,0,0.5)] sm:p-5">
+                  <div
+                    key={tier.key}
+                    className="flex flex-col rounded-2xl p-4 bg-[#0D0D11]/80 border border-emerald-500/20 backdrop-blur-xl shadow-[0_8px_30px_0_rgba(0,0,0,0.5)] sm:p-5"
+                  >
                     <div className="mb-3 flex flex-col gap-2 border-b border-emerald-500/15 pb-3">
                       <div className="flex items-center gap-2">
                         <span className={`size-2 shrink-0 rounded-full ${tier.accentClass}`} />
-                        <h2 className={`truncate text-[10px] font-black uppercase tracking-widest ${tier.textClass}`}>
+                        <h2
+                          className={`truncate text-[10px] font-black uppercase tracking-widest ${tier.textClass}`}
+                        >
                           {tier.label}
                         </h2>
                         <span className="ml-auto shrink-0 rounded border border-emerald-500/20 bg-black px-2 py-0.5 font-mono text-[10px] font-bold tabular-nums text-emerald-400 shadow-[inset_0_1px_2px_rgba(52,211,153,0.1)]">
-                          {(state.tasks[tier.key] || []).filter((t) => t.done).length}/{(state.tasks[tier.key] || []).length}
+                          {(state.tasks[tier.key] || []).filter((t) => t.done).length}/
+                          {(state.tasks[tier.key] || []).length}
                         </span>
                       </div>
 
@@ -1296,7 +1402,9 @@ function ApexMission() {
                         );
                       })}
                       {(state.tasks[tier.key] || []).length === 0 && (
-                        <li className="px-1 py-3 text-xs text-zinc-600 font-medium italic">No execution objects mapped.</li>
+                        <li className="px-1 py-3 text-xs text-zinc-600 font-medium italic">
+                          No execution objects mapped.
+                        </li>
                       )}
                     </ul>
 
@@ -1324,8 +1432,13 @@ function ApexMission() {
               </section>
 
               {/* Daily Action */}
-              <section className={`rounded-2xl border p-5 sm:p-8 transition-all duration-500 bg-[#0D0D11]/80 backdrop-blur-2xl border-emerald-500/25 shadow-[0_8px_32px_0_rgba(0,0,0,0.6)] ${state.daily.done ? "border-emerald-500/50 bg-emerald-950/20" : ""}`}>
-                <label htmlFor="daily-action" className="block text-[10px] font-black uppercase tracking-widest text-emerald-400/80">
+              <section
+                className={`rounded-2xl border p-5 sm:p-8 transition-all duration-500 bg-[#0D0D11]/80 backdrop-blur-2xl border-emerald-500/25 shadow-[0_8px_32px_0_rgba(0,0,0,0.6)] ${state.daily.done ? "border-emerald-500/50 bg-emerald-950/20" : ""}`}
+              >
+                <label
+                  htmlFor="daily-action"
+                  className="block text-[10px] font-black uppercase tracking-widest text-emerald-400/80"
+                >
                   Today's Master Focus Action
                 </label>
 
@@ -1342,7 +1455,9 @@ function ApexMission() {
                   >
                     <Check
                       className={`size-6 transition-all duration-200 ${
-                        state.daily.done ? "scale-100 text-black font-black" : "scale-50 text-transparent group-hover:text-emerald-500/50"
+                        state.daily.done
+                          ? "scale-100 text-black font-black"
+                          : "scale-50 text-transparent group-hover:text-emerald-500/50"
                       }`}
                       strokeWidth={3}
                     />
@@ -1360,7 +1475,9 @@ function ApexMission() {
                     placeholder="Set today's top action…"
                     disabled={state.daily.done}
                     className={`field-flush min-h-11 min-w-0 w-full truncate bg-transparent font-display text-lg font-bold tracking-tight outline-none transition-all duration-300 placeholder:text-zinc-700 sm:text-2xl ${
-                      state.daily.done ? "text-zinc-500 line-through decoration-emerald-500/50 decoration-2" : "text-white"
+                      state.daily.done
+                        ? "text-zinc-500 line-through decoration-emerald-500/50 decoration-2"
+                        : "text-white"
                     }`}
                   />
                 </div>
@@ -1377,13 +1494,19 @@ function ApexMission() {
                           <span className="text-sm">🌙</span>
                         </div>
                         <div className="min-w-0 text-left">
-                          <p className="text-[9px] font-black uppercase tracking-wider text-emerald-400/70">Day Closeout</p>
-                          <h4 className="truncate text-xs font-bold uppercase tracking-wide text-zinc-200 group-hover:text-white font-mono">Win Your Night</h4>
+                          <p className="text-[9px] font-black uppercase tracking-wider text-emerald-400/70">
+                            Day Closeout
+                          </p>
+                          <h4 className="truncate text-xs font-bold uppercase tracking-wide text-zinc-200 group-hover:text-white font-mono">
+                            Win Your Night
+                          </h4>
                         </div>
                       </div>
                       <div className="relative z-10 flex shrink-0 items-center gap-2 font-mono text-[10px] font-black uppercase tracking-wider text-zinc-500 transition-colors group-hover:text-emerald-400">
                         <span className="hidden sm:inline">Lock in Progress</span>
-                        <span className="transform transition-transform duration-300 group-hover:translate-x-1">→</span>
+                        <span className="transform transition-transform duration-300 group-hover:translate-x-1">
+                          →
+                        </span>
                       </div>
                     </button>
                   </div>
@@ -1391,8 +1514,12 @@ function ApexMission() {
 
                 <div className="grid grid-cols-1 gap-3 sm:flex sm:items-center sm:justify-between sm:gap-4">
                   <div className="flex items-center gap-3">
-                    <div className={`flex size-10 items-center justify-center rounded-xl border bg-black ${state.streak.count > 0 ? "border-orange-500/40 bg-orange-950/20 text-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.2)]" : "border-emerald-500/20 text-zinc-600"}`}>
-                      <Flame className={`size-5 ${state.streak.count > 0 ? "fill-orange-400" : ""}`} />
+                    <div
+                      className={`flex size-10 items-center justify-center rounded-xl border bg-black ${state.streak.count > 0 ? "border-orange-500/40 bg-orange-950/20 text-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.2)]" : "border-emerald-500/20 text-zinc-600"}`}
+                    >
+                      <Flame
+                        className={`size-5 ${state.streak.count > 0 ? "fill-orange-400" : ""}`}
+                      />
                     </div>
                     <div className="text-left">
                       <div className="font-mono text-lg font-black text-white tabular-nums">
@@ -1403,14 +1530,16 @@ function ApexMission() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex w-full items-center justify-center gap-3 rounded-xl border border-emerald-500/20 bg-black/60 px-4 py-2 shadow-[inset_0_1px_3px_rgba(16,185,129,0.1)] sm:w-auto sm:justify-start">
                     <TimerReset className="size-4.5 shrink-0 text-emerald-400/70" />
                     <div className="text-left">
                       <div className="font-mono text-sm font-black tabular-nums text-emerald-400">
                         {resetMs === null ? "--:--:--" : formatCountdown(resetMs)}
                       </div>
-                      <div className="text-[9px] font-bold uppercase tracking-wider text-zinc-500">until calendar reset</div>
+                      <div className="text-[9px] font-bold uppercase tracking-wider text-zinc-500">
+                        until calendar reset
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1420,25 +1549,35 @@ function ApexMission() {
 
           {/* RANKS LEADERBOARD TAB */}
           {activeTab === "leaderboard" && (
-            <section className={`rounded-2xl border p-4 sm:p-6 text-left transform transition-all duration-500 translate-y-2 animate-fade-in ${themeClasses.card} bg-[#0D0D11]/80 border-emerald-500/25 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.6)]`}>
+            <section
+              className={`rounded-2xl border p-4 sm:p-6 text-left transform transition-all duration-500 translate-y-2 animate-fade-in ${themeClasses.card} bg-[#0D0D11]/80 border-emerald-500/25 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.6)]`}
+            >
               <div className="mb-4 flex flex-col justify-between gap-4 border-b border-emerald-500/15 pb-4 sm:flex-row sm:items-center">
                 <div>
                   <h2 className="flex items-center gap-2 text-[13px] font-black uppercase tracking-wider text-white sm:text-sm">
-                    <Trophy className="size-4 shrink-0 text-amber-400" /> Real-Time Network Operator Standings
+                    <Trophy className="size-4 shrink-0 text-amber-400" /> Real-Time Network Operator
+                    Standings
                   </h2>
-                  <p className="mt-1 text-[11px] text-zinc-400 sm:text-xs">Cross-examine absolute consistency vectors. Only real authenticated system operators currently mapped to this network cluster are displayed.</p>
+                  <p className="mt-1 text-[11px] text-zinc-400 sm:text-xs">
+                    Cross-examine absolute consistency vectors. Only real authenticated system
+                    operators currently mapped to this network cluster are displayed.
+                  </p>
                 </div>
-                
+
                 <button
                   type="button"
                   disabled={loadingRoster}
                   onClick={fetchLiveAccountabilityRoster}
                   className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-950/30 px-3 py-2 font-mono text-[10px] font-black uppercase text-emerald-400 transition-all hover:bg-emerald-500 hover:text-black shadow-[0_0_15px_rgba(16,185,129,0.15)] sm:w-auto"
                 >
-                  {loadingRoster ? <Loader2 className="size-3 animate-spin text-emerald-400" /> : "🔄 Resync Ledger"}
+                  {loadingRoster ? (
+                    <Loader2 className="size-3 animate-spin text-emerald-400" />
+                  ) : (
+                    "🔄 Resync Ledger"
+                  )}
                 </button>
               </div>
-              
+
               <div className="overflow-x-auto rounded-xl border border-emerald-500/20 bg-black/40 font-mono text-xs shadow-[inset_0_1px_4px_rgba(16,185,129,0.1)]">
                 <div className="grid min-w-[600px] grid-cols-6 border-b border-emerald-500/20 bg-emerald-950/30 px-4 py-3 text-center text-[9px] font-black uppercase tracking-wider text-emerald-400/80 sm:text-left">
                   <span>Rank</span>
@@ -1452,59 +1591,87 @@ function ApexMission() {
                 <div className="min-w-[600px] divide-y divide-emerald-500/10">
                   {leaderboardOperators.map((operator, index) => {
                     const isCurrentClientNode = operator.id === currentUserId;
-                    const activeDisplayCredits = isCurrentClientNode 
-                      ? ((state as any).points !== undefined ? (state as any).points : 1000) 
-                      : (operator.points || operator.beta_points || 0);
+                    const activeDisplayCredits = isCurrentClientNode
+                      ? (state as any).points !== undefined
+                        ? (state as any).points
+                        : 1000
+                      : operator.points || operator.beta_points || 0;
 
-                    const hasFounderBadge = isCurrentClientNode 
+                    const hasFounderBadge = isCurrentClientNode
                       ? getScopedItem("apexmission-unlocked-badge-alpha-founder") === "true"
                       : operator.unlocked_layouts?.includes("badge-alpha-founder");
 
                     return (
-                      <div 
-                        key={operator.id} 
+                      <div
+                        key={operator.id}
                         className={`grid grid-cols-6 px-4 py-4 items-center text-center sm:text-left text-zinc-300 transition-colors duration-200 hover:bg-emerald-950/10 ${
-                          isCurrentClientNode ? "bg-emerald-950/30 text-emerald-300 font-bold border-y border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.1)]" : ""
+                          isCurrentClientNode
+                            ? "bg-emerald-950/30 text-emerald-300 font-bold border-y border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.1)]"
+                            : ""
                         }`}
                       >
                         <span className="font-bold text-zinc-500">
-                          {index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${String(index + 1).padStart(2, "0")}`}
+                          {index === 0
+                            ? "🥇"
+                            : index === 1
+                              ? "🥈"
+                              : index === 2
+                                ? "🥉"
+                                : `${String(index + 1).padStart(2, "0")}`}
                         </span>
-                        
+
                         <span className="truncate font-semibold text-white text-left flex items-center gap-2 min-w-0">
-                          <span className="truncate">{operator.full_name || "Anonymous Operator"}</span>
-                          
+                          <span className="truncate">
+                            {operator.full_name || "Anonymous Operator"}
+                          </span>
+
                           {hasFounderBadge && (
                             <span className="shrink-0 text-[8px] font-black tracking-widest text-amber-400 bg-amber-950/60 border border-amber-500/30 px-1.5 py-0.5 rounded shadow-[0_0_8px_rgba(245,158,11,0.3)] animate-pulse">
                               ⚡ FOUNDER
                             </span>
                           )}
 
-                          {isCurrentClientNode && <span className="shrink-0 text-[8px] tracking-widest uppercase bg-emerald-950 border border-emerald-500/40 text-emerald-400 px-1.5 py-0.5 rounded shadow-[0_0_10px_rgba(16,185,129,0.3)]">YOU</span>}
+                          {isCurrentClientNode && (
+                            <span className="shrink-0 text-[8px] tracking-widest uppercase bg-emerald-950 border border-emerald-500/40 text-emerald-400 px-1.5 py-0.5 rounded shadow-[0_0_10px_rgba(16,185,129,0.3)]">
+                              YOU
+                            </span>
+                          )}
                         </span>
-                        
-                        <span className="text-center text-orange-400 font-bold tabular-nums">{operator.current_streak}d</span>
-                        <span className="text-center text-amber-500 font-bold tabular-nums">{operator.max_streak}d</span>
-                        
+
+                        <span className="text-center text-orange-400 font-bold tabular-nums">
+                          {operator.current_streak}d
+                        </span>
+                        <span className="text-center text-amber-500 font-bold tabular-nums">
+                          {operator.max_streak}d
+                        </span>
+
                         <span className="text-center flex flex-col sm:flex-row items-center justify-center gap-1">
-                          <span className="text-rose-400 font-semibold tabular-nums bg-rose-950/30 px-1.5 py-0.5 rounded border border-rose-500/20">{operator.failure_count}</span>
-                          <span className={`text-[8px] font-black uppercase px-1 rounded tracking-wide border ${
-                            operator.operational_status === "Operational" 
-                              ? "bg-emerald-950/40 text-emerald-400 border-emerald-500/30 shadow-[0_0_8px_rgba(16,185,129,0.2)]" 
-                              : "bg-rose-950/40 text-rose-400 border-rose-500/30 animate-pulse"
-                          }`}>
+                          <span className="text-rose-400 font-semibold tabular-nums bg-rose-950/30 px-1.5 py-0.5 rounded border border-rose-500/20">
+                            {operator.failure_count}
+                          </span>
+                          <span
+                            className={`text-[8px] font-black uppercase px-1 rounded tracking-wide border ${
+                              operator.operational_status === "Operational"
+                                ? "bg-emerald-950/40 text-emerald-400 border-emerald-500/30 shadow-[0_0_8px_rgba(16,185,129,0.2)]"
+                                : "bg-rose-950/40 text-rose-400 border-rose-500/30 animate-pulse"
+                            }`}
+                          >
                             {operator.operational_status}
                           </span>
                         </span>
-                        
-                        <span className="text-right text-emerald-400 font-bold font-mono tabular-nums">{activeDisplayCredits} cr</span>
+
+                        <span className="text-right text-emerald-400 font-bold font-mono tabular-nums">
+                          {activeDisplayCredits} cr
+                        </span>
                       </div>
                     );
                   })}
 
                   {leaderboardOperators.length === 0 && (
                     <div className="p-8 text-center text-zinc-600 italic">
-                      {loadingRoster ? "Establishing network stream channels..." : "No active profiles discovered inside network cluster parameters."}
+                      {loadingRoster
+                        ? "Establishing network stream channels..."
+                        : "No active profiles discovered inside network cluster parameters."}
                     </div>
                   )}
                 </div>
@@ -1516,28 +1683,38 @@ function ApexMission() {
           {activeTab === "hardware" && (
             <section className="grid grid-cols-1 gap-4 text-left animate-fade-in sm:grid-cols-2 xl:grid-cols-3">
               {HARDWARE_STORE_INVENTORY.map((item) => (
-                <div key={item.id} className={`flex flex-col justify-between rounded-2xl border p-4 bg-[#0D0D11]/80 border-emerald-500/25 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.6)] sm:p-5`}>
+                <div
+                  key={item.id}
+                  className={`flex flex-col justify-between rounded-2xl border p-4 bg-[#0D0D11]/80 border-emerald-500/25 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.6)] sm:p-5`}
+                >
                   <div>
-                    <span className="rounded-lg bg-emerald-950/40 border border-emerald-500/30 px-2.5 py-1 text-[9px] font-black uppercase text-emerald-400 tracking-wider w-max block shadow-[0_0_10px_rgba(16,185,129,0.15)]">{item.type}</span>
+                    <span className="rounded-lg bg-emerald-950/40 border border-emerald-500/30 px-2.5 py-1 text-[9px] font-black uppercase text-emerald-400 tracking-wider w-max block shadow-[0_0_10px_rgba(16,185,129,0.15)]">
+                      {item.type}
+                    </span>
                     <h4 className="text-sm font-black text-white mt-3">{item.name}</h4>
                     <p className="text-[11px] text-zinc-400 mt-1">{item.desc}</p>
                   </div>
                   <div className="mt-6 flex items-center justify-between">
-                    <span className="font-mono text-xs font-black text-emerald-400">{item.cost} credits</span>
-                    <button 
-                      type="button" 
+                    <span className="font-mono text-xs font-black text-emerald-400">
+                      {item.cost} credits
+                    </span>
+                    <button
+                      type="button"
                       onClick={async () => {
                         const currentPoints = (state as any).points || 0;
-                        if (currentPoints < item.cost) return alert("❌ INSUFFICIENT OPERATIONAL CREDITS.");
+                        if (currentPoints < item.cost)
+                          return alert("❌ INSUFFICIENT OPERATIONAL CREDITS.");
 
                         const nextPoints = currentPoints - item.cost;
-                        setState(s => ({ ...s, points: nextPoints }));
+                        setState((s) => ({ ...s, points: nextPoints }));
 
-                        if (item.id.startsWith("theme-")) { 
-                          setScopedItem("apexmission-active-theme", item.id); 
+                        if (item.id.startsWith("theme-")) {
+                          setScopedItem("apexmission-active-theme", item.id);
                         } else if (item.id.startsWith("badge-")) {
                           setScopedItem(`apexmission-unlocked-${item.id}`, "true");
-                          alert(`💎 ALPHA COGNITIVE EMBLEM EQUIPPED: ${item.name} is now locked onto your identity matrix rows!`);
+                          alert(
+                            `💎 ALPHA COGNITIVE EMBLEM EQUIPPED: ${item.name} is now locked onto your identity matrix rows!`,
+                          );
                         }
 
                         // Persist the debit so a reload does not restore the old balance.
@@ -1554,7 +1731,7 @@ function ApexMission() {
                         if (item.id.startsWith("theme-") || item.id.startsWith("badge-")) {
                           window.location.reload();
                         }
-                      }} 
+                      }}
                       className="flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500 px-4 py-2 text-xs font-black text-black font-mono shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all hover:bg-emerald-400 active:scale-95"
                     >
                       Equip
@@ -1564,13 +1741,12 @@ function ApexMission() {
               ))}
             </section>
           )}
-
         </div>
       </main>
 
       {/* COPYRIGHT / IP NOTICE */}
       <footer className="px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-1 text-center md:pl-[calc(15rem+1rem)]">
-        <p className="font-mono text-[9px] font-black uppercase tracking-[0.2em] text-zinc-700">
+        <p className="font-mono text-[9px] font-black uppercase tracking-[0.2em] text-emerald-400">
           © 2026 ApexMissions. All rights reserved. Unauthorized copying, scraping,
           reverse-engineering, or reproduction of this software or its content is strictly
           prohibited.
@@ -1599,8 +1775,11 @@ function ApexMission() {
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/90 px-4 py-6 backdrop-blur-md animate-fade-in">
           <div className="relative my-auto max-h-[calc(100dvh-3rem)] w-full max-w-sm overflow-y-auto rounded-2xl border border-emerald-500/40 bg-[#0E1612]/95 p-6 text-center shadow-[0_0_50px_rgba(16,185,129,0.25)] backdrop-blur-2xl sm:p-8">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400 to-transparent" />
-            
-            <div id="apex-progress-card" className="bg-[#0A0F0C] border border-emerald-500/30 rounded-xl p-6 mb-6 text-center shadow-[inset_0_1px_5px_rgba(16,185,129,0.15)]">
+
+            <div
+              id="apex-progress-card"
+              className="bg-[#0A0F0C] border border-emerald-500/30 rounded-xl p-6 mb-6 text-center shadow-[inset_0_1px_5px_rgba(16,185,129,0.15)]"
+            >
               <div className="mx-auto flex size-12 items-center justify-center rounded-xl border border-emerald-500/40 bg-emerald-950/50 text-emerald-400 mb-4 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
                 <Flame className="size-6 fill-emerald-400" />
               </div>
@@ -1622,7 +1801,9 @@ function ApexMission() {
                 onClick={() => {
                   const cardText = `🔥 Just locked in an elite ${showMilestoneCelebration}-Day Execution Streak on ApexMission! Win your morning, win your day, win your night. join the console loop here: ${window.location.origin}`;
                   navigator.clipboard.writeText(cardText).then(() => {
-                    alert("🚀 Core marketing deployment copy copied to clipboard! Share it across your social grids.");
+                    alert(
+                      "🚀 Core marketing deployment copy copied to clipboard! Share it across your social grids.",
+                    );
                   });
                 }}
                 className="w-full rounded-xl bg-emerald-500 py-3.5 text-sm font-bold text-black transition-all duration-300 hover:bg-emerald-400 hover:shadow-[0_0_25px_rgba(52,211,153,0.4)] active:scale-98 font-black font-mono uppercase tracking-wider"
@@ -1675,8 +1856,16 @@ function ApexMission() {
               userName: userName,
               mission: plan.mission || s.mission,
               tasks: {
-                high: (plan.high || []).map((text: string) => ({ id: nextId(), text, done: false })),
-                medium: (plan.medium || []).map((text: string) => ({ id: nextId(), text, done: false })),
+                high: (plan.high || []).map((text: string) => ({
+                  id: nextId(),
+                  text,
+                  done: false,
+                })),
+                medium: (plan.medium || []).map((text: string) => ({
+                  id: nextId(),
+                  text,
+                  done: false,
+                })),
                 low: (plan.low || []).map((text: string) => ({ id: nextId(), text, done: false })),
               },
               daily: { text: plan.dailyAction || "", done: false, date: todayKey() },
@@ -1752,7 +1941,8 @@ function ApexMission() {
 
             <div className="rounded-xl border border-emerald-500/20 bg-emerald-950/20 px-4 py-3 mb-5">
               <p className="text-xs text-zinc-400">
-                Replies are sent within <span className="text-emerald-400 font-semibold">1–4 business days</span>.
+                Replies are sent within{" "}
+                <span className="text-emerald-400 font-semibold">1–4 business days</span>.
               </p>
             </div>
 
@@ -1775,14 +1965,18 @@ function ApexMission() {
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/85 px-4 py-6 text-left font-mono backdrop-blur-md animate-fade-in">
           <div className="relative my-auto max-h-[calc(100dvh-3rem)] w-full max-w-lg overflow-y-auto rounded-2xl border border-emerald-500/30 bg-[#0A0A0F]/95 p-4 shadow-[0_0_60px_rgba(0,0,0,0.9)] backdrop-blur-2xl sm:p-8">
             <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent" />
-            
+
             <div className="mb-5 flex items-start justify-between gap-3 border-b border-emerald-500/20 pb-4 sm:mb-6">
               <div className="min-w-0">
-                <h3 className="text-xs font-black uppercase tracking-wider text-white sm:text-sm">📈 Velocity Consistency Index</h3>
-                <p className="mt-0.5 text-[10px] uppercase tracking-wide text-emerald-400/70">Real Operator Execution Telemetry</p>
+                <h3 className="text-xs font-black uppercase tracking-wider text-white sm:text-sm">
+                  📈 Velocity Consistency Index
+                </h3>
+                <p className="mt-0.5 text-[10px] uppercase tracking-wide text-emerald-400/70">
+                  Real Operator Execution Telemetry
+                </p>
               </div>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setShowAnalyticsModal(false)}
                 aria-label="Close metrics"
                 className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-black text-xs font-bold text-emerald-400 hover:text-white"
@@ -1805,7 +1999,8 @@ function ApexMission() {
                   {velocityConsistencyLabel}
                 </p>
                 <p className="mt-2 text-[10px] font-medium text-zinc-500">
-                  Blended from task closure discipline ({progress}% of the priority matrix closed) and mission momentum ({currentStreak}-day streak).
+                  Blended from task closure discipline ({progress}% of the priority matrix closed)
+                  and mission momentum ({currentStreak}-day streak).
                 </p>
               </div>
 
@@ -1819,11 +2014,14 @@ function ApexMission() {
                   const barHeight = Math.max(4, (bar.value / maxCompletions) * 100);
                   const isToday = bar.key === todayKey();
                   return (
-                    <div key={bar.key} className="flex-1 flex flex-col items-center gap-2 h-full justify-end relative z-10">
+                    <div
+                      key={bar.key}
+                      className="flex-1 flex flex-col items-center gap-2 h-full justify-end relative z-10"
+                    >
                       <span className="text-[9px] font-mono font-black tabular-nums text-emerald-400/90">
                         {bar.value > 0 ? `${bar.value} Task${bar.value === 1 ? "" : "s"}` : "—"}
                       </span>
-                      <div 
+                      <div
                         className={`w-full rounded-t-md transition-all duration-1000 border-t ${
                           bar.value > 0
                             ? isToday
@@ -1833,20 +2031,73 @@ function ApexMission() {
                         }`}
                         style={{ height: `${barHeight}%` }}
                       />
-                      <span className="text-[9px] font-black uppercase text-zinc-500 tracking-wider mt-1">{bar.label}</span>
+                      <span className="text-[9px] font-black uppercase text-zinc-500 tracking-wider mt-1">
+                        {bar.label}
+                      </span>
                     </div>
                   );
                 })}
               </div>
 
               <div className="space-y-2 rounded-xl border border-emerald-500/20 bg-black/40 p-3.5 text-[11px] leading-relaxed text-zinc-300">
-                <p className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between"><span className="text-[9px] font-bold uppercase text-zinc-500">Task Execution Vector:</span> <span className="font-bold text-emerald-400">{progress}% ({done}/{total} objectives closed)</span></p>
-                <p className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between"><span className="text-[9px] font-bold uppercase text-zinc-500">Current Streak:</span> <span className="font-bold tabular-nums text-emerald-400">{currentStreak}d</span></p>
-                <p className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between"><span className="text-[9px] font-bold uppercase text-zinc-500">Tasks Completed:</span> <span className="font-bold tabular-nums text-emerald-400">{behaviorAnalytics.totalTasksCompleted}</span></p>
-                <p className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between"><span className="text-[9px] font-bold uppercase text-zinc-500">Sessions Logged:</span> <span className="font-bold tabular-nums text-emerald-400">{behaviorAnalytics.sessionCount}</span></p>
-                <p className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between"><span className="text-[9px] font-bold uppercase text-zinc-500">Procrastination Events:</span> <span className={`font-bold tabular-nums ${(behaviorAnalytics.procrastinationEvents ?? 0) > 3 ? "text-rose-400" : "text-emerald-400"}`}>{behaviorAnalytics.procrastinationEvents ?? 0}</span></p>
-                <p className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between"><span className="text-[9px] font-bold uppercase text-zinc-500">Daily Action Status:</span> <span className={`font-bold tabular-nums ${state.daily?.done ? "text-emerald-400" : "text-amber-400"}`}>{state.daily?.done ? "Executed" : "Pending"}</span></p>
-                <p className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between"><span className="text-[9px] font-bold uppercase text-zinc-500">Avg Completions / Day:</span> <span className="font-bold tabular-nums text-emerald-400">{computeAverageCompletionsPerDay(taskHistory)}</span></p>
+                <p className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="text-[9px] font-bold uppercase text-zinc-500">
+                    Task Execution Vector:
+                  </span>{" "}
+                  <span className="font-bold text-emerald-400">
+                    {progress}% ({done}/{total} objectives closed)
+                  </span>
+                </p>
+                <p className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="text-[9px] font-bold uppercase text-zinc-500">
+                    Current Streak:
+                  </span>{" "}
+                  <span className="font-bold tabular-nums text-emerald-400">{currentStreak}d</span>
+                </p>
+                <p className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="text-[9px] font-bold uppercase text-zinc-500">
+                    Tasks Completed:
+                  </span>{" "}
+                  <span className="font-bold tabular-nums text-emerald-400">
+                    {behaviorAnalytics.totalTasksCompleted}
+                  </span>
+                </p>
+                <p className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="text-[9px] font-bold uppercase text-zinc-500">
+                    Sessions Logged:
+                  </span>{" "}
+                  <span className="font-bold tabular-nums text-emerald-400">
+                    {behaviorAnalytics.sessionCount}
+                  </span>
+                </p>
+                <p className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="text-[9px] font-bold uppercase text-zinc-500">
+                    Procrastination Events:
+                  </span>{" "}
+                  <span
+                    className={`font-bold tabular-nums ${(behaviorAnalytics.procrastinationEvents ?? 0) > 3 ? "text-rose-400" : "text-emerald-400"}`}
+                  >
+                    {behaviorAnalytics.procrastinationEvents ?? 0}
+                  </span>
+                </p>
+                <p className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="text-[9px] font-bold uppercase text-zinc-500">
+                    Daily Action Status:
+                  </span>{" "}
+                  <span
+                    className={`font-bold tabular-nums ${state.daily?.done ? "text-emerald-400" : "text-amber-400"}`}
+                  >
+                    {state.daily?.done ? "Executed" : "Pending"}
+                  </span>
+                </p>
+                <p className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="text-[9px] font-bold uppercase text-zinc-500">
+                    Avg Completions / Day:
+                  </span>{" "}
+                  <span className="font-bold tabular-nums text-emerald-400">
+                    {computeAverageCompletionsPerDay(taskHistory)}
+                  </span>
+                </p>
                 <p className="mt-2 border-t border-emerald-500/10 pt-2 text-[10px] italic text-zinc-400">
                   {total === 0
                     ? "⚠️ VELOCITY SCORING PENDING: Populate the priority matrix to activate the consistency index."
@@ -1873,7 +2124,15 @@ function ApexMission() {
   );
 }
 
-function TaskRow({ task, onToggle, onRemove }: { task: Task, onToggle: () => void, onRemove: () => void }) {
+function TaskRow({
+  task,
+  onToggle,
+  onRemove,
+}: {
+  task: Task;
+  onToggle: () => void;
+  onRemove: () => void;
+}) {
   return (
     <li className="group flex items-start justify-between gap-2 rounded-xl border border-emerald-500/15 bg-black/40 px-2 py-1.5 transition-all duration-300 hover:border-emerald-500/30 hover:bg-emerald-950/10">
       <div className="flex min-w-0 flex-1 items-start gap-2">
@@ -1916,28 +2175,28 @@ export const AUDIENCE_PROFILES = {
   ceo: {
     high: "Capital Allocation / Executive Hirings",
     medium: "Cross-Department Alignment Sweeps",
-    low: "Ebox Sorting / Calendar Curation"
+    low: "Ebox Sorting / Calendar Curation",
   },
   corporate: {
     high: "High-Priority Deliverables / QBR Decks",
     medium: "Cross-Functional Sync Intercepts",
-    low: "Timesheet Logging / Jira Grooming"
+    low: "Timesheet Logging / Jira Grooming",
   },
   university: {
     high: "Thesis Writing / Core Lab Code",
     medium: "Lecture Curation & Problem Sheets",
-    low: "Internship Grid Submissions"
+    low: "Internship Grid Submissions",
   },
   student: {
     high: "SAT Prep / Mastery Term Studies",
     medium: "Extracurricular Documentation",
-    low: "Daily Homework Form Submission"
+    low: "Daily Homework Form Submission",
   },
   general: {
     high: "Higher Leverage Strategy Focus Target",
     medium: "Secondary Support Sub-Task Node",
-    low: "General Routine Maintenance Item"
-  }
+    low: "General Routine Maintenance Item",
+  },
 };
 
 const TIERS: Array<{
@@ -1948,9 +2207,30 @@ const TIERS: Array<{
   textClass: string;
   placeholder: string;
 }> = [
-  { key: "high", label: "High Impact", accentClass: "bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]", borderClass: "focus-within:border-rose-500/30", textClass: "text-rose-400 font-bold", placeholder: "Add high-impact…" },
-  { key: "medium", label: "Medium Impact", accentClass: "bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]", borderClass: "focus-within:border-amber-500/30", textClass: "text-amber-400 font-bold", placeholder: "Add secondary…" },
-  { key: "low", label: "Low Impact", accentClass: "bg-sky-500 shadow-[0_0_10px_rgba(14,165,233,0.5)]", borderClass: "focus-within:border-sky-500/30", textClass: "text-sky-400 font-bold", placeholder: "Add maintenance…" }
+  {
+    key: "high",
+    label: "High Impact",
+    accentClass: "bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]",
+    borderClass: "focus-within:border-rose-500/30",
+    textClass: "text-rose-400 font-bold",
+    placeholder: "Add high-impact…",
+  },
+  {
+    key: "medium",
+    label: "Medium Impact",
+    accentClass: "bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]",
+    borderClass: "focus-within:border-amber-500/30",
+    textClass: "text-amber-400 font-bold",
+    placeholder: "Add secondary…",
+  },
+  {
+    key: "low",
+    label: "Low Impact",
+    accentClass: "bg-sky-500 shadow-[0_0_10px_rgba(14,165,233,0.5)]",
+    borderClass: "focus-within:border-sky-500/30",
+    textClass: "text-sky-400 font-bold",
+    placeholder: "Add maintenance…",
+  },
 ];
 
 function formatCountdown(ms: number): string {

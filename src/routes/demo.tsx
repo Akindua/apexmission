@@ -246,7 +246,7 @@ function DemoShowcasePage() {
           </a>
         </footer>
 
-        <p className="mt-6 text-center font-mono text-[9px] font-black uppercase tracking-[0.2em] text-zinc-700">
+        <p className="mt-6 text-center font-mono text-[9px] font-black uppercase tracking-[0.2em] text-emerald-400">
           © 2026 ApexMissions. All rights reserved. Demo data is synthetic.
         </p>
       </div>

@@ -336,11 +336,7 @@ function AuthConsolePage() {
     } catch (err) {
       console.error("Passkey authentication fault:", err);
       setErrorMessage(
-        err instanceof Error && err.message.toLowerCase().includes("webauthn")
-          ? "🔑 PASSKEYS NOT CONFIGURED: Enable WebAuthn in the Supabase Auth dashboard to use hardware-key sign-in."
-          : err instanceof Error
-            ? err.message
-            : "Passkey sign-in failed. Use your access key instead.",
+        "🔑 PASSKEYS NOT CONFIGURED: Enable WebAuthn in the Supabase Auth dashboard to use hardware-key sign-in.",
       );
     } finally {
       setPasskeyBusy(false);
@@ -545,7 +541,7 @@ function AuthConsolePage() {
           </button>
         </div>
 
-        <p className="mt-4 text-center font-mono text-[9px] font-black uppercase tracking-[0.2em] text-zinc-600">
+        <p className="mt-4 text-center font-mono text-[9px] font-black uppercase tracking-[0.2em] text-emerald-400">
           © 2026 ApexMissions. All rights reserved.
         </p>
       </div>

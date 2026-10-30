@@ -27,6 +27,7 @@ const FORBIDDEN_PAGE = `<!doctype html>
 function screenRequest(request: Request): Response | null {
   const userAgent = request.headers.get("user-agent");
   const { pathname } = new URL(request.url);
+  const authHeader = request.headers.get("authorization") ?? "";
 
   // Probe paths (secret files, scanners) are refused outright.
   if (isProbePath(pathname)) return agentBlockedResponse();
@@ -35,8 +36,10 @@ function screenRequest(request: Request): Response | null {
   if (isBlockedAgent(userAgent)) return agentBlockedResponse();
 
   // Headless automation is only refused on HTML page loads; authenticated
-  // API clients (curl, SDKs) keep working.
-  if (request.method === "GET" && !pathname.startsWith("/api/") && isBlockedPageAgent(userAgent)) {
+  // API clients (curl, SDKs) keep working. Skip page-agent block for
+  // requests that carry a valid bearer token (authenticated Supabase clients).
+  const bearerPresent = authHeader.startsWith("Bearer ");
+  if (request.method === "GET" && !pathname.startsWith("/api/") && !bearerPresent && isBlockedPageAgent(userAgent)) {
     return new Response(FORBIDDEN_PAGE, {
       status: 403,
       headers: { "content-type": "text/html; charset=utf-8" },
