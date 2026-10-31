@@ -336,8 +336,16 @@ function AuthConsolePage() {
       navigate({ to: next || "/app" });
     } catch (err) {
       console.error("Passkey authentication fault:", err);
+      const msg = err instanceof Error ? err.message : "";
+      // If the error mentions webauthn / not configured / not enabled, show setup guide
+      const isWebAuthnMissing =
+        msg.toLowerCase().includes("webauthn") ||
+        msg.toLowerCase().includes("not configured") ||
+        msg.toLowerCase().includes("passkey");
       setErrorMessage(
-        "🔑 PASSKEYS NOT CONFIGURED: Enable WebAuthn in the Supabase Auth dashboard to use hardware-key sign-in.",
+        isWebAuthnMissing
+          ? "🔑 PASSKEYS NOT CONFIGURED: Enable WebAuthn in the Supabase Auth dashboard (Settings → WebAuthn) and register a passkey on your device."
+          : msg || "Passkey sign-in failed. Use your access key instead.",
       );
     } finally {
       setPasskeyBusy(false);
