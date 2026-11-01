@@ -318,11 +318,19 @@ function AuthConsolePage() {
    */
   const handlePasskeySignIn = async () => {
     if (passkeyBusy) return;
+    if (TURNSTILE_SITE_KEY && !turnstileToken) {
+      setErrorMessage("🔒 HUMAN VERIFICATION REQUIRED: Complete the security challenge and retry.");
+      return;
+    }
     setPasskeyBusy(true);
     setErrorMessage(null);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPasskey();
+      const { data, error } = await supabase.auth.signInWithPasskey({
+        options: {
+          captchaToken: turnstileToken || undefined,
+        },
+      });
       if (error) throw error;
 
       const userId = data.user?.id;
@@ -349,6 +357,8 @@ function AuthConsolePage() {
       );
     } finally {
       setPasskeyBusy(false);
+      // Single-use token consumed (or attempt failed) — re-challenge.
+      resetChallenge();
     }
   };
 
@@ -448,7 +458,7 @@ function AuthConsolePage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="operator@apexmission.com"
+                placeholder="operator@apexmissions.app"
                 className="glass-input-field"
               />
             </div>
@@ -544,7 +554,7 @@ function AuthConsolePage() {
 
           <button
             type="submit"
-            disabled={busy || (isSignUp && !agreeTerms)}
+            disabled={busy || (isSignUp && !agreeTerms) || (TURNSTILE_SITE_KEY && !turnstileToken)}
             className="btn-glass-primary w-full h-12 mt-2"
           >
             {busy ? (
@@ -573,7 +583,7 @@ function AuthConsolePage() {
               <button
                 type="button"
                 onClick={handlePasskeySignIn}
-                disabled={passkeyBusy}
+                disabled={passkeyBusy || (TURNSTILE_SITE_KEY && !turnstileToken)}
                 className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-zinc-700/70 bg-zinc-900/40 font-mono text-[11px] font-black uppercase tracking-wider text-zinc-300 transition-all hover:border-emerald-500/40 hover:text-emerald-400 disabled:opacity-60"
               >
                 {passkeyBusy ? (
