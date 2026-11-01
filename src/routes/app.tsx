@@ -943,7 +943,7 @@ function ApexMission() {
   // A company subdomain must never render the dashboard for a non-member.
   if (activeTenant && !activeTenant.isMember) {
     return (
-      <div className="app-emerald-canvas min-h-screen text-zinc-100 flex items-center justify-center px-6 py-12 relative overflow-hidden">
+      <div className="min-h-screen bg-[#07110d] text-zinc-100 flex items-center justify-center px-6 py-12 relative overflow-hidden">
         <div className="ambient-emerald-glow" />
         <div className="grid-pattern-overlay" />
         <div className="relative w-full max-w-md rounded-2xl border border-amber-500/25 bg-[#0D0D11]/90 p-8 text-center backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.6)]">
@@ -1741,17 +1741,17 @@ function ApexMission() {
               ))}
             </section>
           )}
+
+          {/* COPYRIGHT / IP NOTICE */}
+          <footer className="mt-2 border-t border-emerald-500/10 pt-5 pb-2 text-center">
+            <p className="mx-auto max-w-3xl font-mono text-[10px] font-semibold uppercase leading-relaxed tracking-[0.18em] text-emerald-400/70">
+              © 2026 ApexMissions. All rights reserved. Unauthorized copying, scraping,
+              reverse-engineering, or reproduction of this software or its content is strictly
+              prohibited.
+            </p>
+          </footer>
         </div>
       </main>
-
-      {/* COPYRIGHT / IP NOTICE */}
-      <footer className="px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-1 text-center md:pl-[calc(15rem+1rem)]">
-        <p className="font-mono text-[9px] font-black uppercase tracking-[0.2em] text-zinc-300">
-          © 2026 ApexMissions. All rights reserved. Unauthorized copying, scraping,
-          reverse-engineering, or reproduction of this software or its content is strictly
-          prohibited.
-        </p>
-      </footer>
 
       {/* OVERLAY MODALS & COMPONENTS */}
       {surpriseLoot && (
