@@ -550,7 +550,7 @@ function ApexMission() {
         };
       default:
         return {
-          bg: "app-emerald-canvas text-zinc-100",
+          bg: "bg-[#07110d] text-zinc-100",
           card: "bg-[#0B1511]/80 border-emerald-500/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.6),inset_0_0_25px_rgba(16,185,129,0.04)] backdrop-blur-2xl",
           border: "border-emerald-500/20",
           accent: "text-emerald-400 bg-emerald-950/30 border-emerald-500/20",
