@@ -1746,7 +1746,7 @@ function ApexMission() {
 
       {/* COPYRIGHT / IP NOTICE */}
       <footer className="px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-1 text-center md:pl-[calc(15rem+1rem)]">
-        <p className="font-mono text-[9px] font-black uppercase tracking-[0.2em] text-emerald-400">
+        <p className="font-mono text-[9px] font-black uppercase tracking-[0.2em] text-zinc-300">
           © 2026 ApexMissions. All rights reserved. Unauthorized copying, scraping,
           reverse-engineering, or reproduction of this software or its content is strictly
           prohibited.
