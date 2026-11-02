@@ -86,6 +86,7 @@ export type Database = {
           company_id: string | null
           created_at: string
           credits: number
+          current_plan: Json
           current_streak: number
           email: string | null
           failure_count: number
@@ -95,6 +96,7 @@ export type Database = {
           max_streak: number
           onboarding_completed: boolean
           operational_status: string
+          plan_date: string | null
           subscription_tier: string
           task_history: Json
           unlocked_layouts: string[]
@@ -106,6 +108,7 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           credits?: number
+          current_plan?: Json
           current_streak?: number
           email?: string | null
           failure_count?: number
@@ -115,6 +118,7 @@ export type Database = {
           max_streak?: number
           onboarding_completed?: boolean
           operational_status?: string
+          plan_date?: string | null
           subscription_tier?: string
           task_history?: Json
           unlocked_layouts?: string[]
@@ -126,6 +130,7 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           credits?: number
+          current_plan?: Json
           current_streak?: number
           email?: string | null
           failure_count?: number
@@ -135,6 +140,7 @@ export type Database = {
           max_streak?: number
           onboarding_completed?: boolean
           operational_status?: string
+          plan_date?: string | null
           subscription_tier?: string
           task_history?: Json
           unlocked_layouts?: string[]
@@ -216,6 +222,30 @@ export type Database = {
           p_token: string
         }
         Returns: string
+      }
+      get_company_execution_analytics: {
+        Args: {
+          p_days?: number
+        }
+        Returns: Json
+      }
+      get_company_route_by_invite_token: {
+        Args: {
+          p_token: string
+        }
+        Returns: {
+          company_id: string
+          company_name: string
+          company_slug: string
+        }[]
+      }
+      get_my_company_route: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          company_id: string
+          company_name: string
+          company_slug: string
+        }[]
       }
       get_operator_leaderboard: {
         Args: Record<PropertyKey, never>

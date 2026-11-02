@@ -8,8 +8,9 @@ import {
   computeAverageCompletionsPerDay,
   type LeaderboardSnapshot,
   type OperatorProfileMetadata,
+  type TaskHistoryEntry,
 } from "@/lib/synthetic-briefing";
-import { loadState, saveState, todayKey } from "@/lib/mission-store";
+import { loadState, saveState } from "@/lib/mission-store";
 import { getScopedItem, setScopedItem } from "@/lib/user-storage";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -48,7 +49,7 @@ interface BehaviorAnalytics {
   totalMessagesExchanged: number;
   streakConsistency: number;
   preferredFocusAreas: string[];
-  taskHistory?: Array<{ date: string; text?: string }>;
+  taskHistory?: TaskHistoryEntry[];
 }
 
 /**
@@ -721,30 +722,34 @@ function CoachPanel({
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      (window as any).__apex_task_completed = (taskText: string) => {
-        const analytics = loadBehaviorAnalytics();
-        analytics.totalTasksCompleted += 1;
-        analytics.taskHistory = [
-          ...(Array.isArray(analytics.taskHistory) ? analytics.taskHistory : []),
-          { date: todayKey(), text: taskText },
-        ].slice(-30);
-
+      (window as any).__apex_task_completed = (_taskText: string) => {
         const currentHour = new Date().getHours();
-        if (analytics.totalTasksCompleted === 1) {
-          analytics.peakProductivityHour = currentHour;
-        } else {
-          const taskCounts: Record<number, number> = {};
-          taskCounts[currentHour] = (taskCounts[currentHour] || 0) + 1;
-          const maxHour = Object.entries(taskCounts).sort((a, b) => b[1] - a[1])[0];
-          if (maxHour) {
-            analytics.peakProductivityHour = parseInt(maxHour[0]);
-          }
-        }
-        
-        saveBehaviorAnalytics(analytics);
-        setBehaviorAnalytics(analytics);
-        
-        if (analytics.totalTasksCompleted % 5 === 0) {
+
+        // The dashboard owns the enriched closure event (tier + timestamp).
+        // This hook only maintains the aggregate counters and peak-hour model,
+        // so a single closure can never be counted twice.
+        let milestoneReached = false;
+        setBehaviorAnalytics((prev) => {
+          const total = (prev.totalTasksCompleted ?? 0) + 1;
+          const peak =
+            total === 1
+              ? currentHour
+              : Math.abs((prev.peakProductivityHour ?? currentHour) - currentHour) <= 2
+                ? Math.round(((prev.peakProductivityHour ?? currentHour) + currentHour) / 2)
+                : prev.peakProductivityHour ?? currentHour;
+
+          const next: BehaviorAnalytics = {
+            ...prev,
+            totalTasksCompleted: total,
+            peakProductivityHour: peak,
+          };
+
+          saveBehaviorAnalytics(next);
+          milestoneReached = total % 5 === 0;
+          return next;
+        });
+
+        if (milestoneReached) {
           playSoundEffect("success");
         }
       };
@@ -754,7 +759,7 @@ function CoachPanel({
         delete (window as any).__apex_task_completed;
       }
     };
-  }, [state]);
+  }, [setBehaviorAnalytics]);
 
   useEffect(() => {
     try {

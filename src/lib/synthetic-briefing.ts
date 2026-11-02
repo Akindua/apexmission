@@ -50,6 +50,14 @@ export interface LeaderboardSnapshot {
   leaderStreak: number;
 }
 
+/** One real task closure, with the impact tier and local completion time. */
+export interface TaskHistoryEntry {
+  date: string;
+  text?: string;
+  tier?: "high" | "medium" | "low";
+  completedAt?: string;
+}
+
 export interface BehaviorAnalytics {
   sessionCount?: number;
   lastSessionDate?: string;
@@ -61,7 +69,7 @@ export interface BehaviorAnalytics {
   streakConsistency?: number;
   preferredFocusAreas?: string[];
   /** Real task-closure events: ISO date key + task label, newest last. */
-  taskHistory?: Array<{ date: string; text?: string }>;
+  taskHistory?: TaskHistoryEntry[];
 }
 
 export interface OperatorProfileMetadata {
@@ -75,8 +83,12 @@ export interface OperatorProfileMetadata {
   failureCount: number;
   operationalStatus: string;
   lastActionLogged: string;
-  taskHistory?: Array<{ date: string; text?: string }> | null;
+  taskHistory?: TaskHistoryEntry[] | null;
   velocityScore?: number | null;
+  /** Latest persisted priority matrix (untrusted JSONB; normalize before use). */
+  currentPlan?: unknown;
+  /** Local date the persisted plan belongs to. */
+  planDate?: string | null;
 }
 
 export interface UserContext {
@@ -209,13 +221,28 @@ interface ProcrastinationAudit {
 export async function fetchOperatorProfileMetadata(
   userId: string,
 ): Promise<OperatorProfileMetadata | null> {
-  const { data, error } = await supabase
+  const profileSelect =
+    "id, full_name, email, company_id, onboarding_completed, credits, current_streak, max_streak, failure_count, operational_status, last_action_logged, task_history, velocity_score, current_plan, plan_date";
+
+  let result: { data: any; error: any } = await supabase
     .from("profiles")
-    .select(
-      "id, full_name, email, company_id, onboarding_completed, credits, current_streak, max_streak, failure_count, operational_status, last_action_logged, task_history, velocity_score",
-    )
+    .select(profileSelect)
     .eq("id", userId)
     .maybeSingle();
+
+  // Graceful rollout: the dashboard must keep working if the plan columns have
+  // not been migrated yet. Retry with the legacy projection before failing.
+  if (result.error && /\b(current_plan|plan_date)\b/.test(String(result.error.message ?? ""))) {
+    result = await supabase
+      .from("profiles")
+      .select(
+        "id, full_name, email, company_id, onboarding_completed, credits, current_streak, max_streak, failure_count, operational_status, last_action_logged, task_history, velocity_score",
+      )
+      .eq("id", userId)
+      .maybeSingle();
+  }
+
+  const { data, error } = result;
 
   if (error) {
     console.error("[SyntheticBriefing] Profile telemetry query failed:", error);
@@ -238,8 +265,12 @@ export async function fetchOperatorProfileMetadata(
     failureCount: Number(data.failure_count ?? 0),
     operationalStatus: data.operational_status || "OPERATIONAL",
     lastActionLogged: data.last_action_logged || "",
-    taskHistory: Array.isArray(data.task_history) ? (data.task_history as Array<{ date: string; text?: string }>) : [],
+    taskHistory: Array.isArray(data.task_history)
+      ? (data.task_history as unknown as TaskHistoryEntry[])
+      : [],
     velocityScore: data.velocity_score == null ? null : Number(data.velocity_score),
+    currentPlan: data.current_plan ?? null,
+    planDate: typeof data.plan_date === "string" ? data.plan_date : null,
   };
 }
 

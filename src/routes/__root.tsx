@@ -10,6 +10,22 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
+function RegisterServiceWorker() {
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .register("/sw.js", { scope: "/" })
+        .then((reg) => {
+          console.log("[SW] Registered:", reg.scope);
+        })
+        .catch((err) => {
+          console.warn("[SW] Registration failed:", err);
+        });
+    }
+  }, []);
+  return null;
+}
+
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { WorkspaceAccessGuard } from "@/components/WorkspaceAccessGuard";
@@ -160,6 +176,7 @@ function RootShell({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body className="min-h-screen">
+        <RegisterServiceWorker />
         {children}
         <Scripts />
       </body>
