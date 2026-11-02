@@ -1,4 +1,4 @@
-# Mission Control Hub
+# ApexMissions
 
 Build a highly optimized single-page web app called "Mission Control" that helps users prioritize goals and take daily action. Use a clean, modern, dark-mode minimalist interface designed to prevent user distraction.
 
