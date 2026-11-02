@@ -77,6 +77,9 @@ async function main() {
   // Test 11: push_subscriptions table isolation
   await testPushSubscriptionsIsolation(clientA1, clientB1, userA1.id, userB1.id);
 
+  // Test 12: entitlements table isolation
+  await testEntitlementsIsolation(clientA1, clientB1, userA1.id, userB1.id, companyA.id, companyB.id, admin);
+
   console.log("\n✅ All RLS isolation tests passed!");
 }
 
@@ -443,6 +446,69 @@ async function testPushSubscriptionsIsolation(clientA, clientB, userAId, userBId
   const { data: subBRemaining } = await clientB.from("push_subscriptions").select("*").eq("user_id", userBId);
   if (!subBRemaining || subBRemaining.length !== 1) throw new Error("User B's subscription was affected!");
   console.log("  ✓ User B's subscription unaffected");
+}
+
+async function testEntitlementsIsolation(clientA, clientB, userAId, userBId, companyAId, companyBId, admin) {
+  console.log("\n📋 Test 12: entitlements table isolation");
+
+  // Admin creates personal entitlement for User A
+  const { error: insertErrorA } = await admin.from("entitlements").insert({
+    user_id: userAId,
+    plan: "standard",
+    status: "active",
+    astra_credits_balance: 0,
+  });
+  if (insertErrorA) throw new Error(`Admin insert personal entitlement failed: ${insertErrorA.message}`);
+  console.log("  ✓ Admin created personal entitlement for User A");
+
+  // Admin creates company entitlement for Company A
+  const { error: insertErrorCompA } = await admin.from("entitlements").insert({
+    company_id: companyAId,
+    plan: "company_core",
+    status: "active",
+    astra_credits_balance: 100,
+    credits_reset_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+  });
+  if (insertErrorCompA) throw new Error(`Admin insert company entitlement failed: ${insertErrorCompA.message}`);
+  console.log("  ✓ Admin created company entitlement for Company A");
+
+  // User A can read their own personal entitlement
+  const { data: entA, error: readErrorA } = await clientA.from("entitlements").select("*").eq("user_id", userAId).single();
+  if (readErrorA) throw new Error(`User A read own entitlement failed: ${readErrorA.message}`);
+  if (!entA || entA.plan !== "standard") throw new Error("User A entitlement mismatch!");
+  console.log("  ✓ User A can read own personal entitlement");
+
+  // User B cannot read User A's personal entitlement
+  const { data: entBRead, error: readErrorB } = await clientB.from("entitlements").select("*").eq("user_id", userAId);
+  if (readErrorB) throw new Error(`User B read personal entitlement failed: ${readErrorB.message}`);
+  if (entBRead && entBRead.length > 0) throw new Error("User B can read User A's personal entitlement!");
+  console.log("  ✓ User B cannot read User A's personal entitlement");
+
+  // User A cannot read Company A's entitlement directly (no company_id in their profile for Company A)
+  // But User A1 is in Company A, so they CAN read it
+  const { data: entCompA, error: readErrorCompA } = await clientA.from("entitlements").select("*").eq("company_id", companyAId).single();
+  if (readErrorCompA) throw new Error(`User A read company entitlement failed: ${readErrorCompA.message}`);
+  if (!entCompA || entCompA.plan !== "company_core") throw new Error("User A company entitlement mismatch!");
+  console.log("  ✓ User A (company member) can read Company A entitlement");
+
+  // User B (Company B) cannot read Company A's entitlement
+  const { data: entCompBRead, error: readErrorCompB } = await clientB.from("entitlements").select("*").eq("company_id", companyAId);
+  if (readErrorCompB) throw new Error(`User B read company entitlement failed: ${readErrorCompB.message}`);
+  if (entCompBRead && entCompBRead.length > 0) throw new Error("User B can read Company A's entitlement!");
+  console.log("  ✓ User B (different company) cannot read Company A entitlement");
+
+  // Users cannot write entitlements (no INSERT/UPDATE/DELETE policies)
+  const { error: writeErrorA } = await clientA.from("entitlements").insert({ user_id: userAId, plan: "astra_elite", status: "active" });
+  if (!writeErrorA) throw new Error("User A was able to insert entitlement!");
+  console.log("  ✓ User A cannot write entitlements");
+
+  const { error: updateErrorA } = await clientA.from("entitlements").update({ plan: "astra_elite" }).eq("user_id", userAId);
+  if (!updateErrorA) throw new Error("User A was able to update entitlement!");
+  console.log("  ✓ User A cannot update entitlements");
+
+  const { error: deleteErrorA } = await clientA.from("entitlements").delete().eq("user_id", userAId);
+  if (!deleteErrorA) throw new Error("User A was able to delete entitlement!");
+  console.log("  ✓ User A cannot delete entitlements");
 }
 
 main().catch((err) => {
