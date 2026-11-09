@@ -1,0 +1,17 @@
+name: Push Reminders Cron
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"  # Every 30 minutes
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  send-push-reminders:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger push reminder cron
+        run: |
+          curl -fsS -X GET \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.CRON_URL }}"

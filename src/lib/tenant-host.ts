@@ -15,6 +15,66 @@ export const TENANT_ROOT_DOMAIN = "apexmissions.app";
 export const PLATFORM_APP_URL = `https://www.${TENANT_ROOT_DOMAIN}`;
 export const SUBDOMAIN_HEADER = "x-subdomain-slug";
 
+/** Invite token for the seeded Showcase Demo Corp tenant. */
+export const DEMO_INVITE_CODE = "DEMO-PREVIEW-99";
+/** Fixed UUID + display name of the seeded demo tenant. */
+export const DEMO_COMPANY_ID = "11111111-1111-4111-8111-111111111111";
+export const DEMO_COMPANY_NAME = "Showcase Demo Corp";
+
+function normalizePath(path: string): string {
+  const trimmed = path.trim();
+  if (!trimmed) return "/";
+  return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+}
+
+function normalizeHostname(hostname: string): string {
+  return hostname.trim().toLowerCase().replace(/\.$/, "").split(":")[0] ?? "";
+}
+
+/** True for the apex domain, `www`, and local development hosts. */
+export function isPlatformHostname(hostname: string, rootDomain: string = TENANT_ROOT_DOMAIN): boolean {
+  const host = normalizeHostname(hostname);
+  const root = normalizeHostname(rootDomain);
+  return host === root || host === `www.${root}` || host === "localhost" || host === "127.0.0.1";
+}
+
+/**
+ * True when the host belongs to the production wildcard tenant domain.
+ * Preview/local hosts are excluded because they cannot serve company subdomains.
+ */
+export function canUseTenantSubdomains(
+  hostname: string,
+  rootDomain: string = TENANT_ROOT_DOMAIN,
+): boolean {
+  const host = normalizeHostname(hostname);
+  const root = normalizeHostname(rootDomain);
+  return host === root || host === `www.${root}` || host.endsWith(`.${root}`);
+}
+
+/** Dashboard URL on the platform host (`www.apexmissions.app/app`). */
+export function buildPlatformAppUrl(path = "/app"): string {
+  return `${PLATFORM_APP_URL}${normalizePath(path)}`;
+}
+
+/**
+ * Dashboard URL on a company subdomain. Falls back to the platform URL when
+ * the slug is invalid. Local development maps to `<slug>.localhost:<port>`.
+ */
+export function buildTenantAppUrl(slug: string, path = "/app"): string {
+  const normalized = normalizeTenantSlug(slug);
+  if (!normalized) return buildPlatformAppUrl(path);
+
+  if (typeof window !== "undefined") {
+    const host = normalizeHostname(window.location.hostname);
+    if (host === "localhost" || host === "127.0.0.1") {
+      const port = window.location.port ? `:${window.location.port}` : "";
+      return `${window.location.protocol}//${normalized}.localhost${port}${normalizePath(path)}`;
+    }
+  }
+
+  return `https://${normalized}.${TENANT_ROOT_DOMAIN}${normalizePath(path)}`;
+}
+
 /** Single DNS label, lowercase alphanumeric plus internal hyphens (max 63). */
 const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 

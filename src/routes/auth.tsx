@@ -84,6 +84,18 @@ function sanitizeNext(value: unknown): string | undefined {
   return value;
 }
 
+/** Preserves an onboarding invite token carried through `next`. */
+function onboardingSearchFromNext(next?: string): { invite: string | undefined } {
+  if (!next || !next.startsWith("/onboarding")) return { invite: undefined };
+  try {
+    const invite = new URL(next, "https://apexmissions.local").searchParams.get("invite");
+    const trimmed = invite?.trim().slice(0, 200);
+    return { invite: trimmed || undefined };
+  } catch {
+    return { invite: undefined };
+  }
+}
+
 export const Route = createFileRoute("/auth")({
   validateSearch: (search: Record<string, unknown>): AuthSearch => ({
     mode:
@@ -214,9 +226,11 @@ function AuthConsolePage() {
           }
         }
 
+        const onboardingDestination =
+          next && next.startsWith("/onboarding") ? next : "/onboarding";
         const redirectUrl = new URL("/verify-email", window.location.origin);
         redirectUrl.searchParams.set("email", email.trim());
-        redirectUrl.searchParams.set("next", "/onboarding");
+        redirectUrl.searchParams.set("next", onboardingDestination);
 
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
@@ -245,11 +259,11 @@ function AuthConsolePage() {
           // Email confirmation is disabled on this project: the new account is
           // already authenticated, so go straight to account-type selection.
           setStorageScope(data.session.user.id);
-          navigate({ to: "/onboarding" });
+          navigate({ to: "/onboarding", search: onboardingSearchFromNext(next) });
         } else {
           navigate({
             to: "/verify-email",
-            search: { email: email.trim(), next: "/onboarding" },
+            search: { email: email.trim(), next: onboardingDestination },
           });
         }
       } else {
@@ -286,9 +300,11 @@ function AuthConsolePage() {
           onboardingCompleted = Boolean(profile?.onboarding_completed);
         }
 
-        navigate({
-          to: onboardingCompleted ? next || "/app" : "/onboarding",
-        });
+        if (onboardingCompleted) {
+          navigate({ to: next || "/app" });
+        } else {
+          navigate({ to: "/onboarding", search: onboardingSearchFromNext(next) });
+        }
       }
     } catch (err) {
       console.error("Auth terminal synchronization fault:", err);
@@ -328,7 +344,7 @@ function AuthConsolePage() {
     try {
       const { data, error } = await supabase.auth.signInWithPasskey({
         options: {
-          captchaToken: turnstileToken || undefined,
+          ...(turnstileToken ? { captchaToken: turnstileToken } : {}),
         },
       });
       if (error) throw error;
@@ -554,7 +570,7 @@ function AuthConsolePage() {
 
           <button
             type="submit"
-            disabled={busy || (isSignUp && !agreeTerms) || (TURNSTILE_SITE_KEY && !turnstileToken)}
+            disabled={busy || (isSignUp && !agreeTerms) || Boolean(TURNSTILE_SITE_KEY && !turnstileToken)}
             className="btn-glass-primary w-full h-12 mt-2"
           >
             {busy ? (
@@ -583,7 +599,7 @@ function AuthConsolePage() {
               <button
                 type="button"
                 onClick={handlePasskeySignIn}
-                disabled={passkeyBusy || (TURNSTILE_SITE_KEY && !turnstileToken)}
+                disabled={passkeyBusy || Boolean(TURNSTILE_SITE_KEY && !turnstileToken)}
                 className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-zinc-700/70 bg-zinc-900/40 font-mono text-[11px] font-black uppercase tracking-wider text-zinc-300 transition-all hover:border-emerald-500/40 hover:text-emerald-400 disabled:opacity-60"
               >
                 {passkeyBusy ? (

@@ -1,5 +1,5 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, useRef } from "react";
+import { createFileRoute, useNavigate, Outlet } from "@tanstack/react-router";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
   Check,
@@ -17,11 +17,17 @@ import {
   HelpCircle,
   MessageSquare,
   Building2,
+  Settings,
 } from "lucide-react";
 import { PaywallModal } from "@/components/PaywallModal";
 import { MissionCoach } from "@/components/MissionCoach";
 import { OperatorInduction } from "@/components/OperatorInduction";
 import { TacticalBriefing } from "@/components/TacticalBriefing";
+import { DayPlanBriefing } from "@/components/DayPlanBriefing";
+import { EnterpriseAnalyticsPanel } from "@/components/EnterpriseAnalyticsPanel";
+import { FivePmNudge } from "@/components/FivePmNudge";
+import { PersonalPatternsCard } from "@/components/PersonalPatternsCard";
+import { VoiceDayLogger } from "@/components/VoiceDayLogger";
 import {
   computeAverageCompletionsPerDay,
   fetchLeaderboardTelemetry,
@@ -30,12 +36,15 @@ import {
   type BehaviorAnalytics,
   type LeaderboardSnapshot,
   type OperatorProfileMetadata,
+  type TaskHistoryEntry,
 } from "@/lib/synthetic-briefing";
 import { useSubscriptionTier } from "@/hooks/useSubscriptionTier";
 import { supabase } from "@/integrations/supabase/client";
 import { startCheckout, type PlanId } from "@/lib/billing.functions";
 import {
+  appendReflectionEntry,
   completeDailyToday,
+  countTasks,
   defaultState,
   FREE_TASK_LIMIT,
   loadState,
@@ -45,15 +54,37 @@ import {
   MAX_TASK_TEXT_LENGTH,
   MAX_TASKS_PER_TIER,
   msUntilReset,
+  normalizeTaskMatrix,
+  reconcileDailyPlan,
   saveState,
+  serializeTaskMatrix,
+  TASK_HISTORY_LIMIT,
   todayKey,
   type ImpactTier,
   type MissionState,
+  type RolloverSummary,
   type Task,
+  type TaskCompletionEvent,
 } from "@/lib/mission-store";
+import {
+  applyDayPlan,
+  buildLocalDayPlan,
+  mergeDayPlans,
+  requestAiDayPlan,
+  type DayPlanProposal,
+} from "@/lib/daily-plan";
 import { generateMissionPlan } from "@/lib/mission-planner";
-import { extractSubdomainSlug, PLATFORM_APP_URL, TENANT_ROOT_DOMAIN } from "@/lib/tenant-host";
+import {
+  canUseTenantSubdomains,
+  extractSubdomainSlug,
+  isPlatformHostname,
+  PLATFORM_APP_URL,
+  TENANT_ROOT_DOMAIN,
+} from "@/lib/tenant-host";
+import { buildTenantHandoffUrl, consumeTenantHandoff } from "@/lib/tenant-handoff";
+import { fetchMyCompanyRoute } from "@/lib/enterprise-analytics";
 import { resolveActiveTenant, type SessionTenant } from "@/lib/tenant.functions";
+import type { Json } from "@/integrations/supabase/types";
 import {
   clearCurrentUserStorage,
   getScopedItem,
@@ -83,7 +114,9 @@ function ApexMission() {
   const [loadingRoster, setLoadingRoster] = useState(false);
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState<"workspace" | "leaderboard" | "hardware">("workspace");
+  const [activeTab, setActiveTab] = useState<
+    "workspace" | "leaderboard" | "hardware" | "enterprise" | "settings"
+  >("workspace");
   const mainRef = useRef<HTMLElement | null>(null);
   const [coachOpen, setCoachOpen] = useState(false);
   const [showInduction, setShowInduction] = useState(false);
@@ -100,6 +133,15 @@ function ApexMission() {
   const [leaderboardSnapshot, setLeaderboardSnapshot] = useState<LeaderboardSnapshot | null>(null);
   const [profileHydrated, setProfileHydrated] = useState(false);
   const [activeTenant, setActiveTenant] = useState<SessionTenant | null>(null);
+  const [dayPlan, setDayPlan] = useState<DayPlanProposal | null>(null);
+  const [rollover, setRollover] = useState<RolloverSummary | null>(null);
+  const [isRefiningPlan, setIsRefiningPlan] = useState(false);
+  const [nudgeDismissed, setNudgeDismissed] = useState(false);
+  const [nowHour, setNowHour] = useState(() => new Date().getHours());
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  const planRefinedRef = useRef(false);
+  const isRefiningRef = useRef(false);
+  const stateRef = useRef(state);
   const [behaviorAnalytics, setBehaviorAnalytics] = useState<BehaviorAnalytics>({
     sessionCount: 0,
     lastSessionDate: "",
@@ -129,22 +171,160 @@ function ApexMission() {
     };
   }, []);
 
+  const isCorporate = Boolean(operatorProfile?.companyId) || Boolean(activeTenant?.isMember);
+
   const userRankIndex = leaderboardOperators.findIndex((op) => op.id === currentUserId);
   const userRankText = useMemo(() => {
+    if (isCorporate) return "Company-scoped workspace";
     if (leaderboardOperators.length === 0) return "Global Operator Node";
     return userRankIndex !== -1
       ? `#${userRankIndex + 1} of ${leaderboardOperators.length} Operators`
       : `Unranked (${leaderboardOperators.length} Active Operators)`;
-  }, [userRankIndex, leaderboardOperators]);
+  }, [isCorporate, userRankIndex, leaderboardOperators]);
 
   const userFailureCount = useMemo(() => {
     const currentUser = leaderboardOperators.find((op) => op.id === currentUserId);
     return currentUser?.failure_count || 0;
   }, [leaderboardOperators, currentUserId]);
 
+  // Keep the async plan refiner reading the freshest matrix without making the
+  // callback depend on every render.
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
+  // Drives the pre-5PM nudge and its live countdown.
+  useEffect(() => {
+    const refresh = () => {
+      const now = new Date();
+      setNowHour(now.getHours());
+      setNowTick(now.getTime());
+    };
+    refresh();
+    const id = window.setInterval(refresh, 30_000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  /**
+   * Refines the local rollover plan with AI once per day. Local content is
+   * always authoritative: AI may reorder unfinished work and choose the focus,
+   * but it can never add, drop, or complete a task. When any task has already
+   * been closed today, the matrix is left untouched.
+   */
+  const refineDayPlan = useCallback(async (force = false) => {
+    if (typeof window === "undefined" || isRefiningRef.current) return;
+
+    const attemptedKey = `apexmission-day-plan-ai-${todayKey()}`;
+    if (!force && getScopedItem(attemptedKey) === "true") return;
+
+    const snapshot = stateRef.current;
+    const local = buildLocalDayPlan({ mission: snapshot.mission, tasks: snapshot.tasks });
+
+    if (countTasks(snapshot.tasks) === 0 && !snapshot.mission.trim()) {
+      setDayPlan(local);
+      return;
+    }
+
+    isRefiningRef.current = true;
+    setIsRefiningPlan(true);
+
+    try {
+      const refined = await requestAiDayPlan({
+        mission: snapshot.mission,
+        tasks: snapshot.tasks,
+      });
+      const merged = mergeDayPlans(local, refined);
+      setDayPlan(merged);
+      setScopedItem(attemptedKey, "true");
+
+      const focusUntouchedBefore =
+        !snapshot.daily.done &&
+        (!snapshot.daily.text.trim() || snapshot.daily.text === local.dailyAction);
+
+      setState((prev) => {
+        const localFocus = buildLocalDayPlan({
+          mission: prev.mission,
+          tasks: prev.tasks,
+        }).dailyAction;
+        const focusUntouched =
+          !prev.daily.done && (!prev.daily.text.trim() || prev.daily.text === localFocus);
+        const anyClosed = (Object.keys(prev.tasks) as ImpactTier[]).some((tier) =>
+          (prev.tasks[tier] ?? []).some((task) => task.done),
+        );
+
+        if (anyClosed) {
+          if (!focusUntouched) return prev;
+          return {
+            ...prev,
+            daily: { ...prev.daily, text: merged.dailyAction, date: todayKey() },
+          };
+        }
+
+        // Never reorder over edits made while the AI request was in flight.
+        const snapshotKeys = (Object.keys(snapshot.tasks) as ImpactTier[])
+          .flatMap((tier) => (snapshot.tasks[tier] ?? []).map((task) => `${tier}:${task.text}`))
+          .sort();
+        const currentKeys = (Object.keys(prev.tasks) as ImpactTier[])
+          .flatMap((tier) => (prev.tasks[tier] ?? []).map((task) => `${tier}:${task.text}`))
+          .sort();
+        const matrixUnchanged =
+          snapshotKeys.length === currentKeys.length &&
+          snapshotKeys.every((key, index) => key === currentKeys[index]);
+
+        if (!matrixUnchanged) {
+          if (!focusUntouched) return prev;
+          return {
+            ...prev,
+            daily: { ...prev.daily, text: merged.dailyAction, date: todayKey() },
+          };
+        }
+
+        const applied = applyDayPlan(prev, merged);
+        return focusUntouched ? applied : { ...applied, daily: prev.daily };
+      });
+
+      if (focusUntouchedBefore) setDailyDraft(merged.dailyAction);
+    } catch (error) {
+      // AI is an enhancement, never a dependency. Keep the deterministic plan.
+      console.warn("[DayPlan] AI refinement unavailable; keeping local plan:", error);
+      setScopedItem(attemptedKey, "true");
+    } finally {
+      isRefiningRef.current = false;
+      setIsRefiningPlan(false);
+    }
+  }, []);
+
+  // Automatic once-per-day AI refinement after the local plan is on screen.
+  useEffect(() => {
+    if (!hydrated || !profileHydrated) return;
+    if (planRefinedRef.current) return;
+
+    const attemptedKey = `apexmission-day-plan-ai-${todayKey()}`;
+    if (getScopedItem(attemptedKey) === "true") return;
+
+    planRefinedRef.current = true;
+    const timer = window.setTimeout(() => {
+      void refineDayPlan(false);
+    }, 1_500);
+    return () => window.clearTimeout(timer);
+  }, [hydrated, profileHydrated, refineDayPlan]);
+
+  // Enterprise operators get the company console; personal operators get the
+  // cross-tenant leaderboard. Neither view can be reached by the other.
+  useEffect(() => {
+    if (!hydrated || !profileHydrated) return;
+    if (isCorporate && activeTab === "leaderboard") {
+      setActiveTab("enterprise");
+    } else if (!isCorporate && activeTab === "enterprise") {
+      setActiveTab("workspace");
+    }
+  }, [activeTab, hydrated, isCorporate, profileHydrated]);
+
   // Live real-time database query pipeline selector function
   const fetchLiveAccountabilityRoster = async () => {
     if (loadingRoster) return;
+    // The global leaderboard is never exposed to corporate operators.
+    if (isCorporate) return;
     setLoadingRoster(true);
     try {
       const { operators, snapshot } = await fetchLeaderboardTelemetry(currentUserId);
@@ -169,6 +349,10 @@ function ApexMission() {
 
     const initializeAppSession = async () => {
       try {
+        // A cross-subdomain handoff must be applied before any auth guard reads
+        // the session, because Supabase storage is per-origin.
+        await consumeTenantHandoff();
+
         // getSession reads/refreshes the local session without a network round
         // trip, so a transient getUser failure cannot bounce a valid user.
         const {
@@ -192,9 +376,30 @@ function ApexMission() {
         setCurrentUserId(user.id);
 
         const localState = loadState();
+        const { state: reconciledState, rollover: rolloverSummary } = reconcileDailyPlan(localState);
+        const localPlan = buildLocalDayPlan({
+          mission: reconciledState.mission,
+          tasks: reconciledState.tasks,
+        });
+        const stateForToday =
+          rolloverSummary && !reconciledState.daily.text.trim()
+            ? {
+                ...reconciledState,
+                daily: {
+                  ...reconciledState.daily,
+                  text: localPlan.dailyAction,
+                  date: todayKey(),
+                },
+              }
+            : reconciledState;
+
         if (cancelled) return;
-        setState(localState);
-        setDailyDraft(localState.daily.text);
+        setState(stateForToday);
+        saveState(stateForToday);
+        setDailyDraft(stateForToday.daily.text);
+        setRollover(rolloverSummary);
+        setDayPlan(localPlan);
+        setNudgeDismissed(getScopedItem("apexmission-5pm-nudge-dismissed") === todayKey());
         setHasGeneratedMissionPlan(getScopedItem("apexmission-mission-plan-generated") === "true");
         setActiveLayoutTheme(getScopedItem("apexmission-active-theme") || "layout-default");
 
@@ -244,6 +449,39 @@ function ApexMission() {
           points: effectiveProfile.credits,
         }));
 
+        // A fresh device can adopt today's persisted matrix instead of
+        // overwriting the company telemetry with an empty plan.
+        if (countTasks(stateForToday.tasks) === 0 && effectiveProfile.planDate === todayKey()) {
+          const serverMatrix = normalizeTaskMatrix(effectiveProfile.currentPlan);
+          if (countTasks(serverMatrix) > 0) {
+            const serverState = { ...stateForToday, tasks: serverMatrix, planDate: todayKey() };
+            setState(serverState);
+            saveState(serverState);
+            setDayPlan(
+              buildLocalDayPlan({ mission: serverState.mission, tasks: serverState.tasks }),
+            );
+          }
+        }
+
+        // Corporate operators belong on their company subdomain in production.
+        if (effectiveProfile.companyId && typeof window !== "undefined") {
+          const hostname = window.location.hostname;
+          if (isPlatformHostname(hostname) && canUseTenantSubdomains(hostname)) {
+            try {
+              const route = await fetchMyCompanyRoute();
+              if (route?.companySlug) {
+                const handoff = await buildTenantHandoffUrl(route.companySlug, "/app");
+                if (new URL(handoff.url).host !== window.location.host) {
+                  window.location.replace(handoff.url);
+                  return;
+                }
+              }
+            } catch (error) {
+              console.error("Company subdomain routing failed:", error);
+            }
+          }
+        }
+
         // Wildcard host -> company tenant. Only reached on tenant subdomains;
         // the server function reads the trusted x-subdomain-slug header.
         const hostSlug =
@@ -258,19 +496,24 @@ function ApexMission() {
           }
         }
 
-        const { operators, snapshot } = await fetchLeaderboardTelemetry(user.id);
-        const normalizedData = operators.map((operator) => ({
-          ...operator,
-          full_name: operator.operator_name,
-          points: operator.credits,
-        }));
-
-        if (cancelled) return;
-        setLeaderboardOperators(normalizedData);
         // Personal operators receive live rank intelligence. Corporate
-        // operators never receive leaderboard telemetry in the engine.
-        setLeaderboardSnapshot(effectiveProfile.companyId === null ? snapshot : null);
-        setScopedItem("apexmission-leaderboard-cache", JSON.stringify(normalizedData));
+        // operators never fetch the global leaderboard at all.
+        if (effectiveProfile.companyId === null) {
+          const { operators, snapshot } = await fetchLeaderboardTelemetry(user.id);
+          const normalizedData = operators.map((operator) => ({
+            ...operator,
+            full_name: operator.operator_name,
+            points: operator.credits,
+          }));
+
+          if (cancelled) return;
+          setLeaderboardOperators(normalizedData);
+          setLeaderboardSnapshot(snapshot);
+          setScopedItem("apexmission-leaderboard-cache", JSON.stringify(normalizedData));
+        } else {
+          setLeaderboardOperators([]);
+          setLeaderboardSnapshot(null);
+        }
       } catch (err) {
         console.error("Failed to map dynamic operator telemetry:", err);
       } finally {
@@ -675,7 +918,7 @@ function ApexMission() {
       const { error } = await supabase
         .from("profiles")
         .update({
-          task_history: behaviorAnalytics.taskHistory ?? [],
+          task_history: (behaviorAnalytics.taskHistory ?? []) as unknown as Json,
           velocity_score: velocityConsistencyIndex,
         })
         .eq("id", currentUserId);
@@ -694,6 +937,33 @@ function ApexMission() {
     currentUserId,
     operatorProfile,
   ]);
+
+  // Persist today's priority matrix so company analytics can measure open
+  // high-impact work and a fresh device can resume the same plan.
+  useEffect(() => {
+    if (!hydrated || !profileHydrated || !currentUserId) return;
+
+    const planDate =
+      typeof state.planDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(state.planDate)
+        ? state.planDate
+        : todayKey();
+
+    const timer = window.setTimeout(async () => {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          current_plan: serializeTaskMatrix(state.tasks) as unknown as Json,
+          plan_date: planDate,
+        })
+        .eq("id", currentUserId);
+
+      if (error) {
+        console.warn("Daily plan telemetry sync skipped:", error.message);
+      }
+    }, 900);
+
+    return () => window.clearTimeout(timer);
+  }, [hydrated, profileHydrated, currentUserId, state.tasks, state.planDate]);
 
   function addTaskToMatrix(tier: ImpactTier, rawText: string): boolean {
     const text = rawText.trim();
@@ -814,19 +1084,28 @@ function ApexMission() {
         }
 
         const taskCompletionHook = (window as any).__apex_task_completed;
-        if (typeof taskCompletionHook === "function") {
+        const hookAvailable = typeof taskCompletionHook === "function";
+        if (hookAvailable) {
           taskCompletionHook(targetTask?.text || "Task completed");
         }
 
-        // Keep the operator-facing execution telemetry in sync so the Velocity
-        // Consistency Index reflects real task closures as they happen.
+        // Enrich the closure event with its impact tier and local timestamp.
+        // The coach hook owns the aggregate counter, so it is only incremented
+        // here when that hook is not mounted (single-count guarantee).
+        const completionEntry: TaskHistoryEntry = {
+          date: todayKey(),
+          text: targetTask?.text || "Task completed",
+          tier,
+          completedAt: new Date().toISOString(),
+        };
         setBehaviorAnalytics((prev) => ({
           ...prev,
-          totalTasksCompleted: (prev.totalTasksCompleted ?? 0) + 1,
+          totalTasksCompleted:
+            (prev.totalTasksCompleted ?? 0) + (hookAvailable ? 0 : 1),
           taskHistory: [
             ...(Array.isArray(prev.taskHistory) ? prev.taskHistory : []),
-            { date: todayKey(), text: targetTask?.text || "Task completed" },
-          ].slice(-30),
+            completionEntry,
+          ].slice(-TASK_HISTORY_LIMIT),
         }));
       }
 
@@ -908,6 +1187,73 @@ function ApexMission() {
       window.setTimeout(() => setJustCompleted(false), 500);
     }
   }
+
+  async function handleVoiceLogSave(transcript: string) {
+    const trimmed = transcript.trim();
+    if (!trimmed) return;
+
+    const entry = {
+      date: todayKey(),
+      phase: "night" as const,
+      wins: trimmed,
+      blockers: "",
+      tomorrowAction: "",
+      dailyAction: state.daily.text,
+      actionCompleted: state.daily.done,
+      createdAt: new Date().toISOString(),
+      voice: true,
+      transcript: trimmed,
+    };
+
+    setState((prev) => ({
+      ...prev,
+      reflection: { ...prev.reflection, wins: trimmed, date: todayKey() },
+      reflectionHistory: appendReflectionEntry(prev.reflectionHistory, entry),
+    }));
+  }
+
+  function dismissFivePmNudge() {
+    setNudgeDismissed(true);
+    setScopedItem("apexmission-5pm-nudge-dismissed", todayKey());
+  }
+
+  function focusKeyTask() {
+    setActiveTab("workspace");
+    window.setTimeout(() => {
+      const targetId =
+        !state.daily.done && state.daily.text.trim() ? "daily-action" : "task-input-high";
+      const element = document.getElementById(targetId);
+      element?.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (element instanceof HTMLElement) element.focus();
+    }, 160);
+  }
+
+  // The pre-5PM nudge targets the daily focus first, then the highest open
+  // priority. It only appears during the 3PM–5PM window and dismisses per day.
+  const keyOpenTask = useMemo(() => {
+    if (!state.daily.done && state.daily.text.trim()) {
+      return { label: "Today's focus action", text: state.daily.text };
+    }
+    const pending = (tier: ImpactTier) =>
+      (state.tasks[tier] || []).find((task) => !task.done) ?? null;
+    const high = pending("high");
+    if (high) return { label: "High-impact priority", text: high.text };
+    const medium = pending("medium");
+    if (medium) return { label: "Medium-impact priority", text: medium.text };
+    const low = pending("low");
+    if (low) return { label: "Low-impact priority", text: low.text };
+    return null;
+  }, [state.daily.done, state.daily.text, state.tasks]);
+
+  const minutesUntilCutoff = useMemo(() => {
+    const now = new Date(nowTick);
+    const cutoff = new Date(now);
+    cutoff.setHours(17, 0, 0, 0);
+    return Math.max(0, Math.ceil((cutoff.getTime() - now.getTime()) / 60_000));
+  }, [nowTick]);
+
+  const showFivePmNudge =
+    hydrated && !nudgeDismissed && nowHour >= 15 && nowHour < 17 && keyOpenTask !== null;
 
   async function handleSwitchTenantAccount() {
     await supabase.auth.signOut({ scope: "local" });
@@ -1017,18 +1363,35 @@ function ApexMission() {
               <span>Workspace</span>
             </button>
 
-            <button
-              type="button"
-              onClick={() => setActiveTab("leaderboard")}
-              className={`flex min-h-11 items-center gap-3 rounded-xl px-4 py-3 transition-all duration-300 ${
-                activeTab === "leaderboard"
-                  ? "bg-emerald-500 text-black shadow-[0_0_25px_rgba(16,185,129,0.4)] font-black"
-                  : "text-zinc-400 hover:bg-emerald-950/20 hover:text-emerald-300 border border-transparent hover:border-emerald-500/10"
-              }`}
-            >
-              <Award className="size-4" />
-              <span>Ranks</span>
-            </button>
+            {!isCorporate && (
+              <button
+                type="button"
+                onClick={() => setActiveTab("leaderboard")}
+                className={`flex min-h-11 items-center gap-3 rounded-xl px-4 py-3 transition-all duration-300 ${
+                  activeTab === "leaderboard"
+                    ? "bg-emerald-500 text-black shadow-[0_0_25px_rgba(16,185,129,0.4)] font-black"
+                    : "text-zinc-400 hover:bg-emerald-950/20 hover:text-emerald-300 border border-transparent hover:border-emerald-500/10"
+                }`}
+              >
+                <Award className="size-4" />
+                <span>Ranks</span>
+              </button>
+            )}
+
+            {isCorporate && (
+              <button
+                type="button"
+                onClick={() => setActiveTab("enterprise")}
+                className={`flex min-h-11 items-center gap-3 rounded-xl px-4 py-3 transition-all duration-300 ${
+                  activeTab === "enterprise"
+                    ? "bg-emerald-500 text-black shadow-[0_0_25px_rgba(16,185,129,0.4)] font-black"
+                    : "text-zinc-400 hover:bg-emerald-950/20 hover:text-emerald-300 border border-transparent hover:border-emerald-500/10"
+                }`}
+              >
+                <Building2 className="size-4" />
+                <span>Enterprise</span>
+              </button>
+            )}
 
             <button
               type="button"
@@ -1042,6 +1405,21 @@ function ApexMission() {
               <HardDrive className="size-4" />
               <span>Hardware</span>
             </button>
+
+            {!isCorporate && (
+              <button
+                type="button"
+                onClick={() => setActiveTab("settings")}
+                className={`flex min-h-11 items-center gap-3 rounded-xl px-4 py-3 transition-all duration-300 ${
+                  activeTab === "settings"
+                    ? "bg-emerald-500 text-black shadow-[0_0_25px_rgba(16,185,129,0.4)] font-black"
+                    : "text-zinc-400 hover:bg-emerald-950/20 hover:text-emerald-300 border border-transparent hover:border-emerald-500/10"
+                }`}
+              >
+                <Settings className="size-4" />
+                <span>Settings</span>
+              </button>
+            )}
           </nav>
         </div>
 
@@ -1098,19 +1476,36 @@ function ApexMission() {
           <LayoutDashboard className="size-4 shrink-0" />
           <span className="w-full truncate text-center">Home</span>
         </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("leaderboard")}
-          aria-current={activeTab === "leaderboard" ? "page" : undefined}
-          className={`flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl border px-1 py-2 transition-all ${
-            activeTab === "leaderboard"
-              ? "text-emerald-400 bg-emerald-950/40 border-emerald-500/30 font-black shadow-[0_0_15px_rgba(16,185,129,0.2)]"
-              : "text-zinc-500 border-transparent hover:text-zinc-300"
-          }`}
-        >
-          <Award className="size-4 shrink-0" />
-          <span className="w-full truncate text-center">Ranks</span>
-        </button>
+        {!isCorporate && (
+          <button
+            type="button"
+            onClick={() => setActiveTab("leaderboard")}
+            aria-current={activeTab === "leaderboard" ? "page" : undefined}
+            className={`flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl border px-1 py-2 transition-all ${
+              activeTab === "leaderboard"
+                ? "text-emerald-400 bg-emerald-950/40 border-emerald-500/30 font-black shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+                : "text-zinc-500 border-transparent hover:text-zinc-300"
+            }`}
+          >
+            <Award className="size-4 shrink-0" />
+            <span className="w-full truncate text-center">Ranks</span>
+          </button>
+        )}
+        {isCorporate && (
+          <button
+            type="button"
+            onClick={() => setActiveTab("enterprise")}
+            aria-current={activeTab === "enterprise" ? "page" : undefined}
+            className={`flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl border px-1 py-2 transition-all ${
+              activeTab === "enterprise"
+                ? "text-emerald-400 bg-emerald-950/40 border-emerald-500/30 font-black shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+                : "text-zinc-500 border-transparent hover:text-zinc-300"
+            }`}
+          >
+            <Building2 className="size-4 shrink-0" />
+            <span className="w-full truncate text-center">Org</span>
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setActiveTab("hardware")}
@@ -1124,6 +1519,21 @@ function ApexMission() {
           <HardDrive className="size-4 shrink-0" />
           <span className="w-full truncate text-center">Store</span>
         </button>
+        {!isCorporate && (
+          <button
+            type="button"
+            onClick={() => setActiveTab("settings")}
+            aria-current={activeTab === "settings" ? "page" : undefined}
+            className={`flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl border px-1 py-2 transition-all ${
+              activeTab === "settings"
+                ? "text-emerald-400 bg-emerald-950/40 border-emerald-500/30 font-black shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+                : "text-zinc-500 border-transparent hover:text-zinc-300"
+            }`}
+          >
+            <Settings className="size-4 shrink-0" />
+            <span className="w-full truncate text-center">Settings</span>
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setCoachOpen(true)}
@@ -1252,6 +1662,14 @@ function ApexMission() {
           {/* WORKSPACE TAB */}
           {activeTab === "workspace" && (
             <div className="flex flex-col gap-6 animate-fade-in">
+              <DayPlanBriefing
+                rollover={rollover}
+                plan={dayPlan}
+                loading={isRefiningPlan}
+                onRefine={() => void refineDayPlan(true)}
+                onFocusAction={() => handleBriefingExecute("daily")}
+              />
+
               {/* Vision Card with Emerald Glassmorphism */}
               <section className="relative overflow-hidden rounded-2xl border border-emerald-500/25 p-5 sm:p-8 bg-[#0D0D11]/80 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.6),inset_0_0_25px_rgba(16,185,129,0.04)]">
                 <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400 to-transparent" />
@@ -1544,11 +1962,18 @@ function ApexMission() {
                   </div>
                 </div>
               </section>
+
+              <PersonalPatternsCard
+                taskHistory={taskHistory}
+                tasks={state.tasks}
+              />
+
+              <VoiceDayLogger onSave={handleVoiceLogSave} disabled={!hydrated} />
             </div>
           )}
 
           {/* RANKS LEADERBOARD TAB */}
-          {activeTab === "leaderboard" && (
+          {!isCorporate && activeTab === "leaderboard" && (
             <section
               className={`rounded-2xl border p-4 sm:p-6 text-left transform transition-all duration-500 translate-y-2 animate-fade-in ${themeClasses.card} bg-[#0D0D11]/80 border-emerald-500/25 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.6)]`}
             >
@@ -1679,6 +2104,11 @@ function ApexMission() {
             </section>
           )}
 
+          {/* ENTERPRISE ANALYTICS TAB — company-scoped only */}
+          {isCorporate && (activeTab === "enterprise" || activeTab === "leaderboard") && (
+            <EnterpriseAnalyticsPanel companyNameFallback={activeTenant?.companyName ?? null} />
+          )}
+
           {/* HARDWARE MARKET TAB */}
           {activeTab === "hardware" && (
             <section className="grid grid-cols-1 gap-4 text-left animate-fade-in sm:grid-cols-2 xl:grid-cols-3">
@@ -1742,6 +2172,13 @@ function ApexMission() {
             </section>
           )}
 
+          {/* SETTINGS TAB — personal accounts only */}
+          {!isCorporate && activeTab === "settings" && (
+            <section className="animate-fade-in">
+              <Outlet />
+            </section>
+          )}
+
           {/* COPYRIGHT / IP NOTICE */}
           <footer className="mt-2 border-t border-emerald-500/10 pt-5 pb-2 text-center">
             <p className="mx-auto max-w-3xl font-mono text-[10px] font-semibold uppercase leading-relaxed tracking-[0.18em] text-emerald-400/70">
@@ -1762,6 +2199,16 @@ function ApexMission() {
           <Sparkles className="size-4 shrink-0 animate-spin text-emerald-400" />
           <span className="min-w-0">{surpriseLoot.msg}</span>
         </div>
+      )}
+
+      {showFivePmNudge && keyOpenTask && (
+        <FivePmNudge
+          taskLabel={keyOpenTask.label}
+          taskText={keyOpenTask.text}
+          minutesUntilCutoff={minutesUntilCutoff}
+          onDismiss={dismissFivePmNudge}
+          onFocus={focusKeyTask}
+        />
       )}
 
       <PaywallModal

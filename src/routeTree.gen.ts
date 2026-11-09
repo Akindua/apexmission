@@ -21,13 +21,20 @@ import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as PlansRouteImport } from './routes/plans'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as WorkspaceBillingRouteImport } from './routes/workspace-billing'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as ApiDayPlanRouteImport } from './routes/api/day-plan'
 import { Route as ApiMissionPlanRouteImport } from './routes/api/mission-plan'
 import { Route as ApiPdfPlanRouteImport } from './routes/api/pdf-plan'
+import { Route as ApiCronSend4pmPushRouteImport } from './routes/api/cron/send-4pm-push'
+import { Route as ApiHandoffConsumeRouteImport } from './routes/api/handoff/consume'
+import { Route as ApiHandoffIssueRouteImport } from './routes/api/handoff/issue'
+import { Route as ApiPushSubscribeRouteImport } from './routes/api/push/subscribe'
+import { Route as ApiPushUnsubscribeRouteImport } from './routes/api/push/unsubscribe'
 import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe/webhook'
 
 const IndexRoute = IndexRouteImport.update({
@@ -90,6 +97,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
@@ -115,6 +127,11 @@ const ApiChatRoute = ApiChatRouteImport.update({
   path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiDayPlanRoute = ApiDayPlanRouteImport.update({
+  id: '/api/day-plan',
+  path: '/api/day-plan',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMissionPlanRoute = ApiMissionPlanRouteImport.update({
   id: '/api/mission-plan',
   path: '/api/mission-plan',
@@ -123,6 +140,31 @@ const ApiMissionPlanRoute = ApiMissionPlanRouteImport.update({
 const ApiPdfPlanRoute = ApiPdfPlanRouteImport.update({
   id: '/api/pdf-plan',
   path: '/api/pdf-plan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCronSend4pmPushRoute = ApiCronSend4pmPushRouteImport.update({
+  id: '/api/cron/send-4pm-push',
+  path: '/api/cron/send-4pm-push',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiHandoffConsumeRoute = ApiHandoffConsumeRouteImport.update({
+  id: '/api/handoff/consume',
+  path: '/api/handoff/consume',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiHandoffIssueRoute = ApiHandoffIssueRouteImport.update({
+  id: '/api/handoff/issue',
+  path: '/api/handoff/issue',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPushSubscribeRoute = ApiPushSubscribeRouteImport.update({
+  id: '/api/push/subscribe',
+  path: '/api/push/subscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPushUnsubscribeRoute = ApiPushUnsubscribeRouteImport.update({
+  id: '/api/push/unsubscribe',
+  path: '/api/push/unsubscribe',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
@@ -144,13 +186,20 @@ export interface FileRoutesByFullPath {
   '/plans': typeof PlansRoute
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
   '/welcome': typeof WelcomeRoute
   '/workspace-billing': typeof WorkspaceBillingRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/day-plan': typeof ApiDayPlanRoute
   '/api/mission-plan': typeof ApiMissionPlanRoute
   '/api/pdf-plan': typeof ApiPdfPlanRoute
+  '/api/cron/send-4pm-push': typeof ApiCronSend4pmPushRoute
+  '/api/handoff/consume': typeof ApiHandoffConsumeRoute
+  '/api/handoff/issue': typeof ApiHandoffIssueRoute
+  '/api/push/subscribe': typeof ApiPushSubscribeRoute
+  '/api/push/unsubscribe': typeof ApiPushUnsubscribeRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
 }
 export interface FileRoutesByTo {
@@ -166,13 +215,20 @@ export interface FileRoutesByTo {
   '/plans': typeof PlansRoute
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
   '/welcome': typeof WelcomeRoute
   '/workspace-billing': typeof WorkspaceBillingRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/day-plan': typeof ApiDayPlanRoute
   '/api/mission-plan': typeof ApiMissionPlanRoute
   '/api/pdf-plan': typeof ApiPdfPlanRoute
+  '/api/cron/send-4pm-push': typeof ApiCronSend4pmPushRoute
+  '/api/handoff/consume': typeof ApiHandoffConsumeRoute
+  '/api/handoff/issue': typeof ApiHandoffIssueRoute
+  '/api/push/subscribe': typeof ApiPushSubscribeRoute
+  '/api/push/unsubscribe': typeof ApiPushUnsubscribeRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
 }
 export interface FileRoutesById {
@@ -189,13 +245,20 @@ export interface FileRoutesById {
   '/plans': typeof PlansRoute
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
   '/welcome': typeof WelcomeRoute
   '/workspace-billing': typeof WorkspaceBillingRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/day-plan': typeof ApiDayPlanRoute
   '/api/mission-plan': typeof ApiMissionPlanRoute
   '/api/pdf-plan': typeof ApiPdfPlanRoute
+  '/api/cron/send-4pm-push': typeof ApiCronSend4pmPushRoute
+  '/api/handoff/consume': typeof ApiHandoffConsumeRoute
+  '/api/handoff/issue': typeof ApiHandoffIssueRoute
+  '/api/push/subscribe': typeof ApiPushSubscribeRoute
+  '/api/push/unsubscribe': typeof ApiPushUnsubscribeRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
 }
 export interface FileRouteTypes {
@@ -213,13 +276,20 @@ export interface FileRouteTypes {
     | '/plans'
     | '/pricing'
     | '/reset-password'
+    | '/settings'
     | '/signup'
     | '/verify-email'
     | '/welcome'
     | '/workspace-billing'
     | '/api/chat'
+    | '/api/day-plan'
     | '/api/mission-plan'
     | '/api/pdf-plan'
+    | '/api/cron/send-4pm-push'
+    | '/api/handoff/consume'
+    | '/api/handoff/issue'
+    | '/api/push/subscribe'
+    | '/api/push/unsubscribe'
     | '/api/public/stripe/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -235,13 +305,20 @@ export interface FileRouteTypes {
     | '/plans'
     | '/pricing'
     | '/reset-password'
+    | '/settings'
     | '/signup'
     | '/verify-email'
     | '/welcome'
     | '/workspace-billing'
     | '/api/chat'
+    | '/api/day-plan'
     | '/api/mission-plan'
     | '/api/pdf-plan'
+    | '/api/cron/send-4pm-push'
+    | '/api/handoff/consume'
+    | '/api/handoff/issue'
+    | '/api/push/subscribe'
+    | '/api/push/unsubscribe'
     | '/api/public/stripe/webhook'
   id:
     | '__root__'
@@ -257,13 +334,20 @@ export interface FileRouteTypes {
     | '/plans'
     | '/pricing'
     | '/reset-password'
+    | '/settings'
     | '/signup'
     | '/verify-email'
     | '/welcome'
     | '/workspace-billing'
     | '/api/chat'
+    | '/api/day-plan'
     | '/api/mission-plan'
     | '/api/pdf-plan'
+    | '/api/cron/send-4pm-push'
+    | '/api/handoff/consume'
+    | '/api/handoff/issue'
+    | '/api/push/subscribe'
+    | '/api/push/unsubscribe'
     | '/api/public/stripe/webhook'
   fileRoutesById: FileRoutesById
 }
@@ -280,13 +364,20 @@ export interface RootRouteChildren {
   PlansRoute: typeof PlansRoute
   PricingRoute: typeof PricingRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  SettingsRoute: typeof SettingsRoute
   SignupRoute: typeof SignupRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
   WelcomeRoute: typeof WelcomeRoute
   WorkspaceBillingRoute: typeof WorkspaceBillingRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiDayPlanRoute: typeof ApiDayPlanRoute
   ApiMissionPlanRoute: typeof ApiMissionPlanRoute
   ApiPdfPlanRoute: typeof ApiPdfPlanRoute
+  ApiCronSend4pmPushRoute: typeof ApiCronSend4pmPushRoute
+  ApiHandoffConsumeRoute: typeof ApiHandoffConsumeRoute
+  ApiHandoffIssueRoute: typeof ApiHandoffIssueRoute
+  ApiPushSubscribeRoute: typeof ApiPushSubscribeRoute
+  ApiPushUnsubscribeRoute: typeof ApiPushUnsubscribeRoute
   ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
 }
 
@@ -376,6 +467,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/signup': {
       id: '/signup'
       path: '/signup'
@@ -411,6 +509,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/day-plan': {
+      id: '/api/day-plan'
+      path: '/api/day-plan'
+      fullPath: '/api/day-plan'
+      preLoaderRoute: typeof ApiDayPlanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/mission-plan': {
       id: '/api/mission-plan'
       path: '/api/mission-plan'
@@ -423,6 +528,41 @@ declare module '@tanstack/react-router' {
       path: '/api/pdf-plan'
       fullPath: '/api/pdf-plan'
       preLoaderRoute: typeof ApiPdfPlanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cron/send-4pm-push': {
+      id: '/api/cron/send-4pm-push'
+      path: '/api/cron/send-4pm-push'
+      fullPath: '/api/cron/send-4pm-push'
+      preLoaderRoute: typeof ApiCronSend4pmPushRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/handoff/consume': {
+      id: '/api/handoff/consume'
+      path: '/api/handoff/consume'
+      fullPath: '/api/handoff/consume'
+      preLoaderRoute: typeof ApiHandoffConsumeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/handoff/issue': {
+      id: '/api/handoff/issue'
+      path: '/api/handoff/issue'
+      fullPath: '/api/handoff/issue'
+      preLoaderRoute: typeof ApiHandoffIssueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/push/subscribe': {
+      id: '/api/push/subscribe'
+      path: '/api/push/subscribe'
+      fullPath: '/api/push/subscribe'
+      preLoaderRoute: typeof ApiPushSubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/push/unsubscribe': {
+      id: '/api/push/unsubscribe'
+      path: '/api/push/unsubscribe'
+      fullPath: '/api/push/unsubscribe'
+      preLoaderRoute: typeof ApiPushUnsubscribeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/stripe/webhook': {
@@ -448,13 +588,20 @@ const rootRouteChildren: RootRouteChildren = {
   PlansRoute: PlansRoute,
   PricingRoute: PricingRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  SettingsRoute: SettingsRoute,
   SignupRoute: SignupRoute,
   VerifyEmailRoute: VerifyEmailRoute,
   WelcomeRoute: WelcomeRoute,
   WorkspaceBillingRoute: WorkspaceBillingRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiDayPlanRoute: ApiDayPlanRoute,
   ApiMissionPlanRoute: ApiMissionPlanRoute,
   ApiPdfPlanRoute: ApiPdfPlanRoute,
+  ApiCronSend4pmPushRoute: ApiCronSend4pmPushRoute,
+  ApiHandoffConsumeRoute: ApiHandoffConsumeRoute,
+  ApiHandoffIssueRoute: ApiHandoffIssueRoute,
+  ApiPushSubscribeRoute: ApiPushSubscribeRoute,
+  ApiPushUnsubscribeRoute: ApiPushUnsubscribeRoute,
   ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
 }
 export const routeTree = rootRouteImport

@@ -1,27 +1,76 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Building2, KeyRound, Loader2, ShieldCheck, User, UserPlus } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  Building2,
+  KeyRound,
+  Loader2,
+  ShieldCheck,
+  Sparkles,
+  User,
+  UserPlus,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PrivacyShieldBanner } from "@/components/PrivacyShieldBanner";
 import { setStorageScope } from "@/lib/user-storage";
 import { TACTICAL_BRIEFING_SESSION_KEY } from "@/lib/synthetic-briefing";
+import {
+  resolveCompanyRouteByInviteToken,
+  type CompanyRoute,
+} from "@/lib/enterprise-analytics";
+import { buildPlatformHandoffUrl, buildTenantHandoffUrl } from "@/lib/tenant-handoff";
+import { canUseTenantSubdomains, DEMO_INVITE_CODE, extractSubdomainSlug } from "@/lib/tenant-host";
 
 export const Route = createFileRoute("/onboarding")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    invite: typeof search["invite"] === "string" ? search["invite"].trim().slice(0, 200) : undefined,
+  }),
   component: OnboardingPage,
 });
 
 const NEW_ACCOUNT_SEARCH = { mode: "signup" as const, next: "/onboarding" };
 const SIGN_IN_SEARCH = { mode: "signin" as const, next: "/onboarding" };
 
+function onboardingNext(token: string): string {
+  const trimmed = token.trim();
+  return trimmed ? `/onboarding?invite=${encodeURIComponent(trimmed)}` : "/onboarding";
+}
+
+async function redirectToTenant(route: CompanyRoute | null): Promise<boolean> {
+  if (typeof window === "undefined" || !route?.companySlug) return false;
+  if (!canUseTenantSubdomains(window.location.hostname)) return false;
+
+  const handoff = await buildTenantHandoffUrl(route.companySlug, "/app");
+  try {
+    if (new URL(handoff.url).host === window.location.host) return false;
+  } catch {
+    return false;
+  }
+
+  window.location.replace(handoff.url);
+  return true;
+}
+
+async function redirectPersonalToPlatform(): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+  if (!extractSubdomainSlug(window.location.hostname)) return false;
+  if (!canUseTenantSubdomains(window.location.hostname)) return false;
+
+  const handoff = await buildPlatformHandoffUrl("/app");
+  window.location.replace(handoff.url);
+  return true;
+}
+
 function OnboardingPage() {
   const navigate = useNavigate();
+  const { invite } = Route.useSearch();
 
-  const [inviteToken, setInviteToken] = useState("");
+  const [inviteToken, setInviteToken] = useState(invite ?? "");
   const [busy, setBusy] = useState(false);
   const [switching, setSwitching] = useState(false);
   const [sessionChecked, setSessionChecked] = useState(false);
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const autoJoinAttemptedRef = useRef(false);
 
   // Detect the account that is already signed in so the operator can either
   // configure it or deliberately disconnect and register another account.
@@ -68,7 +117,7 @@ function OnboardingPage() {
       }
       setSessionEmail(null);
       setSwitching(false);
-      navigate({ to: "/auth", search: { mode, next: "/onboarding" } });
+      navigate({ to: "/auth", search: { mode, next: onboardingNext(inviteToken) } });
     }
   }
 
@@ -80,8 +129,15 @@ function OnboardingPage() {
     void disconnectAndGoToAuth("signin");
   }
 
-  function redirectToSignup() {
-    navigate({ to: "/auth", search: NEW_ACCOUNT_SEARCH });
+  useEffect(() => {
+    if (invite) setInviteToken(invite);
+  }, [invite]);
+
+  function redirectToSignup(token = inviteToken) {
+    navigate({
+      to: "/auth",
+      search: { mode: "signup", next: onboardingNext(token) },
+    });
   }
 
   // 🧑‍🚀 PERSONAL ACCOUNT PATH — routes straight to the dashboard with company_id = null.
@@ -112,6 +168,9 @@ function OnboardingPage() {
       const { error: metaError } = await supabase.auth.updateUser({ data: { company_id: null } });
       if (metaError) throw metaError;
 
+      // A personal operator must not stay on a company subdomain.
+      if (await redirectPersonalToPlatform()) return;
+
       navigate({ to: "/app" });
     } catch (err) {
       console.error("Personal onboarding failed:", err);
@@ -127,8 +186,8 @@ function OnboardingPage() {
   }
 
   // 🏢 JOIN A COMPANY PATH — validates the enterprise invite token, then binds the tenant.
-  async function handleJoinCompany() {
-    const token = inviteToken.trim();
+  async function handleJoinCompany(tokenOverride?: string) {
+    const token = (tokenOverride ?? inviteToken).trim();
     if (!token) {
       setErrorMessage("🔑 Enter your company invite token to join the mission grid.");
       return;
@@ -142,21 +201,17 @@ function OnboardingPage() {
 
       if (!user) {
         setBusy(false);
-        redirectToSignup();
+        redirectToSignup(token);
         return;
       }
 
       setStorageScope(user.id);
 
-      const { data: companyId, error: lookupError } = await supabase.rpc(
-        "get_company_id_by_invite_token",
-        {
-          p_token: token,
-        },
-      );
-      if (lookupError) throw lookupError;
+      // Public-branding route lookup. It returns the tenant slug as well as the
+      // id, so the browser can hand the session to the correct subdomain.
+      const route = await resolveCompanyRouteByInviteToken(token);
 
-      if (!companyId) {
+      if (!route) {
         setErrorMessage(
           "❌ Invalid or expired invite token. Request a fresh ApexMission join token from your enterprise admin.",
         );
@@ -170,9 +225,11 @@ function OnboardingPage() {
       if (acceptError) throw acceptError;
 
       const { error: metaError } = await supabase.auth.updateUser({
-        data: { company_id: companyId },
+        data: { company_id: route.companyId },
       });
       if (metaError) throw metaError;
+
+      if (await redirectToTenant(route)) return;
 
       navigate({ to: "/app" });
     } catch (err) {
@@ -186,6 +243,29 @@ function OnboardingPage() {
       setErrorMessage(message);
       setBusy(false);
     }
+  }
+
+  // An explicit invite link is a single action: once the session is known,
+  // join the tenant immediately (including the demo console link).
+  useEffect(() => {
+    if (!sessionChecked || !sessionEmail || !invite) return;
+    if (autoJoinAttemptedRef.current) return;
+    autoJoinAttemptedRef.current = true;
+    void handleJoinCompany(invite);
+  }, [invite, sessionChecked, sessionEmail]);
+
+  function handleDemoShortcut() {
+    setInviteToken(DEMO_INVITE_CODE);
+
+    if (!sessionEmail) {
+      navigate({
+        to: "/auth",
+        search: { mode: "signup", next: onboardingNext(DEMO_INVITE_CODE) },
+      });
+      return;
+    }
+
+    void handleJoinCompany(DEMO_INVITE_CODE);
   }
 
   return (
@@ -377,11 +457,21 @@ function OnboardingPage() {
 
           <button
             type="button"
-            onClick={handleJoinCompany}
+            onClick={() => void handleJoinCompany()}
             disabled={busy || !inviteToken.trim()}
             className="btn-glass-secondary w-full h-11 mt-4"
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin text-black" /> : <>Join Mission →</>}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleDemoShortcut}
+            disabled={busy || switching}
+            className="mt-2 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-emerald-500/25 bg-emerald-950/20 px-4 text-[11px] font-bold text-emerald-300 transition-all hover:border-emerald-500/50 hover:bg-emerald-500 hover:text-black disabled:opacity-50"
+          >
+            <Sparkles className="size-3.5" />
+            Explore Showcase Demo Corp · {DEMO_INVITE_CODE}
           </button>
         </div>
 

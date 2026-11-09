@@ -34,7 +34,7 @@ function WelcomePage() {
 
         <div className="w-full flex flex-col gap-3 animate-fade-in-up delay-400">
           {/* Primary Action Button */}
-          <Link to="/onboarding" className="btn-glass-primary h-12">
+          <Link to="/onboarding" search={{ invite: undefined }} className="btn-glass-primary h-12">
             Get Started →
           </Link>
 

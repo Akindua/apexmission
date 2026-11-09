@@ -238,12 +238,20 @@ function DemoShowcasePage() {
               Real database, real tenant isolation, zero AI credits spent on this page.
             </p>
           </div>
-          <a
-            href="/auth?mode=signup"
-            className="inline-flex h-11 items-center rounded-xl bg-emerald-500 px-6 font-mono text-xs font-black uppercase tracking-wider text-black transition-all hover:bg-emerald-400 hover:shadow-[0_0_25px_rgba(52,211,153,0.4)] active:scale-95"
-          >
-            Launch Your Own Workspace →
-          </a>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <a
+              href={`/onboarding?invite=${encodeURIComponent(showcase.inviteCode)}`}
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-emerald-500/35 bg-emerald-950/40 px-5 font-mono text-xs font-black uppercase tracking-wider text-emerald-300 transition-all hover:border-emerald-500/60 hover:bg-emerald-500 hover:text-black active:scale-95"
+            >
+              Open Operator Console →
+            </a>
+            <a
+              href="/auth?mode=signup"
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-500 px-6 font-mono text-xs font-black uppercase tracking-wider text-black transition-all hover:bg-emerald-400 hover:shadow-[0_0_25px_rgba(52,211,153,0.4)] active:scale-95"
+            >
+              Launch Your Own Workspace →
+            </a>
+          </div>
         </footer>
 
         <p className="mt-6 text-center font-mono text-[9px] font-black uppercase tracking-[0.2em] text-emerald-400">

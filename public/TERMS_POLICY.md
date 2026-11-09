@@ -168,6 +168,24 @@ ApexMissions is designed as an output-based accountability platform. Unless a fe
 
 ApexMissions does not require continuous device monitoring to provide its core task-accountability functionality. However, limited technical information, such as IP addresses and security logs, may be processed for authentication, fraud prevention, troubleshooting, and platform security.
 
+### 19.1 Web Push Notifications (4:30 PM Reminder — Personal Accounts Only)
+
+**Opt-in only.** Personal account holders may choose to receive a single daily push notification at approximately 4:30 PM in their local timezone if they have an unfinished High-impact task. The feature is disabled by default and requires explicit user consent via the Settings page.
+
+**What is stored:** When a user subscribes, we store the push subscription endpoint, the p256dh public key, the auth secret, and the user's IANA timezone (e.g., `America/Los_Angeles`). These are stored in the `push_subscriptions` table, scoped to the user's account via Row-Level Security. No task content, task titles, or productivity data are stored in the push subscription record.
+
+**What is sent:** The push payload contains only a generic message: `"Time to close your top task before 5 PM."` — no task text, no project names, no personal data. The notification is delivered via the Web Push protocol (VAPID) to the user's browser push service (e.g., Google FCM for Chrome/Edge, Apple Push Notification service for Safari, Mozilla Push Service for Firefox). The browser's push service may log metadata such as delivery timestamps per their own privacy policies.
+
+**Frequency & targeting:** At most one push per user per day. The cron job (running at 16:30 UTC) checks each subscriber's timezone, verifies they have an unfinished High-impact task from their current plan, and sends only if both conditions are met. Corporate/organizational accounts are excluded and never receive push reminders.
+
+**Third parties:** The push delivery chain involves the browser vendor's push service (Google, Apple, or Mozilla depending on browser). ApexMissions does not control these services. The VAPID keys identify ApexMissions to the push services; the private key is held only on our server.
+
+**How to turn it off:** Open Settings (gear icon in the sidebar), find the "4:30 PM Push Reminder" section, and click "Unsubscribe." This immediately revokes the subscription locally and deletes the record from our server. You can re-enable it at any time by clicking "Subscribe" again (permission will be requested again if previously denied).
+
+**iOS / Safari:** Requires iOS 16.4+, adding the app to Home Screen (Share → Add to Home Screen), and granting notification permission from the Home Screen app. Focus modes / Do Not Disturb may silence the notification.
+
+**Data retention:** Subscription records are retained while the user is subscribed. Upon unsubscription, the record is deleted. If a push returns 404/410 (expired/invalid subscription), the record is automatically deleted by the cron job.
+
 ### 20. How We Use Information
 
 Information collected through ApexMissions may be used for the following purposes: creating and managing user accounts; providing individual productivity workspaces; connecting employees to authorized organizational workspaces; processing task submissions and milestone updates; generating organizational accountability summaries; sending automated notifications and executive briefings; processing subscriptions and billing transactions; maintaining platform functionality and security; troubleshooting technical issues; preventing fraudulent or unauthorized activity; responding to customer support inquiries; complying with applicable legal obligations. We do not intend to sell personal information to third parties. We will not use personal information for unrelated purposes without an appropriate legal basis.
