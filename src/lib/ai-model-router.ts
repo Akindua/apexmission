@@ -26,7 +26,10 @@ export interface EntitlementInfo {
  * Fetches the entitlement for the given actor (personal or company).
  * Returns null if no entitlement row exists (defaults to standard).
  */
-export async function fetchEntitlement(actor: { userId: string; token: string }): Promise<EntitlementInfo | null> {
+export async function fetchEntitlement(actor: {
+  userId: string;
+  token: string;
+}): Promise<EntitlementInfo | null> {
   const supabaseUrl = process.env["SUPABASE_URL"];
   const supabaseServiceKey = process.env["SUPABASE_SERVICE_ROLE_KEY"];
   if (!supabaseUrl || !supabaseServiceKey) {
@@ -117,7 +120,10 @@ export function canUseAstra(ent: EntitlementInfo | null): boolean {
  * Fails closed: if any required env var is missing or invalid, returns null to signal
  * the caller should use the local plan only. Never silently falls back to a more expensive model.
  */
-export async function chooseModel(actor: { userId: string; token: string }): Promise<ModelConfig | null> {
+export async function chooseModel(actor: {
+  userId: string;
+  token: string;
+}): Promise<ModelConfig | null> {
   // Required env vars - fail closed if missing
   const baselineModel = process.env["AI_BASELINE_MODEL"];
   const astraModel = process.env["AI_ASTRA_MODEL"];
@@ -127,8 +133,15 @@ export async function chooseModel(actor: { userId: string; token: string }): Pro
   const baselineTimeoutMsStr = process.env["AI_BASELINE_TIMEOUT_MS"];
   const astraTimeoutMsStr = process.env["AI_ASTRA_TIMEOUT_MS"];
 
-  if (!baselineModel || !astraModel || !baselineMaxTokensStr || !astraMaxTokensStr ||
-      !astraReasoningEffortStr || !baselineTimeoutMsStr || !astraTimeoutMsStr) {
+  if (
+    !baselineModel ||
+    !astraModel ||
+    !baselineMaxTokensStr ||
+    !astraMaxTokensStr ||
+    !astraReasoningEffortStr ||
+    !baselineTimeoutMsStr ||
+    !astraTimeoutMsStr
+  ) {
     console.error("[ModelRouter] Missing required AI env vars - failing closed to local plan");
     return null;
   }
@@ -138,8 +151,12 @@ export async function chooseModel(actor: { userId: string; token: string }): Pro
   const baselineTimeoutMs = parseInt(baselineTimeoutMsStr, 10);
   const astraTimeoutMs = parseInt(astraTimeoutMsStr, 10);
 
-  if (!Number.isFinite(baselineMaxTokens) || !Number.isFinite(astraMaxTokens) ||
-      !Number.isFinite(baselineTimeoutMs) || !Number.isFinite(astraTimeoutMs)) {
+  if (
+    !Number.isFinite(baselineMaxTokens) ||
+    !Number.isFinite(astraMaxTokens) ||
+    !Number.isFinite(baselineTimeoutMs) ||
+    !Number.isFinite(astraTimeoutMs)
+  ) {
     console.error("[ModelRouter] Invalid numeric AI env vars - failing closed to local plan");
     return null;
   }
@@ -180,7 +197,7 @@ export async function chooseModel(actor: { userId: string; token: string }): Pro
 export async function decrementAstraCredits(
   ownerId: string,
   isPersonal: boolean,
-  amount: number = 1
+  amount: number = 1,
 ): Promise<number | null> {
   if (amount <= 0) return null;
 
@@ -217,7 +234,7 @@ export async function decrementAstraCredits(
  */
 export async function getAstraCreditsBalance(
   ownerId: string,
-  isPersonal: boolean
+  isPersonal: boolean,
 ): Promise<number | null> {
   const supabaseUrl = process.env["SUPABASE_URL"];
   const supabaseServiceKey = process.env["SUPABASE_SERVICE_ROLE_KEY"];

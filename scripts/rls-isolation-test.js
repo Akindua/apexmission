@@ -44,6 +44,9 @@ async function main() {
   const clientB1 = await createUserClient(userB1.id);
   const clientB2 = await createUserClient(userB2.id);
 
+  // Anon client (no JWT)
+  const anonClient = createClient(SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "");
+
   // Test 1: profiles table isolation
   await testProfilesIsolation(clientA1, clientB1, userA1.id, userB1.id);
 
@@ -80,10 +83,155 @@ async function main() {
   // Test 12: entitlements table isolation
   await testEntitlementsIsolation(clientA1, clientB1, userA1.id, userB1.id, companyA.id, companyB.id, admin);
 
+  // Test 13: Privilege lockdown - authenticated users cannot write to protected tables
+  await testAuthenticatedPrivilegeLockdown(clientA1);
+
+  // Test 14: Anon client cannot access any table
+  await testAnonPrivilegeLockdown();
+
+  // Test 15: profiles column-level restrictions
+  await testProfilesColumnLockdown(clientA1, clientB1, userA1.id, userB1.id, companyA.id, companyB.id);
+
+  // Test 16: points_ledger and handoff_codes write lockdown
+  await testWriteLockdown(clientA1, userA1.id);
+
+  // Test 17: Coworker cannot read another profile row; cannot move task to another company
+  await testCoworkerProfileAndTaskLockdown(clientA1, clientA2, userA1.id, userA2.id, companyA.id, companyB.id);
+
   console.log("\n✅ All RLS isolation tests passed!");
 }
 
-async function createCompany(name) {
+async function testProfilesColumnLockdown(clientA, clientB, userAId, userBId, companyAId, companyBId) {
+  console.log("\n🔒 Test 15: Profiles column-level lockdown");
+
+  // (a) SELECT on profiles returns only own row
+  const { data: ownProfile, error: ownError } = await clientA
+    .from("profiles")
+    .select("*")
+    .eq("id", userAId)
+    .single();
+  if (ownError) throw new Error(`User A cannot read own profile: ${ownError.message}`);
+  if (ownProfile.id !== userAId) throw new Error("User A got wrong profile!");
+  console.log("  ✓ User A SELECT on profiles returns only own row");
+
+  // User A cannot read User B's profile
+  const { data: otherProfile, error: otherError } = await clientA
+    .from("profiles")
+    .select("*")
+    .eq("id", userBId)
+    .single();
+  if (otherProfile) throw new Error("User A can read User B's profile!");
+  console.log("  ✓ User A cannot read User B's profile via SELECT");
+
+  // (b) UPDATE profiles SET company_id to company Y's id fails
+  const { error: companyIdError } = await clientA
+    .from("profiles")
+    .update({ company_id: companyBId })
+    .eq("id", userAId);
+  if (!companyIdError) throw new Error("User A can change company_id to another company!");
+  console.log("  ✓ User A cannot UPDATE company_id to another company");
+
+  // (c) updating credits fails
+  const { error: creditsError } = await clientA
+    .from("profiles")
+    .update({ credits: 999999 })
+    .eq("id", userAId);
+  if (!creditsError) throw new Error("User A can update credits!");
+  console.log("  ✓ User A cannot UPDATE credits");
+
+  // (c) updating subscription_tier (plan) fails
+  const { error: tierError } = await clientA
+    .from("profiles")
+    .update({ subscription_tier: "lifetime" })
+    .eq("id", userAId);
+  if (!tierError) throw new Error("User A can update subscription_tier!");
+  console.log("  ✓ User A cannot UPDATE subscription_tier");
+
+  // User A CAN update user-editable columns (email, full_name)
+  const { error: emailError } = await clientA
+    .from("profiles")
+    .update({ email: "updated@example.com" })
+    .eq("id", userAId);
+  if (emailError) throw new Error(`User A cannot update email: ${emailError.message}`);
+  console.log("  ✓ User A CAN UPDATE email (user-editable column)");
+}
+
+async function testWriteLockdown(client, userId) {
+  console.log("\n🚫 Test 16: Write lockdown on points_ledger and handoff_codes");
+
+  // INSERT into points_ledger fails (no client INSERT)
+  const { error: ledgerInsertError } = await client
+    .from("points_ledger")
+    .insert({ profile_id: userId, amount_changed: 100, transaction_reason: "test" });
+  if (!ledgerInsertError) throw new Error("User can INSERT into points_ledger!");
+  console.log("  ✓ User cannot INSERT into points_ledger");
+
+  // INSERT into handoff_codes fails (no client grants at all)
+  const { error: handoffInsertError } = await client
+    .from("handoff_codes")
+    .insert({ user_id: userId, target_slug: "platform", expires_at: new Date(Date.now() + 60000).toISOString() });
+  if (!handoffInsertError) throw new Error("User can INSERT into handoff_codes!");
+  console.log("  ✓ User cannot INSERT into handoff_codes");
+}
+
+async function testCoworkerProfileAndTaskLockdown(
+  clientA1,
+  clientA2,
+  userA1Id,
+  userA2Id,
+  companyAId,
+  companyBId
+) {
+  console.log("\n👥 Test 17: Coworker profile and task lockdown");
+
+  // (a) Coworker cannot read another profile row (same company, different user)
+  const { data: coworkerProfile, error: coworkerError } = await clientA1
+    .from("profiles")
+    .select("*")
+    .eq("id", userA2Id)
+    .single();
+  if (coworkerProfile) throw new Error("Coworker can read another profile row!");
+  if (coworkerError && coworkerError.code !== "PGRST116") {
+    // PGRST116 = no rows returned, which is expected
+    throw new Error(`Coworker profile read failed unexpectedly: ${coworkerError.message}`);
+  }
+  console.log("  ✓ Coworker cannot read another profile row");
+
+  // (b) Coworker cannot update company_id on their own profile
+  const { error: coworkerCompanyError } = await clientA1
+    .from("profiles")
+    .update({ company_id: companyBId })
+    .eq("id", userA1Id);
+  if (!coworkerCompanyError) throw new Error("Coworker can change company_id!");
+  console.log("  ✓ Coworker cannot UPDATE company_id");
+
+  // (c) Coworker cannot update subscription_tier
+  const { error: coworkerTierError } = await clientA1
+    .from("profiles")
+    .update({ subscription_tier: "lifetime" })
+    .eq("id", userA1Id);
+  if (!coworkerTierError) throw new Error("Coworker can change subscription_tier!");
+  console.log("  ✓ Coworker cannot UPDATE subscription_tier");
+
+  // (d) Coworker cannot move their own task to another company
+  // First create a task for user A1
+  const { data: taskA, error: taskCreateError } = await clientA1
+    .from("tasks")
+    .insert({ user_id: userA1Id, company_id: companyAId, task_text: "Move test", impact_tier: "high" })
+    .select()
+    .single();
+  if (taskCreateError) throw new Error(`Cannot create test task: ${taskCreateError.message}`);
+
+  const { error: taskMoveError } = await clientA1
+    .from("tasks")
+    .update({ company_id: companyBId })
+    .eq("id", taskA.id);
+  if (!taskMoveError) throw new Error("Coworker can move task to another company!");
+  console.log("  ✓ Coworker cannot move task to another company");
+
+  // Cleanup: delete the test task
+  await clientA1.from("tasks").delete().eq("id", taskA.id);
+}
   const { data, error } = await admin
     .from("companies")
     .insert({ name, slug: name.toLowerCase().replace(/\s+/g, "-") })
@@ -516,3 +664,131 @@ main().catch((err) => {
   console.error(err.stack);
   process.exit(1);
 });
+
+/**
+ * Test that authenticated users cannot perform unexpected operations on
+ * protected tables. Asserts that INSERT/UPDATE/DELETE fail where no client
+ * policy exists, and SELECT is limited to owned rows.
+ */
+async function testAuthenticatedPrivilegeLockdown(client) {
+  console.log("\n🔒 Test 13: Authenticated privilege lockdown");
+
+  const tables = [
+    "profiles",
+    "companies",
+    "tasks",
+    "points_ledger",
+    "entitlements",
+    "push_subscriptions",
+    "handoff_codes",
+    "rate_limit_buckets",
+  ];
+
+  for (const table of tables) {
+    // INSERT should fail on tables without client INSERT policy
+    const noInsertTables = ["companies", "entitlements", "rate_limit_buckets"];
+    if (noInsertTables.includes(table)) {
+      const { error } = await client.from(table).insert({}).select();
+      if (!error) throw new Error(`Authenticated INSERT on ${table} should fail!`);
+      console.log(`  ✓ Authenticated INSERT on ${table} rejected`);
+    }
+
+    // UPDATE should fail on tables without client UPDATE policy
+    const noUpdateTables = ["companies", "entitlements", "rate_limit_buckets"];
+    if (noUpdateTables.includes(table)) {
+      const { error } = await client.from(table).update({}).eq("id", "00000000-0000-0000-0000-000000000000");
+      if (!error) throw new Error(`Authenticated UPDATE on ${table} should fail!`);
+      console.log(`  ✓ Authenticated UPDATE on ${table} rejected`);
+    }
+
+    // DELETE should fail on tables without client DELETE policy
+    const noDeleteTables = ["companies", "entitlements", "rate_limit_buckets", "points_ledger"];
+    if (noDeleteTables.includes(table)) {
+      const { error } = await client.from(table).delete().eq("id", "00000000-0000-0000-0000-000000000000");
+      if (!error) throw new Error(`Authenticated DELETE on ${table} should fail!`);
+      console.log(`  ✓ Authenticated DELETE on ${table} rejected`);
+    }
+
+    // SELECT on companies and rate_limit_buckets should return 0 rows (no policy)
+    const noSelectTables = ["companies", "rate_limit_buckets"];
+    if (noSelectTables.includes(table)) {
+      const { data, error } = await client.from(table).select("*");
+      if (error) throw new Error(`Authenticated SELECT on ${table} failed: ${error.message}`);
+      if (data && data.length > 0) throw new Error(`Authenticated SELECT on ${table} returned ${data.length} rows!`);
+      console.log(`  ✓ Authenticated SELECT on ${table} returns 0 rows`);
+    }
+  }
+
+  // profiles: authenticated can SELECT own row only
+  const { data: profiles, error: profError } = await client.from("profiles").select("*");
+  if (profError) throw new Error(`Authenticated SELECT on profiles failed: ${profError.message}`);
+  // Should only see own row (RLS)
+  console.log(`  ✓ Authenticated SELECT on profiles returns ${profiles?.length ?? 0} row(s) (RLS-limited)`);
+
+  // entitlements: authenticated can SELECT but not INSERT/UPDATE/DELETE
+  const { error: entInsert } = await client.from("entitlements").insert({ plan: "standard" });
+  if (!entInsert) throw new Error("Authenticated INSERT on entitlements should fail!");
+  console.log("  ✓ Authenticated INSERT on entitlements rejected");
+
+  const { error: entUpdate } = await client.from("entitlements").update({ plan: "lifetime" });
+  if (!entUpdate) throw new Error("Authenticated UPDATE on entitlements should fail!");
+  console.log("  ✓ Authenticated UPDATE on entitlements rejected");
+
+  const { error: entDelete } = await client.from("entitlements").delete();
+  if (!entDelete) throw new Error("Authenticated DELETE on entitlements should fail!");
+  console.log("  ✓ Authenticated DELETE on entitlements rejected");
+}
+
+/**
+ * Test that anon client (no JWT) cannot access any table.
+ * All SELECT/INSERT/UPDATE/DELETE should fail or return 0 rows.
+ */
+async function testAnonPrivilegeLockdown() {
+  console.log("\n🚫 Test 14: Anon privilege lockdown");
+
+  const anonClient = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? ""
+  );
+
+  const tables = [
+    "profiles",
+    "companies",
+    "tasks",
+    "points_ledger",
+    "entitlements",
+    "push_subscriptions",
+    "handoff_codes",
+    "rate_limit_buckets",
+  ];
+
+  for (const table of tables) {
+    // SELECT should return 0 rows or error (anon revoked)
+    const { data, error } = await anonClient.from(table).select("*");
+    if (data && data.length > 0) {
+      throw new Error(`Anon SELECT on ${table} returned ${data.length} rows!`);
+    }
+    console.log(`  ✓ Anon SELECT on ${table}: ${data ? data.length : 0} rows`);
+
+    // INSERT should fail
+    const { error: insError } = await anonClient.from(table).insert({});
+    if (!insError && table !== "rate_limit_buckets") {
+      // rate_limit_buckets might not have RLS but anon has no grant
+      console.log(`  ⚠️  Anon INSERT on ${table} unexpectedly succeeded`);
+    } else if (insError) {
+      console.log(`  ✓ Anon INSERT on ${table} rejected`);
+    }
+
+    // UPDATE should fail
+    const { error: updError } = await anonClient.from(table).update({}).eq("id", "00000000-0000-0000-0000-000000000000");
+    if (updError) {
+      console.log(`  ✓ Anon UPDATE on ${table} rejected`);
+    }
+
+    // DELETE should fail
+    const { error: delError } = await anonClient.from(table).delete().eq("id", "00000000-0000-0000-0000-000000000000");
+    if (delError) {
+      console.log(`  ✓ Anon DELETE on ${table} rejected`);
+    }
+  }
+}

@@ -37,6 +37,7 @@ import {
   type LeaderboardSnapshot,
   type OperatorProfileMetadata,
   type TaskHistoryEntry,
+  type LeaderboardOperatorRow,
 } from "@/lib/synthetic-briefing";
 import { useSubscriptionTier } from "@/hooks/useSubscriptionTier";
 import { supabase } from "@/integrations/supabase/client";
@@ -110,7 +111,7 @@ function ApexMission() {
   const [paywall, setPaywall] = useState<string | null>(null);
 
   // 🏛️ DYNAMIC OPERATOR REAL-TIME ROSTER TELEMETRY STATES
-  const [leaderboardOperators, setLeaderboardOperators] = useState<any[]>([]);
+  const [leaderboardOperators, setLeaderboardOperators] = useState<LeaderboardOperatorRow[]>([]);
   const [loadingRoster, setLoadingRoster] = useState(false);
   const navigate = useNavigate();
 
@@ -376,7 +377,8 @@ function ApexMission() {
         setCurrentUserId(user.id);
 
         const localState = loadState();
-        const { state: reconciledState, rollover: rolloverSummary } = reconcileDailyPlan(localState);
+        const { state: reconciledState, rollover: rolloverSummary } =
+          reconcileDailyPlan(localState);
         const localPlan = buildLocalDayPlan({
           mission: reconciledState.mission,
           tasks: reconciledState.tasks,
@@ -690,7 +692,7 @@ function ApexMission() {
 
       if (pendingHighCount > 0) {
         const penaltyAmount = pendingHighCount * 15;
-        const targetCurrentPoints = (state as any).points || 0;
+        const targetCurrentPoints = state.points || 0;
         const optimizedPoints = Math.max(0, targetCurrentPoints - penaltyAmount);
 
         setState((s) => ({ ...s, points: optimizedPoints }));
@@ -699,14 +701,11 @@ function ApexMission() {
           data: { user },
         } = await supabase.auth.getUser();
         if (user) {
-          await supabase
-            .from("profiles")
-            .update({
-              credits: optimizedPoints,
-              operational_status: "FALLEN",
-              last_action_logged: `Deducted ${penaltyAmount} credits due to active operational slacking metrics.`,
-            })
-            .eq("id", user.id);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase.rpc as any)("adjust_profile_credits", {
+            p_user_id: user.id,
+            p_amount: -penaltyAmount,
+          });
         }
 
         setSurpriseLoot({
@@ -732,6 +731,9 @@ function ApexMission() {
       setShowInduction(true);
       return;
     }
+
+    // Onboarding is complete — ensure the induction is not shown.
+    setShowInduction(false);
 
     // Returning login: open the locally generated dossier at most once per
     // browser session. No AI request is made.
@@ -880,19 +882,16 @@ function ApexMission() {
     }
 
     const timer = window.setTimeout(async () => {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          credits: points,
-          current_streak: streak,
-          max_streak: Math.max(operatorProfile.maxStreak, streak),
-          velocity_score: velocityConsistencyIndex,
-        })
-        .eq("id", currentUserId);
-
-      if (error) {
-        console.error("Progress telemetry sync failed:", error);
+      const creditsDelta = points - operatorProfile.credits;
+      if (creditsDelta !== 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase.rpc as any)("adjust_profile_credits", {
+          p_user_id: currentUserId,
+          p_amount: creditsDelta,
+        });
       }
+      // Streak and velocity_score are server-owned; clients must not write them.
+      // They are computed server-side from task completions.
     }, 750);
 
     return () => window.clearTimeout(timer);
@@ -915,16 +914,16 @@ function ApexMission() {
       return;
 
     const timer = window.setTimeout(async () => {
+      // task_history is user-editable; velocity_score is server-owned.
       const { error } = await supabase
         .from("profiles")
         .update({
           task_history: (behaviorAnalytics.taskHistory ?? []) as unknown as Json,
-          velocity_score: velocityConsistencyIndex,
         })
         .eq("id", currentUserId);
 
       if (error) {
-        console.error("Task history telemetry sync failed:", error);
+        console.error("Task history sync failed:", error);
       }
     }, 750);
 
@@ -1083,7 +1082,9 @@ function ApexMission() {
           rewardNotice = `🔥 CRITICAL BOOTSTRAP BONUS UNLOCKED: Infused +${criticalBonus} extra credits into your matrix!`;
         }
 
-        const taskCompletionHook = (window as any).__apex_task_completed;
+        const taskCompletionHook = (
+          window as unknown as { __apex_task_completed?: (text: string) => void }
+        ).__apex_task_completed;
         const hookAvailable = typeof taskCompletionHook === "function";
         if (hookAvailable) {
           taskCompletionHook(targetTask?.text || "Task completed");
@@ -1100,8 +1101,7 @@ function ApexMission() {
         };
         setBehaviorAnalytics((prev) => ({
           ...prev,
-          totalTasksCompleted:
-            (prev.totalTasksCompleted ?? 0) + (hookAvailable ? 0 : 1),
+          totalTasksCompleted: (prev.totalTasksCompleted ?? 0) + (hookAvailable ? 0 : 1),
           taskHistory: [
             ...(Array.isArray(prev.taskHistory) ? prev.taskHistory : []),
             completionEntry,
@@ -1116,7 +1116,7 @@ function ApexMission() {
 
       return {
         ...s,
-        points: Math.max(0, ((s as any).points || 0) + scoreBonus),
+        points: Math.max(0, (s.points || 0) + scoreBonus),
         tasks: {
           ...s.tasks,
           [tier]: currentTasks.map((t) => (taskId(t) === id ? { ...t, done: !t.done } : t)),
@@ -1176,7 +1176,7 @@ function ApexMission() {
 
       return {
         ...s,
-        points: Math.max(0, ((s as any).points || 0) + scoreBonus),
+        points: Math.max(0, (s.points || 0) + scoreBonus),
         daily: { ...s.daily, done: nextDone, date: todayKey() },
         streak: updatedStreak,
       };
@@ -1612,10 +1612,12 @@ function ApexMission() {
 
             {/* Right System Controls & Metrics */}
             <div className="grid w-full grid-cols-2 gap-2 font-mono lg:flex lg:w-auto lg:flex-wrap lg:items-center lg:justify-end">
-              <div className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-emerald-500/30 bg-black/60 px-3 py-2 text-[10px] font-black text-emerald-400 shadow-[inset_0_1px_3px_rgba(52,211,153,0.15)]">
-                <Shield className="size-3.5 fill-emerald-400/20 text-emerald-400" />
-                <span className="truncate">{state?.points || 0} Credits</span>
-              </div>
+              {!isCorporate && (
+                <div className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-emerald-500/30 bg-black/60 px-3 py-2 text-[10px] font-black text-emerald-400 shadow-[inset_0_1px_3px_rgba(52,211,153,0.15)]">
+                  <Shield className="size-3.5 fill-emerald-400/20 text-emerald-400" />
+                  <span className="truncate">{state?.points || 0} Credits</span>
+                </div>
+              )}
 
               <button
                 type="button"
@@ -1963,12 +1965,7 @@ function ApexMission() {
                 </div>
               </section>
 
-              <PersonalPatternsCard
-                taskHistory={taskHistory}
-                tasks={state.tasks}
-              />
-
-              <VoiceDayLogger onSave={handleVoiceLogSave} disabled={!hydrated} />
+              <PersonalPatternsCard taskHistory={taskHistory} tasks={state.tasks} />
             </div>
           )}
 
@@ -2017,14 +2014,14 @@ function ApexMission() {
                   {leaderboardOperators.map((operator, index) => {
                     const isCurrentClientNode = operator.id === currentUserId;
                     const activeDisplayCredits = isCurrentClientNode
-                      ? (state as any).points !== undefined
-                        ? (state as any).points
+                      ? state.points !== undefined
+                        ? state.points
                         : 1000
-                      : operator.points || operator.beta_points || 0;
+                      : operator.credits || 0;
 
                     const hasFounderBadge = isCurrentClientNode
                       ? getScopedItem("apexmission-unlocked-badge-alpha-founder") === "true"
-                      : operator.unlocked_layouts?.includes("badge-alpha-founder");
+                      : false;
 
                     return (
                       <div
@@ -2106,7 +2103,23 @@ function ApexMission() {
 
           {/* ENTERPRISE ANALYTICS TAB — company-scoped only */}
           {isCorporate && (activeTab === "enterprise" || activeTab === "leaderboard") && (
-            <EnterpriseAnalyticsPanel companyNameFallback={activeTenant?.companyName ?? null} />
+            <section className="animate-fade-in">
+              <EnterpriseAnalyticsPanel companyNameFallback={activeTenant?.companyName ?? null} />
+
+              {/* Enterprise Voice Day Log — 10-second voice capture */}
+              <VoiceDayLogger onSave={handleVoiceLogSave} disabled={!hydrated} />
+
+              {/* Enterprise Pre-5PM Nudge — professional reminder */}
+              {showFivePmNudge && keyOpenTask && (
+                <FivePmNudge
+                  taskLabel={keyOpenTask.label}
+                  taskText={keyOpenTask.text}
+                  minutesUntilCutoff={minutesUntilCutoff}
+                  onDismiss={dismissFivePmNudge}
+                  onFocus={focusKeyTask}
+                />
+              )}
+            </section>
           )}
 
           {/* HARDWARE MARKET TAB */}
@@ -2131,7 +2144,7 @@ function ApexMission() {
                     <button
                       type="button"
                       onClick={async () => {
-                        const currentPoints = (state as any).points || 0;
+                        const currentPoints = state.points || 0;
                         if (currentPoints < item.cost)
                           return alert("❌ INSUFFICIENT OPERATIONAL CREDITS.");
 
@@ -2149,13 +2162,11 @@ function ApexMission() {
 
                         // Persist the debit so a reload does not restore the old balance.
                         if (currentUserId) {
-                          const { error: creditError } = await supabase
-                            .from("profiles")
-                            .update({ credits: nextPoints })
-                            .eq("id", currentUserId);
-                          if (creditError) {
-                            console.error("Credit debit persistence failed:", creditError);
-                          }
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          await (supabase.rpc as any)("adjust_profile_credits", {
+                            p_user_id: currentUserId,
+                            p_amount: -item.cost,
+                          });
                         }
 
                         if (item.id.startsWith("theme-") || item.id.startsWith("badge-")) {
@@ -2186,6 +2197,14 @@ function ApexMission() {
               reverse-engineering, or reproduction of this software or its content is strictly
               prohibited.
             </p>
+            <p className="mt-1 text-[9px] font-medium uppercase tracking-wider text-zinc-500">
+              <a
+                href={`mailto:support@apexmissions.app?subject=${encodeURIComponent("ApexMissions beta feedback")}&body=${encodeURIComponent("1) Did anything break or feel confusing during setup?\n\n2) What is the one feature you find yourself using every day?\n\n3) What is missing that would make this an essential part of your daily workflow?")}`}
+                className="text-emerald-400 hover:text-emerald-300 underline"
+              >
+                Send feedback
+              </a>
+            </p>
           </footer>
         </div>
       </main>
@@ -2199,16 +2218,6 @@ function ApexMission() {
           <Sparkles className="size-4 shrink-0 animate-spin text-emerald-400" />
           <span className="min-w-0">{surpriseLoot.msg}</span>
         </div>
-      )}
-
-      {showFivePmNudge && keyOpenTask && (
-        <FivePmNudge
-          taskLabel={keyOpenTask.label}
-          taskText={keyOpenTask.text}
-          minutesUntilCutoff={minutesUntilCutoff}
-          onDismiss={dismissFivePmNudge}
-          onFocus={focusKeyTask}
-        />
       )}
 
       <PaywallModal
@@ -2275,7 +2284,7 @@ function ApexMission() {
         <MissionCoach
           showLauncher={false}
           premium={premium}
-          state={{ ...state, failureCount: userFailureCount }}
+          state={state}
           userName={userName}
           userRank={userRankText}
           isOpen={coachOpen}
@@ -2301,7 +2310,7 @@ function ApexMission() {
             setState((s) => ({
               ...s,
               userName: userName,
-              mission: plan.mission || s.mission,
+              mission: s.mission,
               tasks: {
                 high: (plan.high || []).map((text: string) => ({
                   id: nextId(),
@@ -2346,7 +2355,7 @@ function ApexMission() {
         userName={userName}
         operatorProfile={operatorProfile}
         userRank={userRankText}
-        state={{ ...state, failureCount: userFailureCount }}
+        state={state}
         behaviorAnalytics={behaviorAnalytics}
         companyName={activeTenant?.companyName ?? null}
         leaderboard={leaderboardSnapshot}

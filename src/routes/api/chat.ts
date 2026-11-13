@@ -5,6 +5,7 @@ import { convertToModelMessages, streamText, type UIMessage } from "ai";
 import {
   enforceRateLimit,
   fenceUntrustedContent,
+  getAIPrivacyHeaders,
   getClientIp,
   isSameOriginRequest,
   rateLimit,
@@ -101,6 +102,11 @@ ${safeUpload ? fenceUntrustedContent("DOCUMENT", safeUpload) : "(none)"}`;
           model: openai("gpt-6-sol"),
           system: enhancedPrompt,
           messages: await convertToModelMessages(messages as UIMessage[]),
+          providerOptions: {
+            openai: {
+              headers: getAIPrivacyHeaders(),
+            },
+          },
         });
 
         return result.toUIMessageStreamResponse({

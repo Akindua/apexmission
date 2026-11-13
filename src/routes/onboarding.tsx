@@ -1,28 +1,18 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import {
-  Building2,
-  KeyRound,
-  Loader2,
-  ShieldCheck,
-  Sparkles,
-  User,
-  UserPlus,
-} from "lucide-react";
+import { Building2, KeyRound, Loader2, ShieldCheck, Sparkles, User, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PrivacyShieldBanner } from "@/components/PrivacyShieldBanner";
 import { setStorageScope } from "@/lib/user-storage";
 import { TACTICAL_BRIEFING_SESSION_KEY } from "@/lib/synthetic-briefing";
-import {
-  resolveCompanyRouteByInviteToken,
-  type CompanyRoute,
-} from "@/lib/enterprise-analytics";
+import { resolveCompanyRouteByInviteToken, type CompanyRoute } from "@/lib/enterprise-analytics";
 import { buildPlatformHandoffUrl, buildTenantHandoffUrl } from "@/lib/tenant-handoff";
 import { canUseTenantSubdomains, DEMO_INVITE_CODE, extractSubdomainSlug } from "@/lib/tenant-host";
 
 export const Route = createFileRoute("/onboarding")({
   validateSearch: (search: Record<string, unknown>) => ({
-    invite: typeof search["invite"] === "string" ? search["invite"].trim().slice(0, 200) : undefined,
+    invite:
+      typeof search["invite"] === "string" ? search["invite"].trim().slice(0, 200) : undefined,
   }),
   component: OnboardingPage,
 });
@@ -159,10 +149,11 @@ function OnboardingPage() {
 
       // Security-relevant membership write first. A corporate account cannot
       // clear its tenant here; the database guard rejects that downgrade.
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({ company_id: null })
-        .eq("id", user.id);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: profileError } = await (supabase.rpc as any)("assign_profile_company", {
+        p_user_id: user.id,
+        p_company_id: null,
+      });
       if (profileError) throw profileError;
 
       const { error: metaError } = await supabase.auth.updateUser({ data: { company_id: null } });

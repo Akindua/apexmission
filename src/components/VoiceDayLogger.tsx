@@ -35,6 +35,7 @@ export function VoiceDayLogger({
   const [error, setError] = useState<string | null>(null);
   const [supported, setSupported] = useState(true);
   const [showPrivacyNotice, setShowPrivacyNotice] = useState(false);
+  const [voiceConsentGiven, setVoiceConsentGiven] = useState(false);
 
   const engineDescription = getSpeechEngineDescription();
   const usesCloud = doesSpeechEngineUseCloud();
@@ -97,6 +98,7 @@ export function VoiceDayLogger({
 
   function startCapture() {
     if (disabled || mode === "listening" || mode === "saving") return;
+    if (!voiceConsentGiven) return;
 
     setError(null);
     setTranscript("");
@@ -217,7 +219,9 @@ export function VoiceDayLogger({
     }
   }
 
-  const progress = Math.round(((VOICE_CAPTURE_SECONDS - secondsLeft) / VOICE_CAPTURE_SECONDS) * 100);
+  const progress = Math.round(
+    ((VOICE_CAPTURE_SECONDS - secondsLeft) / VOICE_CAPTURE_SECONDS) * 100,
+  );
 
   return (
     <section
@@ -231,8 +235,8 @@ export function VoiceDayLogger({
             10-Second Voice Day Log
           </h2>
           <p className="mt-1 text-[10px] font-medium leading-relaxed text-zinc-500">
-            Say what moved today, what blocked you, and the next action. Review the transcript,
-            then save. Audio is not stored by ApexMission.
+            Say what moved today, what blocked you, and the next action. Review the transcript, then
+            save. Audio is not stored by ApexMission.
           </p>
         </div>
         <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-500/25 bg-emerald-950/30 px-2.5 py-1 font-mono text-[9px] font-black uppercase tracking-wider text-emerald-400">
@@ -251,10 +255,25 @@ export function VoiceDayLogger({
 
       {mode === "idle" && (
         <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="voice-consent"
+              checked={voiceConsentGiven}
+              onChange={() => setVoiceConsentGiven(!voiceConsentGiven)}
+              className="w-4 h-4 text-emerald-600 border-emerald-500 rounded bg-transparent focus:ring-emerald-500"
+            />
+            <label
+              htmlFor="voice-consent"
+              className="text-[10px] font-medium text-zinc-600 cursor-pointer"
+            >
+              I consent to voice capture and transcription
+            </label>
+          </div>
           <button
             type="button"
             onClick={startCapture}
-            disabled={disabled}
+            disabled={disabled || !voiceConsentGiven}
             className="btn-glass-primary h-11 min-w-0 flex-1 text-xs"
           >
             <Mic className="size-4" />
@@ -302,7 +321,8 @@ export function VoiceDayLogger({
                 : "Audio is processed on-device by the browser's built-in speech engine. ApexMission only receives the final text you choose to save."}
             </p>
             <p className="mt-1">
-              You can review and edit the transcript before saving. Nothing is stored until you click "Save day log".
+              You can review and edit the transcript before saving. Nothing is stored until you
+              click "Save day log".
             </p>
             <p className="mt-1">
               Prefer typing? Click "Type instead" to skip voice capture entirely.

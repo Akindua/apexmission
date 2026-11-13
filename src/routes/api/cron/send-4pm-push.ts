@@ -67,7 +67,7 @@ export const Route = createFileRoute("/api/cron/send-4pm-push")({
         }
 
         const personalUserIds = new Set(
-          profiles?.filter((p) => p.company_id === null).map((p) => p.id) ?? []
+          profiles?.filter((p) => p.company_id === null).map((p) => p.id) ?? [],
         );
 
         let sent = 0;
@@ -117,7 +117,11 @@ export const Route = createFileRoute("/api/cron/send-4pm-push")({
           }
 
           // Check if user has unfinished high-impact tasks
-          const hasUnfinishedHigh = await checkUnfinishedHighImpact(supabase, sub.user_id, userDate);
+          const hasUnfinishedHigh = await checkUnfinishedHighImpact(
+            supabase,
+            sub.user_id,
+            userDate,
+          );
           if (!hasUnfinishedHigh) {
             skipped++;
             return;
@@ -133,7 +137,7 @@ export const Route = createFileRoute("/api/cron/send-4pm-push")({
               JSON.stringify({
                 body: "Time to close your top task before 5 PM.",
                 data: { url: "/app" },
-              })
+              }),
             );
 
             // Update last_sent_date
@@ -147,8 +151,10 @@ export const Route = createFileRoute("/api/cron/send-4pm-push")({
             } else {
               sent++;
             }
-          } catch (pushError: any) {
-            const statusCode = pushError?.statusCode ?? pushError?.status;
+          } catch (pushError: unknown) {
+            const statusCode =
+              (pushError as { statusCode?: number; status?: number })?.statusCode ??
+              (pushError as { statusCode?: number; status?: number })?.status;
             if (statusCode === 404 || statusCode === 410) {
               const { error: delError } = await supabase
                 .from("push_subscriptions")
@@ -189,7 +195,12 @@ function constantTimeEqual(a: string, b: string): boolean {
  * Checks if a user has any unfinished high-impact tasks for the given date.
  * Uses the profiles.current_plan JSONB column.
  */
-async function checkUnfinishedHighImpact(supabase: any, userId: string, userDate: string): Promise<boolean> {
+async function checkUnfinishedHighImpact(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  userId: string,
+  userDate: string,
+): Promise<boolean> {
   const { data, error } = await supabase
     .from("profiles")
     .select("current_plan, plan_date")
@@ -198,12 +209,19 @@ async function checkUnfinishedHighImpact(supabase: any, userId: string, userDate
 
   if (error || !data) return false;
 
-  // Only check if plan_date matches user's today
-  if (data.plan_date !== userDate) return false;
+  const planData = data as { plan_date: string | null; current_plan: unknown };
 
-  const plan = data.current_plan;
+  // Only check if plan_date matches user's today
+  if (planData.plan_date !== userDate) return false;
+
+  const plan = planData.current_plan as { high: unknown[] } | null;
   if (!plan || typeof plan !== "object" || !Array.isArray(plan.high)) return false;
 
   // Check if any high-impact task is not done
-  return plan.high.some((task: any) => task && typeof task === "object" && task.done !== true);
+  return plan.high.some(
+    (task) =>
+      (task as { done?: boolean }) &&
+      typeof task === "object" &&
+      (task as { done?: boolean }).done !== true,
+  );
 }

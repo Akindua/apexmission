@@ -1,7 +1,22 @@
 import { useChat } from "@ai-sdk/react";
 import { extractText } from "@/lib/document-parser";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { Lock, MessageCircle, X, Paperclip, Sparkles, Loader2, Target, Flame, Trophy, Activity, Zap, Brain, Shield, AlertTriangle } from "lucide-react";
+import {
+  Lock,
+  MessageCircle,
+  X,
+  Paperclip,
+  Sparkles,
+  Loader2,
+  Target,
+  Flame,
+  Trophy,
+  Activity,
+  Zap,
+  Brain,
+  Shield,
+  AlertTriangle,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import {
   analyzeOperatorDiscipline,
@@ -10,7 +25,8 @@ import {
   type OperatorProfileMetadata,
   type TaskHistoryEntry,
 } from "@/lib/synthetic-briefing";
-import { loadState, saveState } from "@/lib/mission-store";
+import { loadState, saveState, type MissionState, type Task } from "@/lib/mission-store";
+import { type DayPlanProposal } from "@/lib/daily-plan";
 import { getScopedItem, setScopedItem } from "@/lib/user-storage";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -27,15 +43,25 @@ const FREE_HISTORY_LIMIT = 6;
 const BEHAVIOR_ANALYTICS_KEY = "apexmission-behavior-analytics";
 
 const QUICK_STARTS = [
-  { label: "🎯 Mission Strategy", prompt: "Analyze my current mission strategy and provide tactical improvements based on my performance metrics." },
-  { label: "⚡ Break Through Blockers", prompt: "I'm facing obstacles. Help me identify and overcome my current blockers with military precision." },
+  {
+    label: "🎯 Mission Strategy",
+    prompt:
+      "Analyze my current mission strategy and provide tactical improvements based on my performance metrics.",
+  },
+  {
+    label: "⚡ Break Through Blockers",
+    prompt:
+      "I'm facing obstacles. Help me identify and overcome my current blockers with military precision.",
+  },
   {
     label: "📊 Performance Review",
-    prompt: "Conduct a comprehensive performance review of my execution patterns, streak consistency, and behavioral metrics.",
+    prompt:
+      "Conduct a comprehensive performance review of my execution patterns, streak consistency, and behavioral metrics.",
   },
   {
     label: "🔥 Restore Momentum",
-    prompt: "My momentum has degraded. Deploy recovery protocols to get me back to elite execution velocity immediately.",
+    prompt:
+      "My momentum has degraded. Deploy recovery protocols to get me back to elite execution velocity immediately.",
   },
 ];
 
@@ -76,18 +102,20 @@ function loadMessages(): UIMessage[] {
 function loadBehaviorAnalytics(): BehaviorAnalytics {
   try {
     const raw = getScopedItem(BEHAVIOR_ANALYTICS_KEY);
-    return raw ? (JSON.parse(raw) as BehaviorAnalytics) : {
-      sessionCount: 0,
-      lastSessionDate: "",
-      totalTasksCompleted: 0,
-      averageCompletionTime: 0,
-      procrastinationEvents: 0,
-      peakProductivityHour: 12,
-      totalMessagesExchanged: 0,
-      streakConsistency: 0,
-      preferredFocusAreas: [],
-      taskHistory: []
-    };
+    return raw
+      ? (JSON.parse(raw) as BehaviorAnalytics)
+      : {
+          sessionCount: 0,
+          lastSessionDate: "",
+          totalTasksCompleted: 0,
+          averageCompletionTime: 0,
+          procrastinationEvents: 0,
+          peakProductivityHour: 12,
+          totalMessagesExchanged: 0,
+          streakConsistency: 0,
+          preferredFocusAreas: [],
+          taskHistory: [],
+        };
   } catch {
     return {
       sessionCount: 0,
@@ -99,7 +127,7 @@ function loadBehaviorAnalytics(): BehaviorAnalytics {
       totalMessagesExchanged: 0,
       streakConsistency: 0,
       preferredFocusAreas: [],
-      taskHistory: []
+      taskHistory: [],
     };
   }
 }
@@ -107,7 +135,9 @@ function loadBehaviorAnalytics(): BehaviorAnalytics {
 function saveBehaviorAnalytics(analytics: BehaviorAnalytics) {
   try {
     setScopedItem(BEHAVIOR_ANALYTICS_KEY, JSON.stringify(analytics));
-  } catch {}
+  } catch {
+    // Ignore storage errors - analytics are non-critical
+  }
 }
 
 let audioContext: AudioContext | null = null;
@@ -117,7 +147,9 @@ if (typeof window !== "undefined") {
   const unlockAudio = () => {
     audioUnlocked = true;
     if (audioContext && audioContext.state === "suspended") {
-      void audioContext.resume().catch(() => {});
+      void audioContext.resume().catch(() => {
+        // Ignore resume errors
+      });
     }
   };
   window.addEventListener("pointerdown", unlockAudio, { once: true });
@@ -126,16 +158,20 @@ if (typeof window !== "undefined") {
 
 function getAudioContext(): AudioContext | null {
   if (typeof window === "undefined" || !audioUnlocked) return null;
-  
+
   try {
-    const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
+    const AudioCtxClass =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AudioCtxClass) return null;
-    
+
     if (!audioContext) {
       audioContext = new AudioCtxClass();
     }
     if (audioContext.state === "suspended") {
-      void audioContext.resume().catch(() => {});
+      void audioContext.resume().catch(() => {
+        // Ignore resume errors
+      });
     }
     return audioContext;
   } catch {
@@ -145,16 +181,16 @@ function getAudioContext(): AudioContext | null {
 
 function playSoundEffect(type: "success" | "warning" | "alert" | "message" | "open" | "close") {
   if (typeof window === "undefined") return;
-  
+
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
-    
+
     const now = ctx.currentTime;
-    
+
     switch (type) {
       case "success":
-        [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+        [523.25, 659.25, 783.99, 1046.5].forEach((freq, idx) => {
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
           osc.type = "sine";
@@ -167,8 +203,8 @@ function playSoundEffect(type: "success" | "warning" | "alert" | "message" | "op
           osc.stop(now + idx * 0.08 + 0.3);
         });
         break;
-        
-      case "warning":
+
+      case "warning": {
         const warnOsc = ctx.createOscillator();
         const warnGain = ctx.createGain();
         warnOsc.type = "sawtooth";
@@ -181,8 +217,9 @@ function playSoundEffect(type: "success" | "warning" | "alert" | "message" | "op
         warnOsc.start();
         warnOsc.stop(now + 0.3);
         break;
-        
-      case "alert":
+      }
+
+      case "alert": {
         const alertOsc = ctx.createOscillator();
         const alertGain = ctx.createGain();
         alertOsc.type = "square";
@@ -194,8 +231,9 @@ function playSoundEffect(type: "success" | "warning" | "alert" | "message" | "op
         alertOsc.start();
         alertOsc.stop(now + 0.15);
         break;
-        
-      case "message":
+      }
+
+      case "message": {
         const msgOsc = ctx.createOscillator();
         const msgGain = ctx.createGain();
         msgOsc.type = "sine";
@@ -207,9 +245,10 @@ function playSoundEffect(type: "success" | "warning" | "alert" | "message" | "op
         msgOsc.start();
         msgOsc.stop(now + 0.1);
         break;
-        
-      case "open":
-        [261.63, 329.63, 392.00].forEach((freq, idx) => {
+      }
+
+      case "open": {
+        [261.63, 329.63, 392.0].forEach((freq, idx) => {
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
           osc.type = "sine";
@@ -222,12 +261,13 @@ function playSoundEffect(type: "success" | "warning" | "alert" | "message" | "op
           osc.stop(now + idx * 0.05 + 0.2);
         });
         break;
-        
-      case "close":
+      }
+
+      case "close": {
         const closeOsc = ctx.createOscillator();
         const closeGain = ctx.createGain();
         closeOsc.type = "sine";
-        closeOsc.frequency.setValueAtTime(392.00, now);
+        closeOsc.frequency.setValueAtTime(392.0, now);
         closeOsc.frequency.linearRampToValueAtTime(261.63, now + 0.2);
         closeGain.gain.setValueAtTime(0.04, now);
         closeGain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
@@ -236,6 +276,7 @@ function playSoundEffect(type: "success" | "warning" | "alert" | "message" | "op
         closeOsc.start();
         closeOsc.stop(now + 0.2);
         break;
+      }
     }
   } catch (e) {
     console.warn("Audio context unavailable:", e);
@@ -266,11 +307,11 @@ export function MissionCoach({
   showLauncher = true,
 }: {
   premium?: boolean;
-  state: any;
+  state: MissionState;
   userName?: string;
   userRank?: string;
   onLockedHistory?: () => void;
-  onActionPlanGenerated?: (plan: any) => void;
+  onActionPlanGenerated?: (plan: DayPlanProposal) => void;
   isOpen?: boolean;
   onClose?: () => void;
   onOpenChange?: (open: boolean) => void;
@@ -292,7 +333,7 @@ export function MissionCoach({
     totalMessagesExchanged: 0,
     streakConsistency: 0,
     preferredFocusAreas: [],
-    taskHistory: []
+    taskHistory: [],
   });
   const [mounted, setMounted] = useState(false);
 
@@ -333,7 +374,7 @@ export function MissionCoach({
   if (!mounted) {
     return showLauncher ? <CoachLauncher open={open} onToggle={() => setOpen(true)} /> : null;
   }
-    
+
   return (
     <CoachPanel
       key="coach"
@@ -396,10 +437,10 @@ function CoachPanel({
   initialMessages: UIMessage[];
   premium: boolean;
   onLockedHistory?: (() => void) | undefined;
-  state: any;
+  state: MissionState;
   userName: string;
   userRank: string;
-  onActionPlanGenerated?: ((plan: any) => void) | undefined;
+  onActionPlanGenerated?: ((plan: DayPlanProposal) => void) | undefined;
   behaviorAnalytics: BehaviorAnalytics;
   setBehaviorAnalytics: Dispatch<SetStateAction<BehaviorAnalytics>>;
   companyId: string | null;
@@ -408,15 +449,19 @@ function CoachPanel({
   appContext: CoachAppContext | null;
 }) {
   // Session token is resolved per request so refreshed tokens stay valid.
-  const transport = useMemo(() => new DefaultChatTransport({
-    api: "/api/chat",
-    headers: async () => {
-      const { supabase: client } = await import("@/integrations/supabase/client");
-      const { data } = await client.auth.getSession();
-      const token = data.session?.access_token;
-      return token ? { Authorization: `Bearer ${token}` } : {};
-    },
-  }), []);
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        api: "/api/chat",
+        headers: async () => {
+          const { supabase: client } = await import("@/integrations/supabase/client");
+          const { data } = await client.auth.getSession();
+          const token = data.session?.access_token;
+          return token ? { Authorization: `Bearer ${token}` } : {};
+        },
+      }),
+    [],
+  );
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [files, setFiles] = useState<File[]>([]);
@@ -432,7 +477,7 @@ function CoachPanel({
     else if (behaviorAnalytics.sessionCount >= 5) setInsightLevel("intermediate");
   }, [behaviorAnalytics.sessionCount]);
 
-  const isRateLimited = false; 
+  const isRateLimited = false;
 
   const { messages, sendMessage, status } = useChat({
     id: "mission-coach",
@@ -466,11 +511,9 @@ function CoachPanel({
       "i skipped",
       "i wasted",
     ];
-    const indicatesSlacking = slackingSignals.some((signal) =>
-      textLower.includes(signal),
-    );
+    const indicatesSlacking = slackingSignals.some((signal) => textLower.includes(signal));
     const fallbackPoints = state?.points || 1000;
-  
+
     if (indicatesSlacking) {
       const aiPenalty = 100;
 
@@ -499,51 +542,67 @@ function CoachPanel({
         .getUser()
         .then(({ data: { user } }) => {
           if (!user) return;
-          return supabase.from("profiles").update({ credits: freshPoints }).eq("id", user.id);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return (supabase.rpc as any)("adjust_profile_credits", {
+            p_user_id: user.id,
+            p_amount: freshPoints < 0 ? freshPoints : 0,
+          });
         })
         .catch((error) => {
           console.error("Coach credit penalty sync failed:", error);
         });
 
       playSoundEffect("warning");
-      
-      setBehaviorAnalytics(prev => ({
+
+      setBehaviorAnalytics((prev) => ({
         ...prev,
-        procrastinationEvents: prev.procrastinationEvents + 1
+        procrastinationEvents: prev.procrastinationEvents + 1,
       }));
     }
 
     const nextCount = usageCount + 1;
     setUsageCount(nextCount);
-    
-    setBehaviorAnalytics(prev => ({
+
+    setBehaviorAnalytics((prev) => ({
       ...prev,
-      totalMessagesExchanged: prev.totalMessagesExchanged + 1
+      totalMessagesExchanged: prev.totalMessagesExchanged + 1,
     }));
-    
+
     try {
-      setScopedItem(LIMIT_KEY, JSON.stringify({
-        date: new Date().toDateString(),
-        count: nextCount
-      }));
-    } catch {}
+      setScopedItem(
+        LIMIT_KEY,
+        JSON.stringify({
+          date: new Date().toDateString(),
+          count: nextCount,
+        }),
+      );
+    } catch {
+      // Ignore storage errors - analytics are non-critical
+    }
 
-    const highImpactTasks = (state?.tasks?.high || [])
-      .map((t: any) => `[${t.done ? "✓" : " "}] ${t.text}`)
-      .join("\n      ") || "No high impact vectors initialized.";
+    const highImpactTasks =
+      (state?.tasks?.high || [])
+        .map((t: Task) => `[${t.done ? "✓" : " "}] ${t.text}`)
+        .join("\n      ") || "No high impact vectors initialized.";
 
-    const mediumImpactTasks = (state?.tasks?.medium || [])
-      .map((t: any) => `[${t.done ? "✓" : " "}] ${t.text}`)
-      .join("\n      ") || "No medium impact vectors initialized.";
+    const mediumImpactTasks =
+      (state?.tasks?.medium || [])
+        .map((t: Task) => `[${t.done ? "✓" : " "}] ${t.text}`)
+        .join("\n      ") || "No medium impact vectors initialized.";
 
-    const lowImpactTasks = (state?.tasks?.low || [])
-      .map((t: any) => `[${t.done ? "✓" : " "}] ${t.text}`)
-      .join("\n      ") || "No low impact maintenance items mapped.";
+    const lowImpactTasks =
+      (state?.tasks?.low || [])
+        .map((t: Task) => `[${t.done ? "✓" : " "}] ${t.text}`)
+        .join("\n      ") || "No low impact maintenance items mapped.";
 
     const taskCompletionRate = (() => {
-      const allTasks = [...(state?.tasks?.high || []), ...(state?.tasks?.medium || []), ...(state?.tasks?.low || [])];
+      const allTasks = [
+        ...(state?.tasks?.high || []),
+        ...(state?.tasks?.medium || []),
+        ...(state?.tasks?.low || []),
+      ];
       if (allTasks.length === 0) return 0;
-      const completed = allTasks.filter((t: any) => t.done).length;
+      const completed = allTasks.filter((t: Task) => t.done).length;
       return Math.round((completed / allTasks.length) * 100);
     })();
 
@@ -560,15 +619,13 @@ function CoachPanel({
       ...(state?.tasks?.medium || []),
       ...(state?.tasks?.low || []),
     ];
-    const completedTasks = allTasks.filter((task: any) => task?.done).length;
-    const pendingHighImpact = (state?.tasks?.high || []).filter(
-      (task: any) => !task?.done,
-    ).length;
+    const completedTasks = allTasks.filter((task: Task) => task?.done).length;
+    const pendingHighImpact = (state?.tasks?.high || []).filter((task: Task) => !task?.done).length;
 
     const streak = Number(state?.streak?.count ?? 0);
     const maxStreak = Math.max(streak, Number(operatorProfile?.maxStreak ?? 0));
     const credits = Number(operatorProfile?.credits ?? state?.points ?? 0);
-    const failures = Number(operatorProfile?.failureCount ?? state?.failureCount ?? 0);
+    const failures = Number(operatorProfile?.failureCount ?? 0);
     const dailyDone = Boolean(state?.daily?.done);
     const dailyText = String(state?.daily?.text || "").trim();
     const missionText = String(state?.mission || "").trim();
@@ -607,9 +664,8 @@ function CoachPanel({
       String(state?.reflection?.blockers || latestReflection?.blockers || "").trim() ||
       "No blockers recorded.";
     const nextVelocity =
-      String(
-        state?.reflection?.tomorrowAction || latestReflection?.tomorrowAction || "",
-      ).trim() || "No next action recorded.";
+      String(state?.reflection?.tomorrowAction || latestReflection?.tomorrowAction || "").trim() ||
+      "No next action recorded.";
 
     const rankTelemetry = companyId
       ? "REDACTED — corporate tenant scope. Public ranking is not exposed."
@@ -682,7 +738,7 @@ function CoachPanel({
 
       === REFLECTION LOOP ===
       MORNING LOGS: ${String(state?.daily?.text || "").trim() ? "1+ declaration on file" : "No morning declaration"}
-      NIGHT LOGS: ${reflectionHistory.filter((entry: any) => entry?.phase === "night").length}
+      NIGHT LOGS: ${reflectionHistory.filter((entry) => entry?.phase === "night").length}
       LATEST WINS: "${latestWins}"
       LATEST BLOCKERS: "${latestBlockers}"
       NEXT VELOCITY BLOCK: "${nextVelocity}"
@@ -722,7 +778,9 @@ function CoachPanel({
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      (window as any).__apex_task_completed = (_taskText: string) => {
+      (
+        window as unknown as { __apex_task_completed?: (text: string) => void }
+      ).__apex_task_completed = (_taskText: string) => {
         const currentHour = new Date().getHours();
 
         // The dashboard owns the enriched closure event (tier + timestamp).
@@ -736,7 +794,7 @@ function CoachPanel({
               ? currentHour
               : Math.abs((prev.peakProductivityHour ?? currentHour) - currentHour) <= 2
                 ? Math.round(((prev.peakProductivityHour ?? currentHour) + currentHour) / 2)
-                : prev.peakProductivityHour ?? currentHour;
+                : (prev.peakProductivityHour ?? currentHour);
 
           const next: BehaviorAnalytics = {
             ...prev,
@@ -756,7 +814,8 @@ function CoachPanel({
     }
     return () => {
       if (typeof window !== "undefined") {
-        delete (window as any).__apex_task_completed;
+        delete (window as unknown as { __apex_task_completed?: (text: string) => void })
+          .__apex_task_completed;
       }
     };
   }, [setBehaviorAnalytics]);
@@ -764,7 +823,9 @@ function CoachPanel({
   useEffect(() => {
     try {
       setScopedItem(STORAGE_KEY, JSON.stringify(messages));
-    } catch {}
+    } catch {
+      // Ignore storage errors
+    }
   }, [messages]);
 
   useEffect(() => {
@@ -802,16 +863,17 @@ function CoachPanel({
         body: JSON.stringify({ mission: uploadedText }),
       });
       if (!response.ok) throw new Error(`Mission Planner processing failure: ${response.status}`);
-      const plan = await response.json();
-      
+      const plan = (await response.json()) as DayPlanProposal & { mission?: string };
+
       onActionPlanGenerated?.({
-        mission: plan.mission,
         high: plan.high || [],
         medium: plan.medium || [],
         low: plan.low || [],
-        dailyAction: plan.dailyAction || ""
+        dailyAction: plan.dailyAction || "",
+        rationale: plan.rationale || "",
+        source: "ai",
       });
-      
+
       setPlanGenerated(true);
       setFiles([]);
       setUploadedText("");
@@ -856,13 +918,19 @@ function CoachPanel({
             <MessageCircle className="size-4.5 animate-pulse" />
           </div>
           <div className="min-w-0 text-left flex-1">
-            <h2 className="font-display text-sm font-black tracking-tight text-white uppercase">My Mission Coach</h2>
-            <p className="truncate text-[10px] font-bold text-zinc-500 uppercase tracking-wider mt-0.5">Socratic Strategy · Active</p>
+            <h2 className="font-display text-sm font-black tracking-tight text-white uppercase">
+              My Mission Coach
+            </h2>
+            <p className="truncate text-[10px] font-bold text-zinc-500 uppercase tracking-wider mt-0.5">
+              Socratic Strategy · Active
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-lg bg-emerald-950/30 border border-emerald-500/20">
               <Brain className="size-3 text-emerald-400" />
-              <span className="text-[9px] font-bold text-emerald-400 font-mono">{insightLevel.toUpperCase()}</span>
+              <span className="text-[9px] font-bold text-emerald-400 font-mono">
+                {insightLevel.toUpperCase()}
+              </span>
             </div>
             <button
               type="button"
@@ -883,7 +951,9 @@ function CoachPanel({
                 <Flame className="size-3 text-orange-400" />
                 <span className="text-[10px] font-bold text-zinc-400">Streak</span>
               </div>
-              <span className="text-xs font-black text-white font-mono">{state?.streak?.count || 0}</span>
+              <span className="text-xs font-black text-white font-mono">
+                {state?.streak?.count || 0}
+              </span>
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 mb-1">
@@ -892,8 +962,12 @@ function CoachPanel({
               </div>
               <span className="text-xs font-black text-white font-mono">
                 {(() => {
-                  const allTasks = [...(state?.tasks?.high || []), ...(state?.tasks?.medium || []), ...(state?.tasks?.low || [])];
-                  const completed = allTasks.filter((t: any) => t.done).length;
+                  const allTasks = [
+                    ...(state?.tasks?.high || []),
+                    ...(state?.tasks?.medium || []),
+                    ...(state?.tasks?.low || []),
+                  ];
+                  const completed = allTasks.filter((t: Task) => t.done).length;
                   return `${completed}/${allTasks.length}`;
                 })()}
               </span>
@@ -903,38 +977,50 @@ function CoachPanel({
                 <Trophy className="size-3 text-amber-400" />
                 <span className="text-[10px] font-bold text-zinc-400">Rank</span>
               </div>
-              <span className="text-[10px] font-black text-white font-mono truncate px-1">{userRank.split(' ')[0] || "N/A"}</span>
+              <span className="text-[10px] font-black text-white font-mono truncate px-1">
+                {userRank.split(" ")[0] || "N/A"}
+              </span>
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 mb-1">
                 <Activity className="size-3 text-sky-400" />
                 <span className="text-[10px] font-bold text-zinc-400">Sessions</span>
               </div>
-              <span className="text-xs font-black text-white font-mono">{behaviorAnalytics.sessionCount}</span>
+              <span className="text-xs font-black text-white font-mono">
+                {behaviorAnalytics.sessionCount}
+              </span>
             </div>
           </div>
-          
+
           {/* Behavioral Health Indicator */}
           <div className="mt-3 flex items-center gap-2">
             <div className="flex-1 h-1.5 bg-black rounded-full overflow-hidden border border-zinc-800">
-              <div 
+              <div
                 className={`h-full transition-all duration-500 ${
-                  behaviorAnalytics.procrastinationEvents > 5 
-                    ? "bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]" 
-                    : behaviorAnalytics.procrastinationEvents > 2 
-                    ? "bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" 
-                    : "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                  behaviorAnalytics.procrastinationEvents > 5
+                    ? "bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]"
+                    : behaviorAnalytics.procrastinationEvents > 2
+                      ? "bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]"
+                      : "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
                 }`}
-                style={{ width: `${Math.max(0, 100 - (behaviorAnalytics.procrastinationEvents * 10))}%` }}
+                style={{
+                  width: `${Math.max(0, 100 - behaviorAnalytics.procrastinationEvents * 10)}%`,
+                }}
               />
             </div>
             <span className="text-[9px] font-bold uppercase tracking-wider whitespace-nowrap">
               {behaviorAnalytics.procrastinationEvents > 5 ? (
-                <span className="text-rose-400 flex items-center gap-1"><AlertTriangle className="size-3" />Critical</span>
+                <span className="text-rose-400 flex items-center gap-1">
+                  <AlertTriangle className="size-3" />
+                  Critical
+                </span>
               ) : behaviorAnalytics.procrastinationEvents > 2 ? (
                 <span className="text-amber-400">Warning</span>
               ) : (
-                <span className="text-emerald-400 flex items-center gap-1"><Shield className="size-3" />Optimal</span>
+                <span className="text-emerald-400 flex items-center gap-1">
+                  <Shield className="size-3" />
+                  Optimal
+                </span>
               )}
             </span>
           </div>
@@ -961,7 +1047,7 @@ function CoachPanel({
                 👋 Initializing mission briefing... Your coach is analyzing your dashboard matrices.
               </div>
             )}
-            
+
             {!premium && messages.length > FREE_HISTORY_LIMIT && (
               <button
                 type="button"
@@ -974,7 +1060,9 @@ function CoachPanel({
             )}
 
             {messages.map((message, index) => {
-              let text = message.parts.map((part) => (part.type === "text" ? part.text : "")).join("");
+              let text = message.parts
+                .map((part) => (part.type === "text" ? part.text : ""))
+                .join("");
               if (!text) return null;
 
               if (message.role === "user") {
@@ -989,9 +1077,22 @@ function CoachPanel({
 
               const locked = !premium && index < messages.length - FREE_HISTORY_LIMIT;
               return (
-                <div key={message.id} className={locked ? "relative opacity-40 grayscale blur-[4px] pointer-events-none select-none" : "w-full text-left"}>
+                <div
+                  key={message.id}
+                  className={
+                    locked
+                      ? "relative opacity-40 grayscale blur-[4px] pointer-events-none select-none"
+                      : "w-full text-left"
+                  }
+                >
                   <Message from={message.role}>
-                    <MessageContent className={message.role === "user" ? "bg-zinc-900 border border-zinc-800 text-zinc-100 rounded-2xl px-4 py-3 text-sm ml-auto max-w-[85%]" : "text-zinc-300 text-sm leading-relaxed p-2 max-w-full"}>
+                    <MessageContent
+                      className={
+                        message.role === "user"
+                          ? "bg-zinc-900 border border-zinc-800 text-zinc-100 rounded-2xl px-4 py-3 text-sm ml-auto max-w-[85%]"
+                          : "text-zinc-300 text-sm leading-relaxed p-2 max-w-full"
+                      }
+                    >
                       <MessageResponse>{text}</MessageResponse>
                     </MessageContent>
                   </Message>
@@ -999,13 +1100,17 @@ function CoachPanel({
                 </div>
               );
             })}
-            
+
             {status === "submitted" && (
               <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 p-2 text-left animate-pulse">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" /> Thinking...
               </div>
             )}
-            {error && <p className="rounded-xl border border-rose-500/20 bg-rose-950/10 p-3 text-xs font-bold text-rose-400 text-left">{error}</p>}
+            {error && (
+              <p className="rounded-xl border border-rose-500/20 bg-rose-950/10 p-3 text-xs font-bold text-rose-400 text-left">
+                {error}
+              </p>
+            )}
           </ConversationContent>
           <ConversationScrollButton />
         </Conversation>
@@ -1021,7 +1126,7 @@ function CoachPanel({
               id="coach-upload"
               disabled={isRateLimited}
             />
-            
+
             <div className="flex items-center justify-between gap-2">
               <label
                 htmlFor="coach-upload"
@@ -1036,7 +1141,10 @@ function CoachPanel({
                 <div className="flex flex-col gap-1 flex-1 text-left min-w-[150px]">
                   {files.length > 0 ? (
                     files.map((file, idx) => (
-                      <div key={file.name} className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-zinc-400 truncate">
+                      <div
+                        key={file.name}
+                        className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-zinc-400 truncate"
+                      >
                         📎 {file.name}
                         <button
                           type="button"
@@ -1067,7 +1175,11 @@ function CoachPanel({
                     ) : (
                       <Sparkles className="h-3 w-3" />
                     )}
-                    {generatingPlan ? "Extracting..." : planGenerated ? "Regenerate Mission Plan" : "Generate Mission Plan"}
+                    {generatingPlan
+                      ? "Extracting..."
+                      : planGenerated
+                        ? "Regenerate Mission Plan"
+                        : "Generate Mission Plan"}
                   </button>
                 )}
               </div>
@@ -1088,7 +1200,11 @@ function CoachPanel({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={isRateLimited ? "Quota cap reached..." : "Brief your execution mentor... (Press Enter)"}
+              placeholder={
+                isRateLimited
+                  ? "Quota cap reached..."
+                  : "Brief your execution mentor... (Press Enter)"
+              }
               disabled={isRateLimited || busy}
               className="field-flush w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-700 outline-none resize-none min-h-[48px] max-h-32 disabled:opacity-30 leading-relaxed"
             />

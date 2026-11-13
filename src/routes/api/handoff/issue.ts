@@ -29,13 +29,18 @@ export const Route = createFileRoute("/api/handoff/issue")({
           return new Response("Invalid JSON", { status: 400 });
         }
 
-        const targetSlug = typeof body.targetSlug === "string" ? body.targetSlug.trim().toLowerCase() : "";
-        if (!targetSlug || (targetSlug !== "platform" && !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(targetSlug))) {
+        const targetSlug =
+          typeof body.targetSlug === "string" ? body.targetSlug.trim().toLowerCase() : "";
+        if (
+          !targetSlug ||
+          (targetSlug !== "platform" && !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(targetSlug))
+        ) {
           return new Response("Invalid targetSlug", { status: 400 });
         }
 
         const supabaseUrl = process.env["SUPABASE_URL"];
-        const supabaseKey = process.env["SUPABASE_PUBLISHABLE_KEY"] ?? process.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
+        const supabaseKey =
+          process.env["SUPABASE_PUBLISHABLE_KEY"] ?? process.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
         if (!supabaseUrl || !supabaseKey) {
           console.error("[HandoffIssue] Missing Supabase env vars");
           return new Response("Service unavailable", { status: 503 });
