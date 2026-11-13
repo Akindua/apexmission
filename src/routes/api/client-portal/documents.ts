@@ -65,7 +65,7 @@ export const Route = createFileRoute("/api/client-portal/documents")({
             file_size,
           })
           .select(
-            "id, company_id, user_id, title, description, file_url, file_type, file_size, is_public, created_at, updated_at",
+            "id, company_id, user_id, title, description, file_url, file_type, file_size, created_at, updated_at",
           )
           .single();
 
@@ -81,6 +81,54 @@ export const Route = createFileRoute("/api/client-portal/documents")({
           }),
           {
             status: 201,
+            headers: { "content-type": "application/json" },
+          },
+        );
+      },
+
+      // GET: List documents scoped to the caller's company only.
+      // Explicitly excludes internal employee notes, task comments marked
+      // internal_only, and employee time logs — those live in separate tables
+      // and are never selected here.
+      GET: async ({ request }) => {
+        // 🛡️ Client external role required
+        const actor = await requireRole(request, "client_external");
+        if (actor instanceof Response) return actor;
+
+        const supabaseUrl = process.env["SUPABASE_URL"];
+        const supabaseKey =
+          process.env["SUPABASE_PUBLISHABLE_KEY"] ?? process.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
+        if (!supabaseUrl || !supabaseKey) {
+          console.error("[ClientDocuments] Missing Supabase env vars");
+          return new Response("Service misconfigured", { status: 500 });
+        }
+
+        const { createClient } = await import("@supabase/supabase-js");
+        const supabase = createClient(supabaseUrl, supabaseKey, {
+          global: { headers: { Authorization: `Bearer ${actor.token}` } },
+          auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+        });
+
+        const { data: documents, error } = await supabase
+          .from("client_portal_documents")
+          .select(
+            "id, company_id, user_id, title, description, file_url, file_type, file_size, is_public, created_at, updated_at",
+          )
+          .eq("company_id", actor.companyId)
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          console.error("[ClientDocuments] Query error:", error);
+          return new Response("Failed to fetch documents", { status: 500 });
+        }
+
+        return new Response(
+          JSON.stringify({
+            status: "success",
+            documents: documents ?? [],
+          }),
+          {
+            status: 200,
             headers: { "content-type": "application/json" },
           },
         );

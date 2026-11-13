@@ -43,6 +43,8 @@ import { Route as ApiEnterpriseTimeEntriesRouteImport } from './routes/api/enter
 import { Route as ApiEnterpriseTranscribeRouteImport } from './routes/api/enterprise/transcribe'
 import { Route as ApiHandoffConsumeRouteImport } from './routes/api/handoff/consume'
 import { Route as ApiHandoffIssueRouteImport } from './routes/api/handoff/issue'
+import { Route as ApiPersonalDailyPlanRouteImport } from './routes/api/personal/daily-plan'
+import { Route as ApiPersonalFocusSessionsRouteImport } from './routes/api/personal/focus-sessions'
 import { Route as ApiPushSubscribeRouteImport } from './routes/api/push/subscribe'
 import { Route as ApiPushUnsubscribeRouteImport } from './routes/api/push/unsubscribe'
 import { Route as ApiUserExportDataRouteImport } from './routes/api/user/export-data'
@@ -225,6 +227,17 @@ const ApiHandoffIssueRoute = ApiHandoffIssueRouteImport.update({
   path: '/api/handoff/issue',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPersonalDailyPlanRoute = ApiPersonalDailyPlanRouteImport.update({
+  id: '/api/personal/daily-plan',
+  path: '/api/personal/daily-plan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPersonalFocusSessionsRoute =
+  ApiPersonalFocusSessionsRouteImport.update({
+    id: '/api/personal/focus-sessions',
+    path: '/api/personal/focus-sessions',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPushSubscribeRoute = ApiPushSubscribeRouteImport.update({
   id: '/api/push/subscribe',
   path: '/api/push/subscribe',
@@ -281,6 +294,8 @@ export interface FileRoutesByFullPath {
   '/api/enterprise/transcribe': typeof ApiEnterpriseTranscribeRoute
   '/api/handoff/consume': typeof ApiHandoffConsumeRoute
   '/api/handoff/issue': typeof ApiHandoffIssueRoute
+  '/api/personal/daily-plan': typeof ApiPersonalDailyPlanRoute
+  '/api/personal/focus-sessions': typeof ApiPersonalFocusSessionsRoute
   '/api/push/subscribe': typeof ApiPushSubscribeRoute
   '/api/push/unsubscribe': typeof ApiPushUnsubscribeRoute
   '/api/user/export-data': typeof ApiUserExportDataRoute
@@ -321,6 +336,8 @@ export interface FileRoutesByTo {
   '/api/enterprise/transcribe': typeof ApiEnterpriseTranscribeRoute
   '/api/handoff/consume': typeof ApiHandoffConsumeRoute
   '/api/handoff/issue': typeof ApiHandoffIssueRoute
+  '/api/personal/daily-plan': typeof ApiPersonalDailyPlanRoute
+  '/api/personal/focus-sessions': typeof ApiPersonalFocusSessionsRoute
   '/api/push/subscribe': typeof ApiPushSubscribeRoute
   '/api/push/unsubscribe': typeof ApiPushUnsubscribeRoute
   '/api/user/export-data': typeof ApiUserExportDataRoute
@@ -362,6 +379,8 @@ export interface FileRoutesById {
   '/api/enterprise/transcribe': typeof ApiEnterpriseTranscribeRoute
   '/api/handoff/consume': typeof ApiHandoffConsumeRoute
   '/api/handoff/issue': typeof ApiHandoffIssueRoute
+  '/api/personal/daily-plan': typeof ApiPersonalDailyPlanRoute
+  '/api/personal/focus-sessions': typeof ApiPersonalFocusSessionsRoute
   '/api/push/subscribe': typeof ApiPushSubscribeRoute
   '/api/push/unsubscribe': typeof ApiPushUnsubscribeRoute
   '/api/user/export-data': typeof ApiUserExportDataRoute
@@ -404,6 +423,8 @@ export interface FileRouteTypes {
     | '/api/enterprise/transcribe'
     | '/api/handoff/consume'
     | '/api/handoff/issue'
+    | '/api/personal/daily-plan'
+    | '/api/personal/focus-sessions'
     | '/api/push/subscribe'
     | '/api/push/unsubscribe'
     | '/api/user/export-data'
@@ -444,6 +465,8 @@ export interface FileRouteTypes {
     | '/api/enterprise/transcribe'
     | '/api/handoff/consume'
     | '/api/handoff/issue'
+    | '/api/personal/daily-plan'
+    | '/api/personal/focus-sessions'
     | '/api/push/subscribe'
     | '/api/push/unsubscribe'
     | '/api/user/export-data'
@@ -484,6 +507,8 @@ export interface FileRouteTypes {
     | '/api/enterprise/transcribe'
     | '/api/handoff/consume'
     | '/api/handoff/issue'
+    | '/api/personal/daily-plan'
+    | '/api/personal/focus-sessions'
     | '/api/push/subscribe'
     | '/api/push/unsubscribe'
     | '/api/user/export-data'
@@ -525,6 +550,8 @@ export interface RootRouteChildren {
   ApiEnterpriseTranscribeRoute: typeof ApiEnterpriseTranscribeRoute
   ApiHandoffConsumeRoute: typeof ApiHandoffConsumeRoute
   ApiHandoffIssueRoute: typeof ApiHandoffIssueRoute
+  ApiPersonalDailyPlanRoute: typeof ApiPersonalDailyPlanRoute
+  ApiPersonalFocusSessionsRoute: typeof ApiPersonalFocusSessionsRoute
   ApiPushSubscribeRoute: typeof ApiPushSubscribeRoute
   ApiPushUnsubscribeRoute: typeof ApiPushUnsubscribeRoute
   ApiUserExportDataRoute: typeof ApiUserExportDataRoute
@@ -771,6 +798,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiHandoffIssueRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/personal/daily-plan': {
+      id: '/api/personal/daily-plan'
+      path: '/api/personal/daily-plan'
+      fullPath: '/api/personal/daily-plan'
+      preLoaderRoute: typeof ApiPersonalDailyPlanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/personal/focus-sessions': {
+      id: '/api/personal/focus-sessions'
+      path: '/api/personal/focus-sessions'
+      fullPath: '/api/personal/focus-sessions'
+      preLoaderRoute: typeof ApiPersonalFocusSessionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/push/subscribe': {
       id: '/api/push/subscribe'
       path: '/api/push/subscribe'
@@ -839,6 +880,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiEnterpriseTranscribeRoute: ApiEnterpriseTranscribeRoute,
   ApiHandoffConsumeRoute: ApiHandoffConsumeRoute,
   ApiHandoffIssueRoute: ApiHandoffIssueRoute,
+  ApiPersonalDailyPlanRoute: ApiPersonalDailyPlanRoute,
+  ApiPersonalFocusSessionsRoute: ApiPersonalFocusSessionsRoute,
   ApiPushSubscribeRoute: ApiPushSubscribeRoute,
   ApiPushUnsubscribeRoute: ApiPushUnsubscribeRoute,
   ApiUserExportDataRoute: ApiUserExportDataRoute,

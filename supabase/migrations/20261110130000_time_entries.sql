@@ -6,6 +6,8 @@
 -- via company_id FK to enforce row-level isolation.
 -- ============================================================================
 
+DROP TABLE IF EXISTS public.time_entries CASCADE;
+
 CREATE TABLE IF NOT EXISTS public.time_entries (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -17,6 +19,9 @@ CREATE TABLE IF NOT EXISTS public.time_entries (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+
+ALTER TABLE public.time_entries
+ADD COLUMN project_id uuid; -- You will need to remove NOT NULL if there are existing rows
 
 -- Composite index for fast tenant-scoped + owner lookups
 CREATE INDEX IF NOT EXISTS time_entries_company_user_idx
