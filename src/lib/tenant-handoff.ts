@@ -47,7 +47,11 @@ export async function buildPlatformHandoffUrl(path = "/app"): Promise<HandoffRes
   return initiateHandoff("platform", "platform", path);
 }
 
-async function initiateHandoff(type: "tenant" | "platform", targetSlug: string, path: string): Promise<HandoffResult> {
+async function initiateHandoff(
+  type: "tenant" | "platform",
+  targetSlug: string,
+  path: string,
+): Promise<HandoffResult> {
   // Call server to issue a single-use handoff code
   const response = await fetch("/api/handoff/issue", {
     method: "POST",
@@ -67,9 +71,8 @@ async function initiateHandoff(type: "tenant" | "platform", targetSlug: string, 
   }
 
   // Build the target URL with the code as a query parameter (not fragment)
-  const baseUrl = type === "tenant"
-    ? buildTenantAppUrl(targetSlug, path)
-    : buildPlatformAppUrl(path);
+  const baseUrl =
+    type === "tenant" ? buildTenantAppUrl(targetSlug, path) : buildPlatformAppUrl(path);
 
   const url = new URL(baseUrl);
   url.searchParams.set(HANDOFF_CODE_PARAM, code);
@@ -92,7 +95,11 @@ export async function consumeTenantHandoff(): Promise<string | null> {
 
   // Remove the code from URL immediately so it doesn't leak via referrer/history
   params.delete(HANDOFF_CODE_PARAM);
-  window.history.replaceState(null, "", `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}`);
+  window.history.replaceState(
+    null,
+    "",
+    `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}`,
+  );
 
   // Exchange code for targetSlug verification
   const response = await fetch("/api/handoff/consume", {

@@ -156,8 +156,14 @@ export function msUntilReset(tz?: string): number {
   const hour = Number(hourStr);
   const minute = Number(minuteStr);
   const second = Number(secondStr);
-  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day) ||
-      !Number.isFinite(hour) || !Number.isFinite(minute) || !Number.isFinite(second)) {
+  if (
+    !Number.isFinite(year) ||
+    !Number.isFinite(month) ||
+    !Number.isFinite(day) ||
+    !Number.isFinite(hour) ||
+    !Number.isFinite(minute) ||
+    !Number.isFinite(second)
+  ) {
     return 86_400_000;
   }
   // Create a Date at midnight in the target timezone (interpreted as UTC)
@@ -309,9 +315,7 @@ function cloneMatrix(tasks: Record<ImpactTier, Task[]> | undefined): Record<Impa
 }
 
 export function countTasks(tasks: Record<ImpactTier, Task[]> | undefined): number {
-  return (
-    (tasks?.high?.length ?? 0) + (tasks?.medium?.length ?? 0) + (tasks?.low?.length ?? 0)
-  );
+  return (tasks?.high?.length ?? 0) + (tasks?.medium?.length ?? 0) + (tasks?.low?.length ?? 0);
 }
 
 /** Unfinished priorities, tier by tier, with any stale `done` flags corrected. */
@@ -371,9 +375,7 @@ export function normalizeTaskMatrix(raw: unknown): Record<ImpactTier, Task[]> {
       if (typeof entry !== "object" || entry === null) continue;
       const obj = entry as Record<string, unknown>;
       const text =
-        typeof obj["text"] === "string"
-          ? obj["text"].trim().slice(0, MAX_TASK_TEXT_LENGTH)
-          : "";
+        typeof obj["text"] === "string" ? obj["text"].trim().slice(0, MAX_TASK_TEXT_LENGTH) : "";
       if (!text) continue;
 
       const task: Task = { text, done: obj["done"] === true };
@@ -428,7 +430,10 @@ export function reconcileDailyPlan(state: MissionState): {
   }
 
   if (previousPlanDate === today) {
-    return { state: { ...state, planDate: today, planHistory: history.slice(-14) }, rollover: null };
+    return {
+      state: { ...state, planDate: today, planHistory: history.slice(-14) },
+      rollover: null,
+    };
   }
 
   const currentMatrix = cloneMatrix(state.tasks);

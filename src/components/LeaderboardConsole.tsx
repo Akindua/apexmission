@@ -29,13 +29,31 @@ export const LeaderboardConsole: React.FC = () => {
   useEffect(() => {
     const fetchCloudRankings = async () => {
       try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("id, full_name, current_streak, failure_count, beta_points, operational_status, last_action_logged")
-          .order("beta_points", { ascending: false });
-
+        const { data, error } = await supabase.rpc("get_operator_leaderboard");
         if (error) throw error;
-        setOperators(data || []);
+
+        setOperators(
+          (data || []).map(
+            (row: {
+              id: string;
+              operator_name: string;
+              credits: number;
+              current_streak: number;
+              max_streak: number;
+              failure_count: number;
+              operational_status: string;
+              last_action_logged?: string | null;
+            }) => ({
+              id: String(row.id),
+              full_name: String(row.operator_name || "OPERATOR"),
+              current_streak: Number(row.current_streak ?? 0),
+              failure_count: Number(row.failure_count ?? 0),
+              beta_points: Number(row.credits ?? 0),
+              operational_status: String(row.operational_status || "OPERATIONAL"),
+              last_action_logged: row.last_action_logged ?? null,
+            }),
+          ),
+        );
       } catch (err) {
         console.error("Failed to query live dashboard arrays:", err);
       } finally {
@@ -73,8 +91,12 @@ export const LeaderboardConsole: React.FC = () => {
         <div className="flex items-center gap-2.5">
           <Award className="h-5 w-5 text-emerald-400 animate-pulse" />
           <div className="text-left">
-            <h3 className="font-black text-sm text-white uppercase tracking-wider">Live Operator Rankings</h3>
-            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">Real-Time Account Balance Grid</p>
+            <h3 className="font-black text-sm text-white uppercase tracking-wider">
+              Live Operator Rankings
+            </h3>
+            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">
+              Real-Time Account Balance Grid
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-1.5 text-[10px] font-black uppercase text-emerald-400 bg-emerald-950/20 px-2 py-1 rounded border border-emerald-500/10">
@@ -127,11 +149,13 @@ export const LeaderboardConsole: React.FC = () => {
                     </button>
                   </td>
                   <td className="py-4 px-4 text-right whitespace-nowrap">
-                    <span className={`inline-block rounded-lg border px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${
-                      op.operational_status === "FALLEN"
-                        ? "border-rose-500/20 bg-rose-950/20 text-rose-400"
-                        : "border-emerald-500/30 bg-emerald-950/20 text-emerald-400"
-                    }`}>
+                    <span
+                      className={`inline-block rounded-lg border px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${
+                        op.operational_status === "FALLEN"
+                          ? "border-rose-500/20 bg-rose-950/20 text-rose-400"
+                          : "border-emerald-500/30 bg-emerald-950/20 text-emerald-400"
+                      }`}
+                    >
                       {op.operational_status}
                     </span>
                   </td>
@@ -148,8 +172,12 @@ export const LeaderboardConsole: React.FC = () => {
           <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-[#0D0D11] p-6 shadow-2xl text-left">
             <div className="flex items-center justify-between border-b border-zinc-900 pb-3 mb-4">
               <div>
-                <h4 className="text-sm font-black text-white uppercase tracking-wider">System Deficit Ledger</h4>
-                <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">Operator ID: {activeModalOperator.full_name}</p>
+                <h4 className="text-sm font-black text-white uppercase tracking-wider">
+                  System Deficit Ledger
+                </h4>
+                <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">
+                  Operator ID: {activeModalOperator.full_name}
+                </p>
               </div>
               <button
                 type="button"
@@ -161,27 +189,43 @@ export const LeaderboardConsole: React.FC = () => {
             </div>
 
             <div className="space-y-3 mt-4">
-              <p className="text-xs text-zinc-500 uppercase tracking-wider font-bold mb-2">Recent Balance Transmissions</p>
-              
+              <p className="text-xs text-zinc-500 uppercase tracking-wider font-bold mb-2">
+                Recent Balance Transmissions
+              </p>
+
               {loadingLedger ? (
-                <p className="text-xs text-zinc-600 italic py-4 animate-pulse">Syncing delta transaction entries...</p>
+                <p className="text-xs text-zinc-600 italic py-4 animate-pulse">
+                  Syncing delta transaction entries...
+                </p>
               ) : ledgerLogs.length === 0 ? (
                 <div className="flex items-center gap-2 rounded-xl border border-emerald-500/10 bg-emerald-950/5 p-4 text-xs font-bold text-emerald-400">
                   <ShieldCheck className="h-4 w-4" />
-                  <p>Prisinte Account Integrity. No execution deficits or manual penalties indexed.</p>
+                  <p>
+                    Prisinte Account Integrity. No execution deficits or manual penalties indexed.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {ledgerLogs.map((log) => (
-                    <div key={log.id} className="flex items-center justify-between p-3 rounded-xl border border-zinc-900 bg-black/30 text-xs">
+                    <div
+                      key={log.id}
+                      className="flex items-center justify-between p-3 rounded-xl border border-zinc-900 bg-black/30 text-xs"
+                    >
                       <div className="text-left">
                         <p className="font-bold text-zinc-200">{log.transaction_reason}</p>
-                        <p className="text-[10px] text-zinc-600 font-mono mt-0.5">{new Date(log.created_at).toLocaleDateString()}</p>
+                        <p className="text-[10px] text-zinc-600 font-mono mt-0.5">
+                          {new Date(log.created_at).toLocaleDateString()}
+                        </p>
                       </div>
-                      <span className={`font-mono font-black px-2 py-0.5 rounded text-[11px] ${
-                        log.amount_changed < 0 ? "bg-rose-950/20 text-rose-400 border-rose-500/20" : "bg-emerald-950/20 text-emerald-400 border-emerald-500/20"
-                      }`}>
-                        {log.amount_changed < 0 ? "" : "+"}{log.amount_changed}
+                      <span
+                        className={`font-mono font-black px-2 py-0.5 rounded text-[11px] ${
+                          log.amount_changed < 0
+                            ? "bg-rose-950/20 text-rose-400 border-rose-500/20"
+                            : "bg-emerald-950/20 text-emerald-400 border-emerald-500/20"
+                        }`}
+                      >
+                        {log.amount_changed < 0 ? "" : "+"}
+                        {log.amount_changed}
                       </span>
                     </div>
                   ))}

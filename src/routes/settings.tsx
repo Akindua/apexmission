@@ -22,7 +22,8 @@ function SettingsPage() {
 
   async function checkSupportAndSubscription() {
     try {
-      const isSupported = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+      const isSupported =
+        "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
       setSupported(isSupported);
       setPermission(Notification.permission);
 
@@ -160,7 +161,8 @@ function SettingsPage() {
           Server Not Configured
         </h2>
         <p className="mt-2 text-[11px] font-medium leading-relaxed text-zinc-400">
-          Push notifications are not configured on the server. The <code className="font-mono bg-black/40 px-1 rounded">VITE_VAPID_PUBLIC_KEY</code>
+          Push notifications are not configured on the server. The{" "}
+          <code className="font-mono bg-black/40 px-1 rounded">VITE_VAPID_PUBLIC_KEY</code>
           environment variable is missing. Contact your administrator.
         </p>
       </section>
@@ -176,15 +178,17 @@ function SettingsPage() {
             4:30 PM Push Reminder
           </h2>
           <p className="mt-1 text-[10px] font-medium leading-relaxed text-zinc-500">
-            Receive ONE daily push at ~4:30 PM in your timezone if your top High-impact task is not done.
-            Works even when the app is closed.
+            Receive ONE daily push at ~4:30 PM in your timezone if your top High-impact task is not
+            done. Works even when the app is closed.
           </p>
         </div>
-        <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[9px] font-black uppercase tracking-wider ${
-          subscribed
-            ? "border-emerald-500/30 bg-emerald-950/30 text-emerald-400"
-            : "border-zinc-500/25 bg-zinc-950/30 text-zinc-500"
-        }`}>
+        <span
+          className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[9px] font-black uppercase tracking-wider ${
+            subscribed
+              ? "border-emerald-500/30 bg-emerald-950/30 text-emerald-400"
+              : "border-zinc-500/25 bg-zinc-950/30 text-zinc-500"
+          }`}
+        >
           {subscribed ? (
             <>
               <CheckCircle2 className="size-3" />
@@ -206,11 +210,34 @@ function SettingsPage() {
             How it works
           </h3>
           <ul className="mt-2 grid gap-1.5 text-[10px] font-medium leading-relaxed text-zinc-400">
-            <li className="flex items-start gap-1.5">{"1."} <span>Runs once per day at ~4:30 PM in <strong>your local timezone</strong>.</span></li>
-            <li className="flex items-start gap-1.5">{"2."} <span>Only fires if you have an unfinished <strong>High-impact</strong> task.</span></li>
-            <li className="flex items-start gap-1.5">{"3."} <span>Notification text is generic: <strong>"Time to close your top task before 5 PM."</strong> No task content on lock screen.</span></li>
-            <li className="flex items-start gap-1.5">{"4."} <span>Personal accounts only — corporate workspaces do not receive pushes.</span></li>
-            <li className="flex items-start gap-1.5">{"5."} <span>Subscription stored encrypted on server; you can revoke anytime below.</span></li>
+            <li className="flex items-start gap-1.5">
+              {"1."}{" "}
+              <span>
+                Runs once per day at ~4:30 PM in <strong>your local timezone</strong>.
+              </span>
+            </li>
+            <li className="flex items-start gap-1.5">
+              {"2."}{" "}
+              <span>
+                Only fires if you have an unfinished <strong>High-impact</strong> task.
+              </span>
+            </li>
+            <li className="flex items-start gap-1.5">
+              {"3."}{" "}
+              <span>
+                Notification text is generic:{" "}
+                <strong>"Time to close your top task before 5 PM."</strong> No task content on lock
+                screen.
+              </span>
+            </li>
+            <li className="flex items-start gap-1.5">
+              {"4."}{" "}
+              <span>Personal accounts only — corporate workspaces do not receive pushes.</span>
+            </li>
+            <li className="flex items-start gap-1.5">
+              {"5."}{" "}
+              <span>Subscription stored encrypted on server; you can revoke anytime below.</span>
+            </li>
           </ul>
         </div>
 
@@ -220,10 +247,21 @@ function SettingsPage() {
             iOS / Safari Notes
           </h3>
           <ul className="mt-2 grid gap-1.5 text-[10px] font-medium leading-relaxed text-zinc-400">
-            <li className="flex items-start gap-1.5">{"•"} <span>Requires iOS 16.4+ and <strong>"Add to Home Screen"</strong> (PWA).</span></li>
-            <li className="flex items-start gap-1.5">{"•"} <span>In Safari: Share → Add to Home Screen → Open from Home Screen.</span></li>
-            <li className="flex items-start gap-1.5">{"•"} <span>Notifications permission must be granted from the Home Screen app.</span></li>
-            <li className="flex items-start gap-1.5">{"•"} <span>Focus modes / Do Not Disturb may silence the notification.</span></li>
+            <li className="flex items-start gap-1.5">
+              {"•"}{" "}
+              <span>
+                Requires iOS 16.4+ and <strong>"Add to Home Screen"</strong> (PWA).
+              </span>
+            </li>
+            <li className="flex items-start gap-1.5">
+              {"•"} <span>In Safari: Share → Add to Home Screen → Open from Home Screen.</span>
+            </li>
+            <li className="flex items-start gap-1.5">
+              {"•"} <span>Notifications permission must be granted from the Home Screen app.</span>
+            </li>
+            <li className="flex items-start gap-1.5">
+              {"•"} <span>Focus modes / Do Not Disturb may silence the notification.</span>
+            </li>
           </ul>
         </div>
       </div>
@@ -261,7 +299,9 @@ function SettingsPage() {
             ) : (
               <Bell className="size-3.5 mr-2" />
             )}
-            {permission === "denied" ? "Enable in browser settings first" : "Subscribe to 4:30 PM reminder"}
+            {permission === "denied"
+              ? "Enable in browser settings first"
+              : "Subscribe to 4:30 PM reminder"}
           </button>
         )}
         {permission === "denied" && !subscribed && (
@@ -279,9 +319,18 @@ function SettingsPage() {
       </div>
 
       <p className="mt-3 text-[9px] font-medium uppercase tracking-wider text-zinc-600">
-        Privacy: We store only your push endpoint and encryption keys (p256dh, auth), plus your timezone.
-        No task content is ever sent to the push server. Delete your subscription anytime above.
+        Privacy: We store only your push endpoint and encryption keys (p256dh, auth), plus your
+        timezone. No task content is ever sent to the push server. Delete your subscription anytime
+        above.
       </p>
+      <div className="mt-4">
+        <a
+          href={`mailto:support@apexmissions.app?subject=${encodeURIComponent("ApexMissions beta feedback")}&body=${encodeURIComponent("1) Did anything break or feel confusing during setup?\n\n2) What is the one feature you find yourself using every day?\n\n3) What is missing that would make this an essential part of your daily workflow?")}`}
+          className="text-xs font-medium uppercase tracking-wider text-emerald-400 hover:text-emerald-300 underline"
+        >
+          Send feedback →
+        </a>
+      </div>
     </section>
   );
 }

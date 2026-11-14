@@ -5,6 +5,7 @@ import { generateText } from "ai";
 import {
   enforceRateLimit,
   fenceUntrustedContent,
+  getAIPrivacyHeaders,
   getClientIp,
   isSameOriginRequest,
   rateLimit,
@@ -126,6 +127,11 @@ No markdown.
 No explanations.
 `,
           prompt: fenceUntrustedContent("DOCUMENT", document),
+          providerOptions: {
+            openai: {
+              headers: getAIPrivacyHeaders(),
+            },
+          },
         });
 
         let parsed: unknown;

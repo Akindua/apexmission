@@ -180,7 +180,11 @@ export function EnterpriseAnalyticsPanel({
               icon={<CheckCircle2 className="size-4" />}
               label="Closures this week"
               value={String(analytics.totals.completed7d)}
-              sub={delta === 0 ? "Level with last week" : `${delta > 0 ? "+" : ""}${delta} vs last week`}
+              sub={
+                delta === 0
+                  ? "Level with last week"
+                  : `${delta > 0 ? "+" : ""}${delta} vs last week`
+              }
               tone={delta >= 0 ? "emerald" : "rose"}
             />
             <KpiCard
@@ -261,7 +265,8 @@ export function EnterpriseAnalyticsPanel({
                 </p>
               </div>
               <span className="rounded-full border border-amber-500/25 bg-amber-950/20 px-2.5 py-1 font-mono text-[9px] font-black uppercase tracking-wider text-amber-300">
-                {analytics.totals.blockersCount} blocker{analytics.totals.blockersCount === 1 ? "" : "s"}
+                {analytics.totals.blockersCount} blocker
+                {analytics.totals.blockersCount === 1 ? "" : "s"}
               </span>
             </div>
 
@@ -276,11 +281,18 @@ export function EnterpriseAnalyticsPanel({
                   .filter((op) => op.blockers.length > 0)
                   .slice(0, 6)
                   .map((operator) => (
-                    <li key={operator.id} className="rounded-xl border border-amber-500/20 bg-black/40 p-3">
-                      <p className="min-w-0 truncate text-xs font-black text-white">{operator.name}</p>
+                    <li
+                      key={operator.id}
+                      className="rounded-xl border border-amber-500/20 bg-black/40 p-3"
+                    >
+                      <p className="min-w-0 truncate text-xs font-black text-white">
+                        {operator.name}
+                      </p>
                       <p className="mt-1.5 text-[10px] font-medium leading-relaxed text-zinc-400">
                         {operator.blockers.slice(0, 3).join("; ")}
-                        {operator.blockers.length > 3 ? ` +${operator.blockers.length - 3} more` : ""}
+                        {operator.blockers.length > 3
+                          ? ` +${operator.blockers.length - 3} more`
+                          : ""}
                       </p>
                     </li>
                   ))}
@@ -351,11 +363,15 @@ function OperatorRow({ operator }: { operator: EnterpriseOperator }) {
         {highCompleted}
       </p>
 
-      <p className={`text-center font-mono font-black tabular-nums ${operator.carriedOverHigh.length > 0 ? "text-amber-400" : "text-zinc-600"}`}>
+      <p
+        className={`text-center font-mono font-black tabular-nums ${operator.carriedOverHigh.length > 0 ? "text-amber-400" : "text-zinc-600"}`}
+      >
         {operator.carriedOverHigh.length}
       </p>
 
-      <p className={`text-center font-mono font-black tabular-nums ${operator.blockers.length > 0 ? "text-rose-400" : "text-zinc-600"}`}>
+      <p
+        className={`text-center font-mono font-black tabular-nums ${operator.blockers.length > 0 ? "text-rose-400" : "text-zinc-600"}`}
+      >
         {operator.blockers.length}
       </p>
     </div>
@@ -376,7 +392,8 @@ function TrendChart({ trend }: { trend: EnterpriseAnalytics["trend"] }) {
   return (
     <div className="mt-4 flex h-40 items-end gap-1.5 rounded-xl border border-emerald-500/15 bg-black/40 p-3">
       {trend.map((day) => {
-        const height = day.completed === 0 ? 3 : Math.max(8, Math.round((day.completed / max) * 100));
+        const height =
+          day.completed === 0 ? 3 : Math.max(8, Math.round((day.completed / max) * 100));
         return (
           <div
             key={day.date}
@@ -451,7 +468,10 @@ function SkeletonGrid() {
   return (
     <div className="grid grid-cols-2 gap-2.5 xl:grid-cols-4">
       {Array.from({ length: 4 }).map((_, index) => (
-        <div key={index} className="h-24 animate-pulse rounded-xl border border-emerald-500/15 bg-emerald-950/10" />
+        <div
+          key={index}
+          className="h-24 animate-pulse rounded-xl border border-emerald-500/15 bg-emerald-950/10"
+        />
       ))}
     </div>
   );

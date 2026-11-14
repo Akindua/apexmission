@@ -110,7 +110,9 @@ export async function fetchMyCompanyRoute(): Promise<CompanyRoute | null> {
 }
 
 /** Public-branding route for an invite token, used to redirect to the tenant host. */
-export async function resolveCompanyRouteByInviteToken(token: string): Promise<CompanyRoute | null> {
+export async function resolveCompanyRouteByInviteToken(
+  token: string,
+): Promise<CompanyRoute | null> {
   const trimmed = token.trim();
   if (!trimmed) return null;
 
@@ -171,8 +173,12 @@ export function parseEnterpriseAnalytics(raw: unknown): EnterpriseAnalytics | nu
       ];
     });
 
-    const carriedOverHigh: string[] = asArray(row["carried_over_high"]).map((t) => asString(t)).filter(Boolean);
-    const blockers: string[] = asArray(row["blockers"]).map((t) => asString(t)).filter(Boolean);
+    const carriedOverHigh: string[] = asArray(row["carried_over_high"])
+      .map((t) => asString(t))
+      .filter(Boolean);
+    const blockers: string[] = asArray(row["blockers"])
+      .map((t) => asString(t))
+      .filter(Boolean);
 
     return [
       {
@@ -207,7 +213,9 @@ export function parseEnterpriseAnalytics(raw: unknown): EnterpriseAnalytics | nu
 }
 
 /** Fetches the caller's company analytics. Returns null for personal accounts. */
-export async function fetchCompanyExecutionAnalytics(days = 28): Promise<EnterpriseAnalytics | null> {
+export async function fetchCompanyExecutionAnalytics(
+  days = 28,
+): Promise<EnterpriseAnalytics | null> {
   const { data, error } = await supabase.rpc("get_company_execution_analytics", {
     p_days: Math.max(7, Math.min(Math.trunc(days), 90)),
   });

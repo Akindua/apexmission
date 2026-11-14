@@ -30,11 +30,24 @@ import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiDayPlanRouteImport } from './routes/api/day-plan'
 import { Route as ApiMissionPlanRouteImport } from './routes/api/mission-plan'
 import { Route as ApiPdfPlanRouteImport } from './routes/api/pdf-plan'
+import { Route as ApiAdminEnterpriseExportWorkerRouteImport } from './routes/api/admin/enterprise-export-worker'
+import { Route as ApiAdminExportWorkerRouteImport } from './routes/api/admin/export-worker'
+import { Route as ApiClientPortalDeliverablesRouteImport } from './routes/api/client-portal/deliverables'
+import { Route as ApiClientPortalDocumentsRouteImport } from './routes/api/client-portal/documents'
 import { Route as ApiCronSend4pmPushRouteImport } from './routes/api/cron/send-4pm-push'
+import { Route as ApiEnterpriseClientPortalDeliverablesRouteImport } from './routes/api/enterprise/client-portal-deliverables'
+import { Route as ApiEnterpriseClientPortalDocumentsRouteImport } from './routes/api/enterprise/client-portal-documents'
+import { Route as ApiEnterpriseDataExportRouteImport } from './routes/api/enterprise/data-export'
+import { Route as ApiEnterpriseInternalNotesRouteImport } from './routes/api/enterprise/internal-notes'
+import { Route as ApiEnterpriseTimeEntriesRouteImport } from './routes/api/enterprise/time-entries'
+import { Route as ApiEnterpriseTranscribeRouteImport } from './routes/api/enterprise/transcribe'
 import { Route as ApiHandoffConsumeRouteImport } from './routes/api/handoff/consume'
 import { Route as ApiHandoffIssueRouteImport } from './routes/api/handoff/issue'
+import { Route as ApiPersonalDailyPlanRouteImport } from './routes/api/personal/daily-plan'
+import { Route as ApiPersonalFocusSessionsRouteImport } from './routes/api/personal/focus-sessions'
 import { Route as ApiPushSubscribeRouteImport } from './routes/api/push/subscribe'
 import { Route as ApiPushUnsubscribeRouteImport } from './routes/api/push/unsubscribe'
+import { Route as ApiUserExportDataRouteImport } from './routes/api/user/export-data'
 import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe/webhook'
 
 const IndexRoute = IndexRouteImport.update({
@@ -142,9 +155,66 @@ const ApiPdfPlanRoute = ApiPdfPlanRouteImport.update({
   path: '/api/pdf-plan',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminEnterpriseExportWorkerRoute =
+  ApiAdminEnterpriseExportWorkerRouteImport.update({
+    id: '/api/admin/enterprise-export-worker',
+    path: '/api/admin/enterprise-export-worker',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiAdminExportWorkerRoute = ApiAdminExportWorkerRouteImport.update({
+  id: '/api/admin/export-worker',
+  path: '/api/admin/export-worker',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiClientPortalDeliverablesRoute =
+  ApiClientPortalDeliverablesRouteImport.update({
+    id: '/api/client-portal/deliverables',
+    path: '/api/client-portal/deliverables',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiClientPortalDocumentsRoute =
+  ApiClientPortalDocumentsRouteImport.update({
+    id: '/api/client-portal/documents',
+    path: '/api/client-portal/documents',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiCronSend4pmPushRoute = ApiCronSend4pmPushRouteImport.update({
   id: '/api/cron/send-4pm-push',
   path: '/api/cron/send-4pm-push',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiEnterpriseClientPortalDeliverablesRoute =
+  ApiEnterpriseClientPortalDeliverablesRouteImport.update({
+    id: '/api/enterprise/client-portal-deliverables',
+    path: '/api/enterprise/client-portal-deliverables',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiEnterpriseClientPortalDocumentsRoute =
+  ApiEnterpriseClientPortalDocumentsRouteImport.update({
+    id: '/api/enterprise/client-portal-documents',
+    path: '/api/enterprise/client-portal-documents',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiEnterpriseDataExportRoute = ApiEnterpriseDataExportRouteImport.update({
+  id: '/api/enterprise/data-export',
+  path: '/api/enterprise/data-export',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiEnterpriseInternalNotesRoute =
+  ApiEnterpriseInternalNotesRouteImport.update({
+    id: '/api/enterprise/internal-notes',
+    path: '/api/enterprise/internal-notes',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiEnterpriseTimeEntriesRoute =
+  ApiEnterpriseTimeEntriesRouteImport.update({
+    id: '/api/enterprise/time-entries',
+    path: '/api/enterprise/time-entries',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiEnterpriseTranscribeRoute = ApiEnterpriseTranscribeRouteImport.update({
+  id: '/api/enterprise/transcribe',
+  path: '/api/enterprise/transcribe',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiHandoffConsumeRoute = ApiHandoffConsumeRouteImport.update({
@@ -157,6 +227,17 @@ const ApiHandoffIssueRoute = ApiHandoffIssueRouteImport.update({
   path: '/api/handoff/issue',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPersonalDailyPlanRoute = ApiPersonalDailyPlanRouteImport.update({
+  id: '/api/personal/daily-plan',
+  path: '/api/personal/daily-plan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPersonalFocusSessionsRoute =
+  ApiPersonalFocusSessionsRouteImport.update({
+    id: '/api/personal/focus-sessions',
+    path: '/api/personal/focus-sessions',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPushSubscribeRoute = ApiPushSubscribeRouteImport.update({
   id: '/api/push/subscribe',
   path: '/api/push/subscribe',
@@ -165,6 +246,11 @@ const ApiPushSubscribeRoute = ApiPushSubscribeRouteImport.update({
 const ApiPushUnsubscribeRoute = ApiPushUnsubscribeRouteImport.update({
   id: '/api/push/unsubscribe',
   path: '/api/push/unsubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiUserExportDataRoute = ApiUserExportDataRouteImport.update({
+  id: '/api/user/export-data',
+  path: '/api/user/export-data',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
@@ -195,11 +281,24 @@ export interface FileRoutesByFullPath {
   '/api/day-plan': typeof ApiDayPlanRoute
   '/api/mission-plan': typeof ApiMissionPlanRoute
   '/api/pdf-plan': typeof ApiPdfPlanRoute
+  '/api/admin/enterprise-export-worker': typeof ApiAdminEnterpriseExportWorkerRoute
+  '/api/admin/export-worker': typeof ApiAdminExportWorkerRoute
+  '/api/client-portal/deliverables': typeof ApiClientPortalDeliverablesRoute
+  '/api/client-portal/documents': typeof ApiClientPortalDocumentsRoute
   '/api/cron/send-4pm-push': typeof ApiCronSend4pmPushRoute
+  '/api/enterprise/client-portal-deliverables': typeof ApiEnterpriseClientPortalDeliverablesRoute
+  '/api/enterprise/client-portal-documents': typeof ApiEnterpriseClientPortalDocumentsRoute
+  '/api/enterprise/data-export': typeof ApiEnterpriseDataExportRoute
+  '/api/enterprise/internal-notes': typeof ApiEnterpriseInternalNotesRoute
+  '/api/enterprise/time-entries': typeof ApiEnterpriseTimeEntriesRoute
+  '/api/enterprise/transcribe': typeof ApiEnterpriseTranscribeRoute
   '/api/handoff/consume': typeof ApiHandoffConsumeRoute
   '/api/handoff/issue': typeof ApiHandoffIssueRoute
+  '/api/personal/daily-plan': typeof ApiPersonalDailyPlanRoute
+  '/api/personal/focus-sessions': typeof ApiPersonalFocusSessionsRoute
   '/api/push/subscribe': typeof ApiPushSubscribeRoute
   '/api/push/unsubscribe': typeof ApiPushUnsubscribeRoute
+  '/api/user/export-data': typeof ApiUserExportDataRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
 }
 export interface FileRoutesByTo {
@@ -224,11 +323,24 @@ export interface FileRoutesByTo {
   '/api/day-plan': typeof ApiDayPlanRoute
   '/api/mission-plan': typeof ApiMissionPlanRoute
   '/api/pdf-plan': typeof ApiPdfPlanRoute
+  '/api/admin/enterprise-export-worker': typeof ApiAdminEnterpriseExportWorkerRoute
+  '/api/admin/export-worker': typeof ApiAdminExportWorkerRoute
+  '/api/client-portal/deliverables': typeof ApiClientPortalDeliverablesRoute
+  '/api/client-portal/documents': typeof ApiClientPortalDocumentsRoute
   '/api/cron/send-4pm-push': typeof ApiCronSend4pmPushRoute
+  '/api/enterprise/client-portal-deliverables': typeof ApiEnterpriseClientPortalDeliverablesRoute
+  '/api/enterprise/client-portal-documents': typeof ApiEnterpriseClientPortalDocumentsRoute
+  '/api/enterprise/data-export': typeof ApiEnterpriseDataExportRoute
+  '/api/enterprise/internal-notes': typeof ApiEnterpriseInternalNotesRoute
+  '/api/enterprise/time-entries': typeof ApiEnterpriseTimeEntriesRoute
+  '/api/enterprise/transcribe': typeof ApiEnterpriseTranscribeRoute
   '/api/handoff/consume': typeof ApiHandoffConsumeRoute
   '/api/handoff/issue': typeof ApiHandoffIssueRoute
+  '/api/personal/daily-plan': typeof ApiPersonalDailyPlanRoute
+  '/api/personal/focus-sessions': typeof ApiPersonalFocusSessionsRoute
   '/api/push/subscribe': typeof ApiPushSubscribeRoute
   '/api/push/unsubscribe': typeof ApiPushUnsubscribeRoute
+  '/api/user/export-data': typeof ApiUserExportDataRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
 }
 export interface FileRoutesById {
@@ -254,11 +366,24 @@ export interface FileRoutesById {
   '/api/day-plan': typeof ApiDayPlanRoute
   '/api/mission-plan': typeof ApiMissionPlanRoute
   '/api/pdf-plan': typeof ApiPdfPlanRoute
+  '/api/admin/enterprise-export-worker': typeof ApiAdminEnterpriseExportWorkerRoute
+  '/api/admin/export-worker': typeof ApiAdminExportWorkerRoute
+  '/api/client-portal/deliverables': typeof ApiClientPortalDeliverablesRoute
+  '/api/client-portal/documents': typeof ApiClientPortalDocumentsRoute
   '/api/cron/send-4pm-push': typeof ApiCronSend4pmPushRoute
+  '/api/enterprise/client-portal-deliverables': typeof ApiEnterpriseClientPortalDeliverablesRoute
+  '/api/enterprise/client-portal-documents': typeof ApiEnterpriseClientPortalDocumentsRoute
+  '/api/enterprise/data-export': typeof ApiEnterpriseDataExportRoute
+  '/api/enterprise/internal-notes': typeof ApiEnterpriseInternalNotesRoute
+  '/api/enterprise/time-entries': typeof ApiEnterpriseTimeEntriesRoute
+  '/api/enterprise/transcribe': typeof ApiEnterpriseTranscribeRoute
   '/api/handoff/consume': typeof ApiHandoffConsumeRoute
   '/api/handoff/issue': typeof ApiHandoffIssueRoute
+  '/api/personal/daily-plan': typeof ApiPersonalDailyPlanRoute
+  '/api/personal/focus-sessions': typeof ApiPersonalFocusSessionsRoute
   '/api/push/subscribe': typeof ApiPushSubscribeRoute
   '/api/push/unsubscribe': typeof ApiPushUnsubscribeRoute
+  '/api/user/export-data': typeof ApiUserExportDataRoute
   '/api/public/stripe/webhook': typeof ApiPublicStripeWebhookRoute
 }
 export interface FileRouteTypes {
@@ -285,11 +410,24 @@ export interface FileRouteTypes {
     | '/api/day-plan'
     | '/api/mission-plan'
     | '/api/pdf-plan'
+    | '/api/admin/enterprise-export-worker'
+    | '/api/admin/export-worker'
+    | '/api/client-portal/deliverables'
+    | '/api/client-portal/documents'
     | '/api/cron/send-4pm-push'
+    | '/api/enterprise/client-portal-deliverables'
+    | '/api/enterprise/client-portal-documents'
+    | '/api/enterprise/data-export'
+    | '/api/enterprise/internal-notes'
+    | '/api/enterprise/time-entries'
+    | '/api/enterprise/transcribe'
     | '/api/handoff/consume'
     | '/api/handoff/issue'
+    | '/api/personal/daily-plan'
+    | '/api/personal/focus-sessions'
     | '/api/push/subscribe'
     | '/api/push/unsubscribe'
+    | '/api/user/export-data'
     | '/api/public/stripe/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -314,11 +452,24 @@ export interface FileRouteTypes {
     | '/api/day-plan'
     | '/api/mission-plan'
     | '/api/pdf-plan'
+    | '/api/admin/enterprise-export-worker'
+    | '/api/admin/export-worker'
+    | '/api/client-portal/deliverables'
+    | '/api/client-portal/documents'
     | '/api/cron/send-4pm-push'
+    | '/api/enterprise/client-portal-deliverables'
+    | '/api/enterprise/client-portal-documents'
+    | '/api/enterprise/data-export'
+    | '/api/enterprise/internal-notes'
+    | '/api/enterprise/time-entries'
+    | '/api/enterprise/transcribe'
     | '/api/handoff/consume'
     | '/api/handoff/issue'
+    | '/api/personal/daily-plan'
+    | '/api/personal/focus-sessions'
     | '/api/push/subscribe'
     | '/api/push/unsubscribe'
+    | '/api/user/export-data'
     | '/api/public/stripe/webhook'
   id:
     | '__root__'
@@ -343,11 +494,24 @@ export interface FileRouteTypes {
     | '/api/day-plan'
     | '/api/mission-plan'
     | '/api/pdf-plan'
+    | '/api/admin/enterprise-export-worker'
+    | '/api/admin/export-worker'
+    | '/api/client-portal/deliverables'
+    | '/api/client-portal/documents'
     | '/api/cron/send-4pm-push'
+    | '/api/enterprise/client-portal-deliverables'
+    | '/api/enterprise/client-portal-documents'
+    | '/api/enterprise/data-export'
+    | '/api/enterprise/internal-notes'
+    | '/api/enterprise/time-entries'
+    | '/api/enterprise/transcribe'
     | '/api/handoff/consume'
     | '/api/handoff/issue'
+    | '/api/personal/daily-plan'
+    | '/api/personal/focus-sessions'
     | '/api/push/subscribe'
     | '/api/push/unsubscribe'
+    | '/api/user/export-data'
     | '/api/public/stripe/webhook'
   fileRoutesById: FileRoutesById
 }
@@ -373,11 +537,24 @@ export interface RootRouteChildren {
   ApiDayPlanRoute: typeof ApiDayPlanRoute
   ApiMissionPlanRoute: typeof ApiMissionPlanRoute
   ApiPdfPlanRoute: typeof ApiPdfPlanRoute
+  ApiAdminEnterpriseExportWorkerRoute: typeof ApiAdminEnterpriseExportWorkerRoute
+  ApiAdminExportWorkerRoute: typeof ApiAdminExportWorkerRoute
+  ApiClientPortalDeliverablesRoute: typeof ApiClientPortalDeliverablesRoute
+  ApiClientPortalDocumentsRoute: typeof ApiClientPortalDocumentsRoute
   ApiCronSend4pmPushRoute: typeof ApiCronSend4pmPushRoute
+  ApiEnterpriseClientPortalDeliverablesRoute: typeof ApiEnterpriseClientPortalDeliverablesRoute
+  ApiEnterpriseClientPortalDocumentsRoute: typeof ApiEnterpriseClientPortalDocumentsRoute
+  ApiEnterpriseDataExportRoute: typeof ApiEnterpriseDataExportRoute
+  ApiEnterpriseInternalNotesRoute: typeof ApiEnterpriseInternalNotesRoute
+  ApiEnterpriseTimeEntriesRoute: typeof ApiEnterpriseTimeEntriesRoute
+  ApiEnterpriseTranscribeRoute: typeof ApiEnterpriseTranscribeRoute
   ApiHandoffConsumeRoute: typeof ApiHandoffConsumeRoute
   ApiHandoffIssueRoute: typeof ApiHandoffIssueRoute
+  ApiPersonalDailyPlanRoute: typeof ApiPersonalDailyPlanRoute
+  ApiPersonalFocusSessionsRoute: typeof ApiPersonalFocusSessionsRoute
   ApiPushSubscribeRoute: typeof ApiPushSubscribeRoute
   ApiPushUnsubscribeRoute: typeof ApiPushUnsubscribeRoute
+  ApiUserExportDataRoute: typeof ApiUserExportDataRoute
   ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
 }
 
@@ -530,11 +707,81 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPdfPlanRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/enterprise-export-worker': {
+      id: '/api/admin/enterprise-export-worker'
+      path: '/api/admin/enterprise-export-worker'
+      fullPath: '/api/admin/enterprise-export-worker'
+      preLoaderRoute: typeof ApiAdminEnterpriseExportWorkerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/export-worker': {
+      id: '/api/admin/export-worker'
+      path: '/api/admin/export-worker'
+      fullPath: '/api/admin/export-worker'
+      preLoaderRoute: typeof ApiAdminExportWorkerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/client-portal/deliverables': {
+      id: '/api/client-portal/deliverables'
+      path: '/api/client-portal/deliverables'
+      fullPath: '/api/client-portal/deliverables'
+      preLoaderRoute: typeof ApiClientPortalDeliverablesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/client-portal/documents': {
+      id: '/api/client-portal/documents'
+      path: '/api/client-portal/documents'
+      fullPath: '/api/client-portal/documents'
+      preLoaderRoute: typeof ApiClientPortalDocumentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/cron/send-4pm-push': {
       id: '/api/cron/send-4pm-push'
       path: '/api/cron/send-4pm-push'
       fullPath: '/api/cron/send-4pm-push'
       preLoaderRoute: typeof ApiCronSend4pmPushRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/enterprise/client-portal-deliverables': {
+      id: '/api/enterprise/client-portal-deliverables'
+      path: '/api/enterprise/client-portal-deliverables'
+      fullPath: '/api/enterprise/client-portal-deliverables'
+      preLoaderRoute: typeof ApiEnterpriseClientPortalDeliverablesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/enterprise/client-portal-documents': {
+      id: '/api/enterprise/client-portal-documents'
+      path: '/api/enterprise/client-portal-documents'
+      fullPath: '/api/enterprise/client-portal-documents'
+      preLoaderRoute: typeof ApiEnterpriseClientPortalDocumentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/enterprise/data-export': {
+      id: '/api/enterprise/data-export'
+      path: '/api/enterprise/data-export'
+      fullPath: '/api/enterprise/data-export'
+      preLoaderRoute: typeof ApiEnterpriseDataExportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/enterprise/internal-notes': {
+      id: '/api/enterprise/internal-notes'
+      path: '/api/enterprise/internal-notes'
+      fullPath: '/api/enterprise/internal-notes'
+      preLoaderRoute: typeof ApiEnterpriseInternalNotesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/enterprise/time-entries': {
+      id: '/api/enterprise/time-entries'
+      path: '/api/enterprise/time-entries'
+      fullPath: '/api/enterprise/time-entries'
+      preLoaderRoute: typeof ApiEnterpriseTimeEntriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/enterprise/transcribe': {
+      id: '/api/enterprise/transcribe'
+      path: '/api/enterprise/transcribe'
+      fullPath: '/api/enterprise/transcribe'
+      preLoaderRoute: typeof ApiEnterpriseTranscribeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/handoff/consume': {
@@ -551,6 +798,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiHandoffIssueRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/personal/daily-plan': {
+      id: '/api/personal/daily-plan'
+      path: '/api/personal/daily-plan'
+      fullPath: '/api/personal/daily-plan'
+      preLoaderRoute: typeof ApiPersonalDailyPlanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/personal/focus-sessions': {
+      id: '/api/personal/focus-sessions'
+      path: '/api/personal/focus-sessions'
+      fullPath: '/api/personal/focus-sessions'
+      preLoaderRoute: typeof ApiPersonalFocusSessionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/push/subscribe': {
       id: '/api/push/subscribe'
       path: '/api/push/subscribe'
@@ -563,6 +824,13 @@ declare module '@tanstack/react-router' {
       path: '/api/push/unsubscribe'
       fullPath: '/api/push/unsubscribe'
       preLoaderRoute: typeof ApiPushUnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/user/export-data': {
+      id: '/api/user/export-data'
+      path: '/api/user/export-data'
+      fullPath: '/api/user/export-data'
+      preLoaderRoute: typeof ApiUserExportDataRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/stripe/webhook': {
@@ -597,11 +865,26 @@ const rootRouteChildren: RootRouteChildren = {
   ApiDayPlanRoute: ApiDayPlanRoute,
   ApiMissionPlanRoute: ApiMissionPlanRoute,
   ApiPdfPlanRoute: ApiPdfPlanRoute,
+  ApiAdminEnterpriseExportWorkerRoute: ApiAdminEnterpriseExportWorkerRoute,
+  ApiAdminExportWorkerRoute: ApiAdminExportWorkerRoute,
+  ApiClientPortalDeliverablesRoute: ApiClientPortalDeliverablesRoute,
+  ApiClientPortalDocumentsRoute: ApiClientPortalDocumentsRoute,
   ApiCronSend4pmPushRoute: ApiCronSend4pmPushRoute,
+  ApiEnterpriseClientPortalDeliverablesRoute:
+    ApiEnterpriseClientPortalDeliverablesRoute,
+  ApiEnterpriseClientPortalDocumentsRoute:
+    ApiEnterpriseClientPortalDocumentsRoute,
+  ApiEnterpriseDataExportRoute: ApiEnterpriseDataExportRoute,
+  ApiEnterpriseInternalNotesRoute: ApiEnterpriseInternalNotesRoute,
+  ApiEnterpriseTimeEntriesRoute: ApiEnterpriseTimeEntriesRoute,
+  ApiEnterpriseTranscribeRoute: ApiEnterpriseTranscribeRoute,
   ApiHandoffConsumeRoute: ApiHandoffConsumeRoute,
   ApiHandoffIssueRoute: ApiHandoffIssueRoute,
+  ApiPersonalDailyPlanRoute: ApiPersonalDailyPlanRoute,
+  ApiPersonalFocusSessionsRoute: ApiPersonalFocusSessionsRoute,
   ApiPushSubscribeRoute: ApiPushSubscribeRoute,
   ApiPushUnsubscribeRoute: ApiPushUnsubscribeRoute,
+  ApiUserExportDataRoute: ApiUserExportDataRoute,
   ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
 }
 export const routeTree = rootRouteImport

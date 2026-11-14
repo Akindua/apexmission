@@ -38,10 +38,11 @@ export function AccountTypeOnboarding({
       throw new Error("No active user found.");
     }
 
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .update({ company_id: companyId })
-      .eq("id", userData.user.id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: profileError } = await (supabase.rpc as any)("assign_profile_company", {
+      p_user_id: userData.user.id,
+      p_company_id: companyId,
+    });
 
     if (profileError) {
       throw new Error(profileError.message || "Failed to update your account profile.");

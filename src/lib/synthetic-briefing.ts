@@ -14,6 +14,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { type MissionState, type Task } from "@/lib/mission-store";
 
 export interface OperatorProfileMetadata {
   id: string;
@@ -31,7 +32,7 @@ export interface OperatorProfileMetadata {
 export interface LeaderboardOperatorRow {
   id: string;
   operator_name: string;
-  full_name: string;
+  full_name?: string;
   credits: number;
   current_streak: number;
   max_streak: number;
@@ -95,7 +96,7 @@ export interface UserContext {
   userName: string;
   operatorName?: string;
   userRank?: string;
-  state: any;
+  state: MissionState;
   behaviorAnalytics?: BehaviorAnalytics | null;
   isFirstSignup: boolean;
   currentHour: number;
@@ -224,11 +225,8 @@ export async function fetchOperatorProfileMetadata(
   const profileSelect =
     "id, full_name, email, company_id, onboarding_completed, credits, current_streak, max_streak, failure_count, operational_status, last_action_logged, task_history, velocity_score, current_plan, plan_date";
 
-  let result: { data: any; error: any } = await supabase
-    .from("profiles")
-    .select(profileSelect)
-    .eq("id", userId)
-    .maybeSingle();
+  let result: { data: Record<string, unknown> | null; error: { message: string } | null } =
+    await supabase.from("profiles").select(profileSelect).eq("id", userId).maybeSingle();
 
   // Graceful rollout: the dashboard must keep working if the plan columns have
   // not been migrated yet. Retry with the legacy projection before failing.
@@ -251,26 +249,44 @@ export async function fetchOperatorProfileMetadata(
 
   if (!data) return null;
 
-  const emailHandle = data.email ? data.email.split("@")[0] : "";
-  const operatorName = (data.full_name || emailHandle || "OPERATOR").trim();
+  const profile = data as unknown as {
+    id: string;
+    email: string | null;
+    full_name: string | null;
+    company_id: string | null;
+    onboarding_completed: boolean;
+    credits: number;
+    current_streak: number;
+    max_streak: number;
+    failure_count: number;
+    operational_status: string;
+    last_action_logged: string | null;
+    task_history: unknown;
+    velocity_score: number | null;
+    current_plan: unknown;
+    plan_date: string | null;
+  };
+
+  const emailHandle = profile.email ? profile.email.split("@")[0] : "";
+  const operatorName = (profile.full_name || emailHandle || "OPERATOR").trim();
 
   return {
-    id: data.id,
+    id: profile.id,
     operatorName,
-    companyId: data.company_id ?? null,
-    onboardingCompleted: Boolean(data.onboarding_completed),
-    credits: Number(data.credits ?? 0),
-    currentStreak: Number(data.current_streak ?? 0),
-    maxStreak: Number(data.max_streak ?? 0),
-    failureCount: Number(data.failure_count ?? 0),
-    operationalStatus: data.operational_status || "OPERATIONAL",
-    lastActionLogged: data.last_action_logged || "",
-    taskHistory: Array.isArray(data.task_history)
-      ? (data.task_history as unknown as TaskHistoryEntry[])
+    companyId: profile.company_id ?? null,
+    onboardingCompleted: Boolean(profile.onboarding_completed),
+    credits: Number(profile.credits ?? 0),
+    currentStreak: Number(profile.current_streak ?? 0),
+    maxStreak: Number(profile.max_streak ?? 0),
+    failureCount: Number(profile.failure_count ?? 0),
+    operationalStatus: profile.operational_status || "OPERATIONAL",
+    lastActionLogged: profile.last_action_logged || "",
+    taskHistory: Array.isArray(profile.task_history)
+      ? (profile.task_history as unknown as TaskHistoryEntry[])
       : [],
-    velocityScore: data.velocity_score == null ? null : Number(data.velocity_score),
-    currentPlan: data.current_plan ?? null,
-    planDate: typeof data.plan_date === "string" ? data.plan_date : null,
+    velocityScore: profile.velocity_score == null ? null : Number(profile.velocity_score),
+    currentPlan: profile.current_plan ?? null,
+    planDate: typeof profile.plan_date === "string" ? profile.plan_date : null,
   };
 }
 
@@ -292,7 +308,7 @@ export async function fetchLeaderboardTelemetry(userId: string | null): Promise<
     if (error) throw error;
     rankedTelemetry = true;
 
-    operators = (data || []).map((row: any, index: number) => ({
+    operators = (data || []).map((row: LeaderboardOperatorRow, index: number) => ({
       id: String(row.id),
       operator_name: String(row.operator_name || "OPERATOR"),
       full_name: String(row.operator_name || "OPERATOR"),
@@ -307,35 +323,13 @@ export async function fetchLeaderboardTelemetry(userId: string | null): Promise<
           : Number(row.rank_position),
     }));
   } catch (rpcError) {
-    console.warn("[SyntheticBriefing] Ranked RPC unavailable, using profile fallback:", rpcError);
-
-    const { data, error } = await supabase
-      .from("profiles")
-      .select(
-        "id, full_name, email, credits, current_streak, max_streak, failure_count, operational_status",
-      )
-      .order("credits", { ascending: false });
-
-    if (error) {
-      console.error("[SyntheticBriefing] Leaderboard fallback query failed:", error);
-      return { operators, snapshot: null };
-    }
-
-    operators = (data || []).map((row: any, index: number) => {
-      const emailHandle = row.email ? String(row.email).split("@")[0] : "";
-      const name = String(row.full_name || emailHandle || "OPERATOR");
-      return {
-        id: String(row.id),
-        operator_name: name,
-        full_name: name,
-        credits: Number(row.credits ?? 0),
-        current_streak: Number(row.current_streak ?? 0),
-        max_streak: Number(row.max_streak ?? 0),
-        failure_count: Number(row.failure_count ?? 0),
-        operational_status: String(row.operational_status || "OPERATIONAL"),
-        rank_position: index + 1,
-      };
-    });
+    console.warn(
+      "[SyntheticBriefing] Ranked RPC unavailable, leaderboard fallback disabled:",
+      rpcError,
+    );
+    // Do NOT fall back to reading all profiles directly -- that would bypass
+    // RLS and expose cross-user data. Return empty operators instead.
+    return { operators, snapshot: null };
   }
 
   if (!userId || operators.length === 0 || !rankedTelemetry) {
@@ -435,7 +429,7 @@ export function generateSyntheticBriefing(context: UserContext): BriefingMessage
  * API-backed coach. No network calls, no AI keys.
  */
 export function analyzeOperatorDiscipline(context: {
-  state: any;
+  state: MissionState;
   behaviorAnalytics?: BehaviorAnalytics | null;
   profile?: OperatorProfileMetadata | null;
   currentHour?: number;
@@ -457,13 +451,7 @@ export function analyzeOperatorDiscipline(context: {
  * the dashboard has already loaded.
  */
 export function generateTacticalDossier(context: UserContext): TacticalDossier {
-  const {
-    userName,
-    state,
-    behaviorAnalytics,
-    currentHour,
-    profile = null,
-  } = context;
+  const { userName, state, behaviorAnalytics, currentHour, profile = null } = context;
 
   const companyId = context.companyId ?? profile?.companyId ?? null;
   const isCorporate = Boolean(companyId);
@@ -491,22 +479,13 @@ export function generateTacticalDossier(context: UserContext): TacticalDossier {
   const streak = Number(state?.streak?.count ?? profile?.currentStreak ?? 0);
   const maxStreak = Math.max(streak, Number(profile?.maxStreak ?? 0));
   const credits = Number(profile?.credits ?? state?.points ?? 0);
-  const failures = Number(profile?.failureCount ?? state?.failureCount ?? 0);
+  const failures = Number(profile?.failureCount ?? 0);
 
   const operationalStatus =
     profile?.operationalStatus ||
-    (failures >= 5
-      ? "FALLEN"
-      : failures >= 3
-        ? "AT RISK"
-        : "OPERATIONAL");
+    (failures >= 5 ? "FALLEN" : failures >= 3 ? "AT RISK" : "OPERATIONAL");
 
-  const directive = getTacticalDirective(
-    taskTrends,
-    procrastinationAudit,
-    state,
-    isCorporate,
-  )
+  const directive = getTacticalDirective(taskTrends, procrastinationAudit, state, isCorporate)
     .split("\n")
     .map((line) => line.replace(/^-\s*/, "").trim())
     .filter(Boolean);
@@ -566,8 +545,7 @@ export function generateTacticalDossier(context: UserContext): TacticalDossier {
       : null,
     nextObjective,
     nextFocus,
-    directive:
-      directive.length > 0 ? directive : ["All systems green. Continue elite execution."],
+    directive: directive.length > 0 ? directive : ["All systems green. Continue elite execution."],
     sections: generateReturningBriefing({
       callSign,
       timeGreeting: getTimeGreeting(currentHour),
@@ -591,7 +569,7 @@ interface BriefingParts {
   reflectionDebrief: ReflectionDebrief;
   procrastinationAudit: ProcrastinationAudit;
   leaderboard: LeaderboardSnapshot | null;
-  state: any;
+  state: MissionState;
 }
 
 function generateOnboardingTutorial(parts: BriefingParts): BriefingMessage[] {
@@ -893,7 +871,11 @@ ${habits}
 ASSESSMENT: ${audit.assessment}`;
 }
 
-function buildPriorityMatrix(state: any, trends: TaskTrends, isCorporate: boolean): string {
+function buildPriorityMatrix(
+  state: MissionState,
+  trends: TaskTrends,
+  isCorporate: boolean,
+): string {
   const mission = cleanText(state?.mission) || "NOT DECLARED — CRITICAL GAP";
   const dailyText = cleanText(state?.daily?.text) || "NO DAILY ACTION ASSIGNED";
   const dailyStatus = state?.daily?.done ? "EXECUTED" : "PENDING";
@@ -971,7 +953,7 @@ Learn the layout. Then execute.`;
 /* TELEMETRY PARSERS                                                          */
 /* -------------------------------------------------------------------------- */
 
-function getTaskTrends(state: any): TaskTrends {
+function getTaskTrends(state: MissionState): TaskTrends {
   const high = summarizeTier(state?.tasks?.high || []);
   const medium = summarizeTier(state?.tasks?.medium || []);
   const low = summarizeTier(state?.tasks?.low || []);
@@ -989,11 +971,11 @@ function getTaskTrends(state: any): TaskTrends {
   };
 }
 
-function summarizeTier(tasks: any[]): TierSummary {
-  const completed = tasks.filter((task: any) => Boolean(task?.done)).length;
+function summarizeTier(tasks: Task[]): TierSummary {
+  const completed = tasks.filter((task: Task) => Boolean(task?.done)).length;
   const pendingTitles = tasks
-    .filter((task: any) => !task?.done)
-    .map((task: any) => cleanText(task?.text))
+    .filter((task: Task) => !task?.done)
+    .map((task: Task) => cleanText(task?.text))
     .filter(Boolean)
     .slice(0, 3);
 
@@ -1040,7 +1022,7 @@ export function computeAverageCompletionsPerDay(
   return Math.round((totalCompletions / daily.length) * 10) / 10;
 }
 
-function getReflectionDebrief(state: any): ReflectionDebrief {
+function getReflectionDebrief(state: MissionState): ReflectionDebrief {
   const currentReflection = state?.reflection || {};
   const history: ReflectionHistoryEntry[] = Array.isArray(state?.reflectionHistory)
     ? state.reflectionHistory
@@ -1127,14 +1109,14 @@ function getReflectionDebrief(state: any): ReflectionDebrief {
 }
 
 function getProcrastinationAudit(
-  state: any,
+  state: MissionState,
   analytics: BehaviorAnalytics | null | undefined,
   profile: OperatorProfileMetadata | null,
   trends: TaskTrends,
   currentHour: number,
 ): ProcrastinationAudit {
   const events = Number(analytics?.procrastinationEvents ?? 0);
-  const failureCount = Number(profile?.failureCount ?? state?.failureCount ?? 0);
+  const failureCount = Number(profile?.failureCount ?? 0);
   const failedDays = Number(state?.consecutiveDaysFailedTasks ?? 0);
   const dailyPending = Boolean(state?.daily?.text) && !state?.daily?.done;
   const hasReflection =
@@ -1204,7 +1186,7 @@ function getProcrastinationAudit(
 function getTacticalDirective(
   trends: TaskTrends,
   audit: ProcrastinationAudit,
-  state: any,
+  state: MissionState,
   isCorporate: boolean,
 ): string {
   const directive: string[] = [];

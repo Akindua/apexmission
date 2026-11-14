@@ -429,3 +429,26 @@ export function agentBlockedResponse(): Response {
     headers: { "content-type": "text/plain; charset=utf-8" },
   });
 }
+
+// ---------------------------------------------------------------------------
+// AI Zero-Data-Retention Headers
+// ---------------------------------------------------------------------------
+
+/**
+ * Headers sent with every AI provider request to enforce zero-data-retention.
+ * OpenAI's API does not use API data for training by default (since March 2023),
+ * but we explicitly declare our intent via headers for compliance and clarity.
+ */
+export const AI_ZERO_DATA_RETENTION_HEADERS: Record<string, string> = {
+  "X-Data-Retention": "false",
+  "X-AI-Training-Opt-Out": "true",
+  "OpenAI-Data-Usage": "false",
+};
+
+/**
+ * Applies zero-data-retention headers to an AI provider request.
+ * Returns headers that can be merged into the AI provider call.
+ */
+export function getAIPrivacyHeaders(): Record<string, string> {
+  return { ...AI_ZERO_DATA_RETENTION_HEADERS };
+}

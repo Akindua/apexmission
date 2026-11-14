@@ -194,23 +194,8 @@ function AuthConsolePage() {
           throw new Error("Full operator name parameters required.");
         }
 
-        const { data: existingProfile, error: profileCheckError } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("email", email.trim())
-          .maybeSingle();
-
-        if (profileCheckError) {
-          console.error("Database pre-flight check:", profileCheckError);
-        }
-
-        if (existingProfile) {
-          setErrorMessage(
-            "🔒 OPERATOR PROFILE CONFLICT: This email is already registered. Please toggle to 'Secure Node Access' and sign in.",
-          );
-          setBusy(false);
-          return;
-        }
+        // Email uniqueness is enforced by auth.signUp() at the auth level;
+        // no separate profile read is needed (and not permitted by RLS).
 
         // Supabase keeps the current browser session alive when a second
         // signUp is submitted. Deliberately drop the active session first so
@@ -226,8 +211,7 @@ function AuthConsolePage() {
           }
         }
 
-        const onboardingDestination =
-          next && next.startsWith("/onboarding") ? next : "/onboarding";
+        const onboardingDestination = next && next.startsWith("/onboarding") ? next : "/onboarding";
         const redirectUrl = new URL("/verify-email", window.location.origin);
         redirectUrl.searchParams.set("email", email.trim());
         redirectUrl.searchParams.set("next", onboardingDestination);
@@ -570,7 +554,9 @@ function AuthConsolePage() {
 
           <button
             type="submit"
-            disabled={busy || (isSignUp && !agreeTerms) || Boolean(TURNSTILE_SITE_KEY && !turnstileToken)}
+            disabled={
+              busy || (isSignUp && !agreeTerms) || Boolean(TURNSTILE_SITE_KEY && !turnstileToken)
+            }
             className="btn-glass-primary w-full h-12 mt-2"
           >
             {busy ? (
