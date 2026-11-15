@@ -540,14 +540,9 @@ function ApexMission() {
   }, [navigate]);
 
   const handleOnboardingComplete = async () => {
-    // Flip the UI immediately, then persist the permanent database flag.
-    setOperatorProfile((current) =>
-      current ? { ...current, onboardingCompleted: true } : current,
-    );
-
     if (!currentUserId) {
       setPaywall("Unable to complete onboarding: no user session.");
-      return;
+      return false;
     }
 
     const { error } = await supabase
@@ -557,15 +552,17 @@ function ApexMission() {
 
     if (error) {
       setPaywall(`Failed to save onboarding completion: ${error.message}`);
-      return;
+      return false;
     }
 
+    setOperatorProfile((current) =>
+      current ? { ...current, onboardingCompleted: true } : current,
+    );
     setScopedItem("apex-tutorial-completed", "true");
+    return true;
   };
 
   const completeInduction = async () => {
-    setShowInduction(false);
-
     // Do not stack the returning-login dossier directly behind the induction.
     try {
       if (typeof window !== "undefined") {
@@ -575,7 +572,12 @@ function ApexMission() {
       // Session storage can be unavailable in private contexts.
     }
 
-    await handleOnboardingComplete();
+    const saved = await handleOnboardingComplete();
+    if (saved) {
+      setShowInduction(false);
+    }
+    // If the save failed, the paywall shows the error and the induction
+    // modal stays open so the user can retry instead of reappearing on every reload.
   };
 
   useEffect(() => {
