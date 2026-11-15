@@ -54,7 +54,8 @@ export const Route = createFileRoute("/api/cron/send-4pm-push")({
           return Response.json({ sent: 0, skipped: 0, deleted: 0 });
         }
 
-        // Filter: only personal accounts (no company_id in profiles)
+        // Filter: only company employees (company_id IS NOT NULL). Personal
+        // accounts never receive push reminders.
         const userIds = subscriptions.map((s) => s.user_id);
         const { data: profiles, error: profileError } = await supabase
           .from("profiles")
@@ -66,8 +67,8 @@ export const Route = createFileRoute("/api/cron/send-4pm-push")({
           return new Response("Failed to fetch profiles", { status: 500 });
         }
 
-        const personalUserIds = new Set(
-          profiles?.filter((p) => p.company_id === null).map((p) => p.id) ?? [],
+        const companyUserIds = new Set(
+          profiles?.filter((p) => p.company_id !== null).map((p) => p.id) ?? [],
         );
 
         let sent = 0;
@@ -75,8 +76,8 @@ export const Route = createFileRoute("/api/cron/send-4pm-push")({
         let deleted = 0;
 
         const pushPromises = subscriptions.map(async (sub) => {
-          // Skip corporate accounts
-          if (!personalUserIds.has(sub.user_id)) {
+          // Skip personal accounts — company employees only.
+          if (!companyUserIds.has(sub.user_id)) {
             skipped++;
             return;
           }

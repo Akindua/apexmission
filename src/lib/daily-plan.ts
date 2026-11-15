@@ -33,9 +33,23 @@ export interface DayPlanInput {
 }
 
 const MAX_PLAN_ITEMS = MAX_TASKS_PER_TIER;
+// AI-generated tasks must be short imperative sentences, capped at 90 chars.
+const MAX_TASK_TEXT_CHARS = 90;
 
 function clean(value: unknown): string {
   return typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
+}
+
+/**
+ * Shorten a task to at most MAX_TASK_TEXT_CHARS characters, cutting at a word
+ * boundary so the result stays a clean imperative sentence (never a mid-word cut).
+ * Falls back to a hard cut only when no space exists within the limit.
+ */
+function shortenTask(text: string): string {
+  if (text.length <= MAX_TASK_TEXT_CHARS) return text;
+  const cut = text.slice(0, MAX_TASK_TEXT_CHARS);
+  const lastSpace = cut.lastIndexOf(" ");
+  return lastSpace > 0 ? cut.slice(0, lastSpace) : cut;
 }
 
 function unique(items: string[]): string[] {
@@ -53,7 +67,7 @@ function unique(items: string[]): string[] {
 function pendingTexts(tasks: Task[] | undefined): string[] {
   return (Array.isArray(tasks) ? tasks : [])
     .filter((task) => !task.done)
-    .map((task) => clean(task.text))
+    .map((task) => shortenTask(clean(task.text)))
     .filter(Boolean);
 }
 
@@ -101,7 +115,7 @@ function normalizeAiPlan(raw: unknown): DayPlanProposal | null {
   const tier = (value: unknown): string[] =>
     cap(
       (Array.isArray(value) ? value : [])
-        .map((entry) => clean(entry))
+        .map((entry) => shortenTask(clean(entry)))
         .filter(Boolean),
     );
 
@@ -188,7 +202,7 @@ function makeTask(text: string, tier: ImpactTier, index: number): Task {
     typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
       ? `plan-${tier}-${crypto.randomUUID()}`
       : `plan-${tier}-${Date.now()}-${index}`;
-  return { id, text, tier, done: false };
+  return { id, text: shortenTask(text), tier, done: false };
 }
 
 /** Replaces today's matrix with the accepted plan. */

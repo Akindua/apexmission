@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { enforceRateLimit, requireApiAuth } from "@/lib/security.server";
+import { enforceRateLimit, requireCompanyActor } from "@/lib/security.server";
 
 export const Route = createFileRoute("/api/push/subscribe")({
   server: {
@@ -9,8 +9,10 @@ export const Route = createFileRoute("/api/push/subscribe")({
           return new Response("Forbidden", { status: 403 });
         }
 
-        const actor = await requireApiAuth(request);
-        if (actor instanceof Response) return actor;
+        // Push reminders are a company workspace feature — personal accounts are rejected.
+        const company = await requireCompanyActor(request);
+        if (company instanceof Response) return company;
+        const actor = company.actor;
 
         const rate = await enforceRateLimit({
           actor,
