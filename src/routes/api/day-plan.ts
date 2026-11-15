@@ -11,7 +11,7 @@ import {
   persistentRateLimit,
   rateLimit,
   rateLimitedResponse,
-  requireApiAuth,
+  requireCompanyActor,
   sanitizePromptText,
 } from "@/lib/security.server";
 import { chooseModel, decrementAstraCredits, ModelConfig } from "@/lib/ai-model-router";
@@ -19,7 +19,7 @@ import { buildLocalDayPlan, type DayPlanInput } from "@/lib/daily-plan";
 
 const MAX_MISSION_CHARS = 4_000;
 const MAX_TASKS_PER_TIER = 10;
-const MAX_TASK_TEXT_CHARS = 300;
+const MAX_TASK_TEXT_CHARS = 90;
 const MAX_DAILY_ACTION_CHARS = 300;
 const MAX_RATIONALE_CHARS = 600;
 const PLAN_BURST_LIMIT = 4;
@@ -105,9 +105,10 @@ export const Route = createFileRoute("/api/day-plan")({
           return new Response("Forbidden", { status: 403 });
         }
 
-        // 🛡️ Day planning is an authenticated, in-app feature — never public.
-        const actor = await requireApiAuth(request);
-        if (actor instanceof Response) return actor;
+        // 🛡️ Day planning is a company workspace feature — personal accounts are rejected.
+        const company = await requireCompanyActor(request);
+        if (company instanceof Response) return company;
+        const actor = company.actor;
 
         // Per-user burst & hourly limits (in-memory + DB-backed)
         const burst = await enforceRateLimit({
@@ -210,7 +211,10 @@ export const Route = createFileRoute("/api/day-plan")({
           });
         }
 
-        const isAstra = modelConfig.model !== (process.env["AI_BASELINE_MODEL"] ?? "");
+        // Company workspace always uses the baseline AI model — never Astra,
+        // and no Astra credit debit is charged for company day plans.
+        modelConfig.model = process.env["AI_BASELINE_MODEL"] ?? modelConfig.model;
+        const isAstra = false;
 
         // Build the prompt payload (for logging/auditing what we send)
         const promptPayload = JSON.stringify({ mission, unfinished }, null, 2);

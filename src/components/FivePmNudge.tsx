@@ -48,10 +48,7 @@ export function FivePmNudge({
           </div>
 
           <p className="mt-1 text-xs font-black leading-snug text-white">
-            {minutesUntilCutoff} min to 5PM. {taskLabel} is still open.
-          </p>
-          <p className="mt-1 line-clamp-2 break-words text-[11px] font-medium leading-relaxed text-zinc-400">
-            {taskText}
+            Log today&apos;s core tasks before the 5:00 PM summary.
           </p>
 
           <div className="mt-3 flex items-center justify-between gap-2">
