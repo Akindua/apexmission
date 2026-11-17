@@ -51,7 +51,7 @@ export function useSubscriptionTier(): SubscriptionState {
 
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, email, subscription_tier, onboarding_completed, company_id")
+        .select("id, subscription_tier, onboarding_completed, company_id")
         .maybeSingle();
       if (!active) return;
       setTier(((data?.subscription_tier as SubscriptionTier) ?? "free") satisfies SubscriptionTier);

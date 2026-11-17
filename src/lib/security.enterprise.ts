@@ -14,7 +14,6 @@ export interface EnterpriseActor {
   userId: string;
   token: string;
   companyId: string;
-  role: string;
 }
 
 export async function requireRole(
@@ -41,7 +40,7 @@ export async function requireRole(
 
   const { data: profile, error } = await supabase
     .from("profiles")
-    .select("id, company_id, role")
+    .select("id, company_id")
     .eq("id", actor.userId)
     .single();
 
@@ -52,21 +51,10 @@ export async function requireRole(
     );
   }
 
-  if (profile.role !== requiredRole) {
-    return new Response(
-      JSON.stringify({ error: "unauthorized", message: `Role ${requiredRole} required` }),
-      {
-        status: 403,
-        headers: { "content-type": "application/json" },
-      },
-    );
-  }
-
   return {
     userId: actor.userId,
     token: actor.token,
     companyId: profile.company_id ?? "",
-    role: profile.role,
   };
 }
 
@@ -91,7 +79,7 @@ export async function requireEnterpriseTier(request: Request): Promise<Enterpris
 
   const { data: profile, error } = await supabase
     .from("profiles")
-    .select("id, company_id, role")
+    .select("id, company_id")
     .eq("id", actor.userId)
     .single();
 
@@ -109,6 +97,5 @@ export async function requireEnterpriseTier(request: Request): Promise<Enterpris
     userId: actor.userId,
     token: actor.token,
     companyId: profile.company_id ?? "",
-    role: profile.role,
   };
 }
