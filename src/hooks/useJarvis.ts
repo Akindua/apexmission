@@ -15,7 +15,7 @@ import {
   getPendingSuggestions,
   setJarvisSuggestions,
   type JarvisSuggestion,
-} from "@/lib/jarvis";
+} from "@/services/jarvis";
 
 export function useJarvis() {
   const [suggestions, setSuggestionsState] = useState<JarvisSuggestion[]>([]);

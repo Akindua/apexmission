@@ -3,8 +3,8 @@
 import { Mic, MicOff, Square, Zap, Loader2, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { JarvisNudgeCard } from "@/components/JarvisNudgeCard";
-import type { JarvisSuggestion } from "@/lib/jarvis";
+import { JarvisNudgeCard } from "@/components/JarvisNudge/JarvisNudgeCard";
+import type { JarvisSuggestion } from "@/services/jarvis";
 
 /**
  * JarvisVoiceListener — Press-to-speak Jarvis listener.

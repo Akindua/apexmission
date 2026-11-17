@@ -7,10 +7,10 @@ import { useSubscriptionTier } from "@/hooks/useSubscriptionTier";
 import {
   getJarvisSuggestions,
   getPendingSuggestions,
-} from "@/lib/jarvis";
-import type { JarvisSuggestion as JarvisSuggestionType } from "@/lib/jarvis";
-import { JarvisBadge } from "@/components/JarvisBadge";
-import { JarvisSuggestion } from "@/components/JarvisSuggestion";
+} from "@/services/jarvis";
+import type { JarvisSuggestion as JarvisSuggestionType } from "@/services/jarvis";
+import { JarvisBadge } from "@/components/JarvisNudge/JarvisBadge";
+import { JarvisSuggestion } from "@/components/JarvisNudge/JarvisSuggestion";
 import { type ImpactTier, type Task } from "@/lib/mission-store";
 
 /**
