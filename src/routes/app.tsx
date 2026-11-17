@@ -28,6 +28,7 @@ import { EnterpriseAnalyticsPanel } from "@/components/EnterpriseAnalyticsPanel"
 import { FivePmNudge } from "@/components/FivePmNudge";
 import { PersonalPatternsCard } from "@/components/PersonalPatternsCard";
 import { VoiceDayLogger } from "@/components/VoiceDayLogger";
+import { JarvisPanel } from "@/components/JarvisPanel";
 import {
   computeAverageCompletionsPerDay,
   fetchLeaderboardTelemetry,
@@ -120,6 +121,7 @@ function ApexMission() {
   >("workspace");
   const mainRef = useRef<HTMLElement | null>(null);
   const [coachOpen, setCoachOpen] = useState(false);
+  const [jarvisOpen, setJarvisOpen] = useState(false);
   const [showInduction, setShowInduction] = useState(false);
   const [showTacticalBriefing, setShowTacticalBriefing] = useState(false);
   const [surpriseLoot, setSurpriseLoot] = useState<{
@@ -1455,6 +1457,14 @@ function ApexMission() {
             <HelpCircle className="size-4 text-emerald-400" />
             <span>Support</span>
           </button>
+          <button
+            type="button"
+            onClick={() => setJarvisOpen(true)}
+            className="flex min-h-11 w-full items-center gap-3 rounded-xl border border-emerald-500/20 bg-emerald-950/10 px-4 py-3 text-xs font-bold text-zinc-300 transition-all hover:border-emerald-500/40 hover:bg-emerald-950/30 hover:text-emerald-400 font-mono uppercase tracking-wider shadow-[inset_0_1px_1px_rgba(52,211,153,0.1)]"
+          >
+            <Sparkles className="size-4 text-emerald-400" />
+            <span>Jarvis AI</span>
+          </button>
         </div>
       </aside>
 
@@ -2330,6 +2340,19 @@ function ApexMission() {
             setShowPlanSuccessAlert(true);
             setTimeout(() => setShowPlanSuccessAlert(false), 4000);
           }}
+        />
+      )}
+
+      {/* JARVIS AI ASSISTANT — suggestive copilot panel (premium only) */}
+      {hydrated && profileHydrated && (
+        <JarvisPanel
+          open={jarvisOpen}
+          onClose={() => setJarvisOpen(false)}
+          userName={userName}
+          mission={state.mission}
+          tasks={state.tasks}
+          daily={state.daily}
+          streak={state.streak}
         />
       )}
 

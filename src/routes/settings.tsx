@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Loader2, Bell, BellOff, Shield, CheckCircle2, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { VITE_VAPID_PUBLIC_KEY } from "@/lib/env";
+import { JarvisDisclaimer } from "@/components/JarvisDisclaimer";
 
 export const Route = createFileRoute("/settings")({
   component: SettingsPage,
@@ -331,6 +332,9 @@ function SettingsPage() {
           Send feedback →
         </a>
       </div>
+
+      {/* Jarvis AI disclaimer */}
+      <JarvisDisclaimer />
     </section>
   );
 }
