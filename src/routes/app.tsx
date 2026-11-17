@@ -29,6 +29,8 @@ import { FivePmNudge } from "@/components/FivePmNudge";
 import { PersonalPatternsCard } from "@/components/PersonalPatternsCard";
 import { VoiceDayLogger } from "@/components/VoiceDayLogger";
 import { JarvisPanel } from "@/components/JarvisPanel";
+import { HabitAuditWidget } from "@/components/HabitAuditWidget";
+import { ForgivenessModeCard } from "@/components/ForgivenessModeCard";
 import {
   computeAverageCompletionsPerDay,
   fetchLeaderboardTelemetry,
@@ -1745,6 +1747,9 @@ function ApexMission() {
                 </div>
               </section>
 
+              {/* Habit Audit — Weekly Recap */}
+              <HabitAuditWidget state={state} userName={userName} />
+
               {/* Profile Selector with Emerald Glass */}
               <div className="flex flex-col gap-2 rounded-2xl border border-emerald-500/20 bg-[#0D0D11]/80 p-3.5 text-left backdrop-blur-xl shadow-[0_8px_25px_0_rgba(0,0,0,0.5)] sm:flex-row sm:items-center sm:gap-3">
                 <span className="shrink-0 pl-1 text-[10px] font-black uppercase tracking-wider text-emerald-400/80 sm:whitespace-nowrap">
@@ -1860,6 +1865,19 @@ function ApexMission() {
                   </div>
                 ))}
               </section>
+
+              {/* Forgiveness Mode — Compassionate Nudge for Missed Days */}
+              <ForgivenessModeCard
+                state={state}
+                userName={userName}
+                onGoalAdjusted={() => {
+                  // Scale back: clear today's daily action and reduce load
+                  setState((s) => ({
+                    ...s,
+                    daily: { ...s.daily, text: "", done: false },
+                  }));
+                }}
+              />
 
               {/* Daily Action */}
               <section
