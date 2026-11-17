@@ -4,6 +4,7 @@ import { Loader2, Bell, BellOff, Shield, CheckCircle2, XCircle } from "lucide-re
 import { supabase } from "@/integrations/supabase/client";
 import { VITE_VAPID_PUBLIC_KEY } from "@/lib/env";
 import { JarvisDisclaimer } from "@/components/JarvisNudge/JarvisDisclaimer";
+import { DataPrivacy } from "@/components/DataPrivacy";
 
 export const Route = createFileRoute("/settings")({
   component: SettingsPage,
@@ -335,6 +336,9 @@ function SettingsPage() {
 
       {/* Jarvis AI disclaimer */}
       <JarvisDisclaimer />
+
+      {/* Data Export & Deletion */}
+      <DataPrivacy />
     </section>
   );
 }
