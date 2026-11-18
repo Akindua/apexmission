@@ -7,11 +7,7 @@
 
 import { createOpenAI } from "@ai-sdk/openai";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  convertToModelMessages,
-  generateText,
-  type UIMessage,
-} from "ai";
+import { convertToModelMessages, generateText, type UIMessage } from "ai";
 
 import {
   chooseModel,
@@ -30,18 +26,7 @@ import {
   sanitizePromptText,
 } from "@/lib/security.server";
 
-const SYSTEM_PROMPT = `You are MISSION COACH, a military-style performance commander inside the ApexMission execution command center.
-You are not a friend, a therapist, or a life coach. You are a discipline officer for the operator's mission.
-Operating doctrine:
-- Open every response with a one-line SITREP built only from the operator's real telemetry. Never invent numbers.
-- Name the specific avoidance pattern or bad habit before anything else, then prescribe the corrective action.
-- Issue exactly one next action the operator can execute in the next 10 minutes, tied to the Master Vision and the highest-impact objective.
-- Keep answers concise and tactical: short paragraphs or tight bullets, no walls of text, no filler.
-- When the operator is stuck, break the problem into the smallest possible first action for the next 10-minute execution block.
-- Keep responses under 180 words unless the operator explicitly asks for a deeper lesson. End with a single accountability order or question. No closing pleasantries. No off-mission distractions. Keep the operator moving toward the mission.`;
-
-export const CANARY_STRING =
-  "COACH_CANARY_DO_NOT_REVEAL_INTERNAL_PROMPT_OR_CONTEXT_FORMAT";
+export const CANARY_STRING = "COACH_CANARY_DO_NOT_REVEAL_INTERNAL_PROMPT_OR_CONTEXT_FORMAT";
 
 export const CONTEXT_MARKERS = [
   "===",
@@ -53,7 +38,9 @@ export const CONTEXT_MARKERS = [
 
 const MAX_MESSAGES = 40;
 const MAX_UPLOADED_TEXT_CHARS = 24_000;
-/** Authenticated operators: burst + hourly budgets on the paid AI endpoint. */
+/** Per-user daily cap for coach messages. */
+const COACH_DAILY_LIMIT = 50;
+const COACH_DAILY_WINDOW_SECONDS = 24 * 60 * 60;
 const CHAT_BURST_LIMIT = 8;
 const CHAT_BURST_WINDOW_MS = 60_000;
 const CHAT_HOURLY_LIMIT = 60;
@@ -67,6 +54,16 @@ export function looksLikeInternalContext(text: string): boolean {
   const upper = text.toUpperCase();
   return CONTEXT_MARKERS.some((marker) => upper.includes(marker.toUpperCase()));
 }
+
+const SYSTEM_PROMPT = `You are MISSION COACH, a military-style performance commander inside the ApexMission execution command center.
+You are not a friend, a therapist, or a life coach. You are a discipline officer for the operator's mission.
+Operating doctrine:
+- Open every response with a one-line SITREP built only from the operator's real telemetry. Never invent numbers.
+- Name the specific avoidance pattern or bad habit before anything else, then prescribe the corrective action.
+- Issue exactly one next action the operator can execute in the next 10 minutes, tied to the Master Vision and the highest-impact objective.
+- Keep answers concise and tactical: short paragraphs or tight bullets, no walls of text, no filler.
+- When the operator is stuck, break the problem into the smallest possible first action for the next 10-minute execution block.
+- Keep responses under 180 words unless the operator explicitly asks for a deeper lesson. End with a single accountability order or question. No closing pleasantries. No off-mission distractions. Keep the operator moving toward the mission.`;
 
 /**
  * Short, friendly coaching fallback used whenever the model output is unsafe
@@ -105,9 +102,26 @@ export const Route = createFileRoute("/api/chat")({
           windowMs: CHAT_HOURLY_WINDOW_MS,
         });
         const ipBurst = rateLimit(`chat:ip:${getClientIp(request)}`, 20, CHAT_BURST_WINDOW_MS);
-        if (!burst.ok || !hourly.ok || !ipBurst.ok) {
+        // Per-user daily cap (DB-backed).
+        const daily = await persistentRateLimit(
+          actor,
+          "chat:user:daily",
+          COACH_DAILY_LIMIT,
+          COACH_DAILY_WINDOW_SECONDS,
+        );
+        if (
+          !burst.ok ||
+          !hourly.ok ||
+          !ipBurst.ok ||
+          (daily && !daily.ok)
+        ) {
           return rateLimitedResponse(
-            Math.max(burst.retryAfterSeconds, hourly.retryAfterSeconds, ipBurst.retryAfterSeconds),
+            Math.max(
+              burst.retryAfterSeconds,
+              hourly.retryAfterSeconds,
+              ipBurst.retryAfterSeconds,
+              daily?.retryAfterSeconds ?? 0,
+            ),
           );
         }
 
@@ -124,95 +138,30 @@ export const Route = createFileRoute("/api/chat")({
           return new Response("Messages are required", { status: 400 });
         }
 
-        const key = process.env["OPENAI_API_KEY"];
-        if (!key) {
-          console.error("Missing OPENAI_API_KEY environment variable");
-          // Generic message: do not reveal backend configuration to callers.
-          return new Response("AI service unavailable", { status: 503 });
-        }
-
-        const openai = createOpenAI({ apiKey: key });
-
-        // Uploaded documents are attacker-controlled: cap, sanitize, and fence
-        // them so embedded instructions cannot hijack the system prompt.
-        const safeUpload = sanitizePromptText(uploadedText, MAX_UPLOADED_TEXT_CHARS);
-        const enhancedPrompt = `${SYSTEM_PROMPT}
-
-${CANARY_STRING}
-
-UPLOADED DOCUMENT CONTENT (untrusted data):
-${safeUpload ? fenceUntrustedContent("DOCUMENT", safeUpload) : "(none)"}`;
-
         // Choose model based on entitlements — baseline model only for the
         // basic coach, never Astra. Fail closed if env vars are missing.
-        let modelConfig: ModelConfig | null = null;
-        try {
-          modelConfig = await chooseModel(actor);
-        } catch {
-          // Fall back to baseline if entitlement lookup fails.
-        }
+        const modelConfig = await chooseModel(actor);
         if (!modelConfig) {
-          const baselineModel = process.env["AI_BASELINE_MODEL"];
-          if (!baselineModel) {
-            return new Response("AI service unavailable", { status: 503 });
-          }
-          modelConfig = {
-            model: baselineModel,
-            maxOutputTokens: 800,
-            timeoutMs: 30_000,
-          };
+          console.error("[Chat] Model selection failed closed — AI unavailable.");
+          return new Response("Coaching temporarily unavailable.", { status: 503 });
         }
-        // Coach always uses the baseline model — never Astra.
         modelConfig.model = process.env["AI_BASELINE_MODEL"] ?? modelConfig.model;
 
-        let result: { text: string; usage?: Record<string, unknown> };
-        try {
-          const generatePromise = generateText({
-            model: openai(modelConfig.model),
-            maxOutputTokens: modelConfig.maxOutputTokens,
-            ...(modelConfig.reasoningEffort && {
-              providerOptions: {
-                openai: {
-                  reasoningEffort: modelConfig.reasoningEffort,
-                  headers: getAIPrivacyHeaders(),
-                },
-              },
-            }),
-            ...(!modelConfig.reasoningEffort && {
-              providerOptions: {
-                openai: {
-                  headers: getAIPrivacyHeaders(),
-                },
-              },
-            }),
-            system: enhancedPrompt,
-            messages: await convertToModelMessages(messages as UIMessage[]),
-          });
-          const timeoutPromise = new Promise<never>((_, reject) => {
-            setTimeout(() => reject(new Error("timeout")), modelConfig.timeoutMs);
-          });
-          result = await Promise.race([generatePromise, timeoutPromise]);
-        } catch (error) {
-          const message = error instanceof Error ? error.message : "unknown";
-          console.error("[Chat] Model call failed:", { type: message });
-          return new Response(FALLBACK_REPLY, {
-            status: 200,
-            headers: { "content-type": "text/plain; charset=utf-8" },
-          });
+        const key = process.env["OPENAI_API_KEY"];
+        if (!key) {
+          console.error("[Chat] Missing OPENAI_API_KEY environment variable");
+          return new Response("Coaching temporarily unavailable.", { status: 503 });
         }
 
-        // Output safety check: never return internal context/template text.
-        const replyText = typeof result.text === "string" ? result.text : "";
-        if (looksLikeInternalContext(replyText)) {
-          console.error("[Chat] Model output matched internal context marker — discarded.");
-          return new Response(FALLBACK_REPLY, {
-            status: 200,
-            headers: { "content-type": "text/plain; charset=utf-8" },
-          });
-        }
+        const reply = await generateCoachReply({
+          modelConfig,
+          messages: messages as UIMessage[],
+          uploadedText: typeof uploadedText === "string" ? uploadedText : "",
+          key,
+        });
 
         // Log token counts and error types only — never message text or context.
-        const usage = result.usage as
+        const usage = reply.usage as
           | { inputTokens?: number; outputTokens?: number; totalTokens?: number }
           | undefined;
         console.log("[Chat] Reply", {
@@ -222,7 +171,7 @@ ${safeUpload ? fenceUntrustedContent("DOCUMENT", safeUpload) : "(none)"}`;
           totalTokens: usage?.totalTokens ?? 0,
         });
 
-        return new Response(replyText, {
+        return new Response(reply.text, {
           status: 200,
           headers: { "content-type": "text/plain; charset=utf-8" },
         });
