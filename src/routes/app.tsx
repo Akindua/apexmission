@@ -1808,8 +1808,6 @@ function ApexMission() {
           )}
 
           {/* WORKSPACE TAB */}
-          {activeTab === "workspace" && (
-          {/* WORKSPACE TAB — personal accounts only */}
           {isPersonal && activeTab === "workspace" && (
             <div className="flex flex-col gap-6 animate-fade-in">
 
