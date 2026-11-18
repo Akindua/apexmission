@@ -26,10 +26,11 @@ const TONE_STYLES: Record<PatternTone, { border: string; chip: string; icon: str
 };
 
 /**
- * Personal execution pattern card. Reads only the operator's own closure
- * history — never the global leaderboard — so it is safe for corporate users.
+ * Your execution patterns card. Reads only the employee's own closure
+ * history — never the global leaderboard or other employees — so it is safe
+ * for the company workspace. A manager cannot see another person's patterns.
  */
-export function PersonalPatternsCard({
+export function YourExecutionPatterns({
   taskHistory,
   tasks,
 }: {
@@ -40,14 +41,14 @@ export function PersonalPatternsCard({
 
   return (
     <section
-      aria-label="Personal execution patterns"
+      aria-label="Your execution patterns"
       className="rounded-2xl border border-emerald-500/20 bg-[#0D0D11]/80 p-4 text-left backdrop-blur-xl shadow-[0_8px_30px_0_rgba(0,0,0,0.5)] sm:p-5"
     >
       <div className="mb-3 flex flex-wrap items-start justify-between gap-2 border-b border-emerald-500/15 pb-3">
         <div className="min-w-0">
           <h2 className="flex items-center gap-2 text-[11px] font-black uppercase tracking-wider text-white">
             <Activity className="size-4 shrink-0 text-emerald-400" />
-            Personal Execution Patterns
+            Your Execution Patterns
           </h2>
           <p className="mt-1 text-[10px] font-medium leading-relaxed text-zinc-500">
             Learned only from your own logged closures. No team or leaderboard data is used.

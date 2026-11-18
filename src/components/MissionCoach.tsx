@@ -998,20 +998,24 @@ ${CANARY_STRING}`;
             )}
 
             {messages.map((message, index) => {
-              let text = message.parts
-                .map((part) => (part.type === "text" ? part.text : ""))
-                .join("");
-              if (!text) return null;
-
+              const textParts = message.parts.filter((part) => part.type === "text");
+              const imageParts = message.parts.filter(
+                (part) =>
+                  part.type === "file" &&
+                  (part as { mediaType?: string }).mediaType?.startsWith("image/")
+              );
+              let displayText = textParts.map((part) => part.text).join("");
               if (message.role === "user") {
-                const telemetryIdx = text.indexOf("\n\n[");
+                const telemetryIdx = displayText.indexOf("\n\n[");
                 if (telemetryIdx !== -1) {
-                  text = text.substring(0, telemetryIdx).trim();
+                  displayText = displayText.substring(0, telemetryIdx).trim();
                 }
-                if (text.includes("[SYSTEM_AUTO_TRIGGER")) {
-                  text = "Initialize my operational briefing and review active metrics.";
+                if (displayText.includes("[SYSTEM_AUTO_TRIGGER")) {
+                  displayText = "Initialize my operational briefing and review active metrics.";
                 }
               }
+              const hasContent = displayText.length > 0 || imageParts.length > 0;
+              if (!hasContent) return null;
 
               const locked = !premium && index < messages.length - FREE_HISTORY_LIMIT;
               return (
@@ -1031,7 +1035,21 @@ ${CANARY_STRING}`;
                           : "text-zinc-300 text-sm leading-relaxed p-2 max-w-full"
                       }
                     >
-                      <MessageResponse>{text}</MessageResponse>
+                      {displayText.length > 0 && (
+                        <MessageResponse>{displayText}</MessageResponse>
+                      )}
+                      {imageParts.map((part, imgIdx) => {
+                        const imageUrl = (part as { url?: string }).url;
+                        return (
+                          <img
+                            key={imgIdx}
+                            src={imageUrl ?? ""}
+                            alt="Coach-generated image"
+                            className="mt-2 max-w-full h-auto rounded-xl border border-zinc-800 bg-zinc-900 shadow-[0_0_15px_rgba(16,185,129,0.1)]"
+                            loading="lazy"
+                          />
+                        );
+                      })}
                     </MessageContent>
                   </Message>
                   {locked && <span className="absolute inset-0" aria-hidden />}
