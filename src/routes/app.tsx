@@ -27,7 +27,7 @@ import { TacticalBriefing } from "@/components/TacticalBriefing";
 import { DayPlanBriefing } from "@/components/DayPlanBriefing";
 import { EnterpriseAnalyticsPanel } from "@/components/EnterpriseAnalyticsPanel";
 import { FivePmNudge } from "@/components/FivePmNudge";
-import { PersonalPatternsCard } from "@/components/PersonalPatternsCard";
+import { YourExecutionPatterns } from "@/components/YourExecutionPatterns";
 import { VoiceDayLogger } from "@/components/VoiceDayLogger";
 import { JarvisPanel } from "@/components/JarvisPanel";
 import { HabitAuditWidget } from "@/components/HabitAuditWidget";
@@ -89,6 +89,7 @@ import {
 import { buildTenantHandoffUrl, consumeTenantHandoff } from "@/lib/tenant-handoff";
 import { fetchMyCompanyRoute } from "@/lib/enterprise-analytics";
 import { resolveActiveTenant, type SessionTenant } from "@/lib/tenant.functions";
+import { isCompanyAccount, isPersonalAccount } from "@/lib/account-type";
 import type { Json } from "@/integrations/supabase/types";
 import {
   clearCurrentUserStorage,
@@ -136,6 +137,8 @@ function ApexMission() {
     low: "",
   });
   const [dailyDraft, setDailyDraft] = useState("");
+  const [visionExpanded, setVisionExpanded] = useState(false);
+  const [dailyExpanded, setDailyExpanded] = useState(false);
   const [justCompleted, setJustCompleted] = useState(false);
   const [resetMs, setResetMs] = useState<number | null>(null);
   const [paywall, setPaywall] = useState<string | null>(null);
@@ -206,7 +209,10 @@ function ApexMission() {
     };
   }, []);
 
-  const isCorporate = Boolean(operatorProfile?.companyId) || Boolean(activeTenant?.isMember);
+  const isCompany =
+    isCompanyAccount(operatorProfile?.companyId ?? null) || Boolean(activeTenant?.isMember);
+  const isPersonal = isPersonalAccount(operatorProfile?.companyId ?? null) && !Boolean(activeTenant?.isMember);
+  const isCorporate = isCompany;
 
   const userRankIndex = leaderboardOperators.findIndex((op) => op.id === currentUserId);
   const userRankText = useMemo(() => {
@@ -627,12 +633,10 @@ function ApexMission() {
 
 
   const handleOnboardingComplete = async () => {
-    // Flip the UI immediately, then persist the permanent database flag.
-    setOperatorProfile((current) =>
-      current ? { ...current, onboardingCompleted: true } : current,
-    );
-
-    if (!currentUserId) return;
+    if (!currentUserId) {
+      setPaywall("Unable to complete onboarding: no user session.");
+      return false;
+    }
 
     const { error } = await supabase
       .from("profiles")
@@ -640,16 +644,18 @@ function ApexMission() {
       .eq("id", currentUserId);
 
     if (error) {
-      console.error("Failed to persist onboarding_completed flag:", error);
-      return;
+      setPaywall(`Failed to save onboarding completion: ${error.message}`);
+      return false;
     }
 
+    setOperatorProfile((current) =>
+      current ? { ...current, onboardingCompleted: true } : current,
+    );
     setScopedItem("apex-tutorial-completed", "true");
+    return true;
   };
 
   const completeInduction = async () => {
-    setShowInduction(false);
-
     // Do not stack the returning-login dossier directly behind the induction.
     try {
       if (typeof window !== "undefined") {
@@ -659,7 +665,12 @@ function ApexMission() {
       // Session storage can be unavailable in private contexts.
     }
 
-    await handleOnboardingComplete();
+    const saved = await handleOnboardingComplete();
+    if (saved) {
+      setShowInduction(false);
+    }
+    // If the save failed, the paywall shows the error and the induction
+    // modal stays open so the user can retry instead of reappearing on every reload.
   };
 
   useEffect(() => {
@@ -1493,18 +1504,20 @@ function ApexMission() {
               </button>
             )}
 
-            <button
-              type="button"
-              onClick={() => setActiveTab("hardware")}
-              className={`flex min-h-11 items-center gap-3 rounded-xl px-4 py-3 transition-all duration-300 ${
-                activeTab === "hardware"
-                  ? "bg-emerald-500 text-black shadow-[0_0_25px_rgba(16,185,129,0.4)] font-black"
-                  : "text-zinc-400 hover:bg-emerald-950/20 hover:text-emerald-300 border border-transparent hover:border-emerald-500/10"
-              }`}
-            >
-              <HardDrive className="size-4" />
-              <span>Hardware</span>
-            </button>
+            {!isCorporate && (
+              <button
+                type="button"
+                onClick={() => setActiveTab("hardware")}
+                className={`flex min-h-11 items-center gap-3 rounded-xl px-4 py-3 transition-all duration-300 ${
+                  activeTab === "hardware"
+                    ? "bg-emerald-500 text-black shadow-[0_0_25px_rgba(16,185,129,0.4)] font-black"
+                    : "text-zinc-400 hover:bg-emerald-950/20 hover:text-emerald-300 border border-transparent hover:border-emerald-500/10"
+                }`}
+              >
+                <HardDrive className="size-4" />
+                <span>Hardware</span>
+              </button>
+            )}
 
             {!isCorporate && (
               <button
@@ -1795,14 +1808,9 @@ function ApexMission() {
 
           {/* WORKSPACE TAB */}
           {activeTab === "workspace" && (
+          {/* WORKSPACE TAB — personal accounts only */}
+          {isPersonal && activeTab === "workspace" && (
             <div className="flex flex-col gap-6 animate-fade-in">
-              <DayPlanBriefing
-                rollover={rollover}
-                plan={dayPlan}
-                loading={isRefiningPlan}
-                onRefine={() => void refineDayPlan(true)}
-                onFocusAction={() => handleBriefingExecute("daily")}
-              />
 
               {/* Vision Card with Emerald Glassmorphism */}
               <section className="relative overflow-hidden rounded-2xl border border-emerald-500/25 p-5 sm:p-8 bg-[#0D0D11]/80 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.6),inset_0_0_25px_rgba(16,185,129,0.04)]">
@@ -1813,7 +1821,7 @@ function ApexMission() {
                 >
                   Core Vision Statement
                 </label>
-                <input
+                <textarea
                   id="mission"
                   value={state.mission}
                   onChange={(e) =>
@@ -1823,8 +1831,19 @@ function ApexMission() {
                     }))
                   }
                   placeholder="Define your core vision…"
-                  className="field-flush mt-3 min-h-11 w-full truncate bg-transparent font-display text-xl font-black tracking-tight text-white outline-none placeholder:text-zinc-700 sm:text-4xl"
+                  className={`field-flush mt-3 w-full bg-transparent font-display text-xl font-bold tracking-tight text-white outline-none placeholder:text-zinc-700 sm:text-4xl break-words whitespace-normal min-w-0 resize-none ${!visionExpanded && state.mission.length > 0 ? "max-h-[7rem] overflow-hidden" : ""}`}
+                  rows={visionExpanded ? 6 : 3}
+                  title={state.mission}
                 />
+                {state.mission.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setVisionExpanded((prev) => !prev)}
+                    className="mt-1 text-[10px] font-bold text-emerald-400 hover:text-emerald-300"
+                  >
+                    {visionExpanded ? "Show less" : "Show more"}
+                  </button>
+                )}
 
                 <div className="mt-5 flex flex-col gap-4 border-t border-emerald-500/15 pt-5 sm:mt-6 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex w-full items-center gap-3 sm:w-auto sm:flex-1">
@@ -2031,7 +2050,7 @@ function ApexMission() {
                     />
                   </button>
 
-                  <input
+                  <textarea
                     id="daily-action"
                     value={dailyDraft}
                     onChange={(e) =>
@@ -2039,15 +2058,22 @@ function ApexMission() {
                     }
                     maxLength={MAX_DAILY_ACTION_LENGTH}
                     onBlur={commitDailyText}
-                    onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+                    onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLTextAreaElement).blur()}
                     placeholder="Set today's top action…"
                     disabled={state.daily.done}
-                    className={`field-flush min-h-11 min-w-0 w-full truncate bg-transparent font-display text-lg font-bold tracking-tight outline-none transition-all duration-300 placeholder:text-zinc-700 sm:text-2xl ${
-                      state.daily.done
-                        ? "text-zinc-500 line-through decoration-emerald-500/50 decoration-2"
-                        : "text-white"
-                    }`}
+                    className={`field-flush min-h-11 min-w-0 w-full bg-transparent font-display text-lg font-bold tracking-tight outline-none transition-all duration-300 placeholder:text-zinc-700 sm:text-2xl break-words whitespace-normal min-w-0 resize-none ${!dailyExpanded && dailyDraft.length > 0 ? "max-h-[7rem] overflow-hidden" : ""} ${state.daily.done ? "text-zinc-500 line-through decoration-emerald-500/50 decoration-2" : "text-white"}`}
+                    rows={dailyExpanded ? 6 : 3}
+                    title={dailyDraft}
                   />
+                  {dailyDraft.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setDailyExpanded((prev) => !prev)}
+                      className="mt-1 text-[10px] font-bold text-emerald-400 hover:text-emerald-300"
+                    >
+                      {dailyExpanded ? "Show less" : "Show more"}
+                    </button>
+                  )}
                 </div>
 
                 {isEvening && (
@@ -2113,7 +2139,6 @@ function ApexMission() {
                 </div>
               </section>
 
-              <PersonalPatternsCard taskHistory={taskHistory} tasks={state.tasks} />
             </div>
           )}
 
@@ -2254,8 +2279,20 @@ function ApexMission() {
             <section className="animate-fade-in">
               <EnterpriseAnalyticsPanel companyNameFallback={activeTenant?.companyName ?? null} />
 
+              {/* Today's Execution Plan — company employees only */}
+              <DayPlanBriefing
+                rollover={rollover}
+                plan={dayPlan}
+                loading={isRefiningPlan}
+                onRefine={() => void refineDayPlan(true)}
+                onFocusAction={() => handleBriefingExecute("daily")}
+              />
+
               {/* Enterprise Voice Day Log — 10-second voice capture */}
               <VoiceDayLogger onSave={handleVoiceLogSave} disabled={!hydrated} />
+
+              {/* Your Execution Patterns — employee's own patterns only */}
+              <YourExecutionPatterns taskHistory={taskHistory} tasks={state.tasks} />
 
               {/* Enterprise Pre-5PM Nudge — professional reminder */}
               {showFivePmNudge && keyOpenTask && (
@@ -2270,8 +2307,8 @@ function ApexMission() {
             </section>
           )}
 
-          {/* HARDWARE MARKET TAB */}
-          {activeTab === "hardware" && (
+          {/* HARDWARE MARKET TAB — personal accounts only (upgrades) */}
+          {isPersonal && activeTab === "hardware" && (
             <section className="grid grid-cols-1 gap-4 text-left animate-fade-in sm:grid-cols-2 xl:grid-cols-3">
               {HARDWARE_STORE_INVENTORY.map((item) => (
                 <div
@@ -2775,7 +2812,7 @@ function TaskRow({
         </button>
         <span
           title={task.text}
-          className={`line-clamp-2 min-h-10 min-w-0 break-words py-2 text-sm font-semibold leading-snug ${task.done ? "text-zinc-500 line-through decoration-emerald-500/40" : "text-zinc-200"}`}
+          className={`min-w-0 break-words whitespace-normal py-2 text-sm font-semibold leading-snug ${task.done ? "text-zinc-500 line-through decoration-emerald-500/40" : "text-zinc-200"}`}
         >
           {task.text}
         </span>

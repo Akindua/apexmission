@@ -168,15 +168,15 @@ ApexMissions is designed as an output-based accountability platform. Unless a fe
 
 ApexMissions does not require continuous device monitoring to provide its core task-accountability functionality. However, limited technical information, such as IP addresses and security logs, may be processed for authentication, fraud prevention, troubleshooting, and platform security.
 
-### 19.1 Web Push Notifications (4:30 PM Reminder — Personal Accounts Only)
+### 19.1 Web Push Notifications (4:30 PM Reminder — Company Workspace Members Only)
 
-**Opt-in only.** Personal account holders may choose to receive a single daily push notification at approximately 4:30 PM in their local timezone if they have an unfinished High-impact task. The feature is disabled by default and requires explicit user consent via the Settings page.
+**Opt-in only.** Company workspace members (employees) may choose to receive a single daily push notification at approximately 4:30 PM in their local timezone if they have an unfinished High-impact task in their own plan. The feature is disabled by default and requires explicit user consent via the Settings page. Personal accounts are excluded and never receive push reminders; a manager never sees another employee's plan or push subscription.
 
 **What is stored:** When a user subscribes, we store the push subscription endpoint, the p256dh public key, the auth secret, and the user's IANA timezone (e.g., `America/Los_Angeles`). These are stored in the `push_subscriptions` table, scoped to the user's account via Row-Level Security. No task content, task titles, or productivity data are stored in the push subscription record.
 
-**What is sent:** The push payload contains only a generic message: `"Time to close your top task before 5 PM."` — no task text, no project names, no personal data. The notification is delivered via the Web Push protocol (VAPID) to the user's browser push service (e.g., Google FCM for Chrome/Edge, Apple Push Notification service for Safari, Mozilla Push Service for Firefox). The browser's push service may log metadata such as delivery timestamps per their own privacy policies.
+**What is sent:** The push payload contains only a generic message: `"Log today's core tasks before the 5:00 PM summary."` — no task text, no project names, no personal data. The notification is delivered via the Web Push protocol (VAPID) to the user's browser push service (e.g., Google FCM for Chrome/Edge, Apple Push Notification service for Safari, Mozilla Push Service for Firefox). The browser's push service may log metadata such as delivery timestamps per their own privacy policies.
 
-**Frequency & targeting:** At most one push per user per day. The cron job (running at 16:30 UTC) checks each subscriber's timezone, verifies they have an unfinished High-impact task from their current plan, and sends only if both conditions are met. Corporate/organizational accounts are excluded and never receive push reminders.
+**Frequency & targeting:** At most one push per user per day. The cron job (running at 16:30 UTC) checks each company employee subscriber's timezone, verifies they have an unfinished High-impact task from their current plan, and sends only if both conditions are met. Personal accounts are excluded and never receive push reminders.
 
 **Third parties:** The push delivery chain involves the browser vendor's push service (Google, Apple, or Mozilla depending on browser). ApexMissions does not control these services. The VAPID keys identify ApexMissions to the push services; the private key is held only on our server.
 

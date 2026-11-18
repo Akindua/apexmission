@@ -14,6 +14,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const TEST_BASE_URL = process.env.TEST_BASE_URL ?? "http://localhost:3000";
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
@@ -37,6 +38,11 @@ async function main() {
   const userB1 = await createUser("userb1@test.local", companyB.id);
   const userB2 = await createUser("userb2@test.local", companyB.id);
   console.log(`Created users: A1=${userA1.id}, A2=${userA2.id}, B1=${userB1.id}, B2=${userB2.id}\n`);
+
+  // Personal account (company_id === null) for the API 403 tests
+  const personalUser = await createPersonalUser("personal@test.local");
+  const personalToken = await getUserToken(personalUser.id);
+  console.log(`Created personal user: ${personalUser.id} (company_id null)\n`);
 
   // Create clients for each user (using anon key + JWT)
   const clientA1 = await createUserClient(userA1.id);
@@ -97,6 +103,15 @@ async function main() {
 
   // Test 17: Coworker cannot read another profile row; cannot move task to another company
   await testCoworkerProfileAndTaskLockdown(clientA1, clientA2, userA1.id, userA2.id, companyA.id, companyB.id);
+
+  // Test 18: Personal account gets 403 from /api/day-plan
+  await testPersonalDayPlanForbidden(personalUser.id, personalToken);
+
+  // Test 19: Personal account gets 403 from /api/push/subscribe
+  await testPersonalPushSubscribeForbidden(personalUser.id, personalToken);
+
+  // Test 20: Manager cannot read an employee's current_plan or task_history
+  await testManagerCannotReadEmployeePlan(clientA1, userA2.id);
 
   console.log("\n✅ All RLS isolation tests passed!");
 }
@@ -232,6 +247,8 @@ async function testCoworkerProfileAndTaskLockdown(
   // Cleanup: delete the test task
   await clientA1.from("tasks").delete().eq("id", taskA.id);
 }
+
+async function createCompany(name) {
   const { data, error } = await admin
     .from("companies")
     .insert({ name, slug: name.toLowerCase().replace(/\s+/g, "-") })
@@ -492,7 +509,8 @@ async function testHandoffCodesIsolation(clientA, clientB) {
   // User A cannot read User B's handoff codes (should be empty)
   const { data: codesA } = await clientA.from("handoff_codes").select("*");
   // User A should only see their own unconsumed codes
-  const userACodes = codesA?.filter((c) => c.user_id === (await clientA.auth.getUser()).data.user?.id) ?? [];
+  const me = await clientA.auth.getUser();
+  const userACodes = codesA?.filter((c) => c.user_id === me.data.user?.id) ?? [];
   console.log(`  ✓ User A sees ${userACodes.length} own handoff codes`);
 }
 
@@ -657,6 +675,106 @@ async function testEntitlementsIsolation(clientA, clientB, userAId, userBId, com
   const { error: deleteErrorA } = await clientA.from("entitlements").delete().eq("user_id", userAId);
   if (!deleteErrorA) throw new Error("User A was able to delete entitlement!");
   console.log("  ✓ User A cannot delete entitlements");
+}
+
+async function getUserToken(userId) {
+  const email = (await admin.auth.admin.getUserById(userId)).data.user?.email;
+  const { data, error } = await admin.auth.signInWithPassword({
+    email,
+    password: "testpassword123",
+  });
+  if (error) throw error;
+  return data.session.access_token;
+}
+
+async function createPersonalUser(email) {
+  const { data: authData, error: authError } = await admin.auth.admin.createUser({
+    email,
+    password: "testpassword123",
+    email_confirm: true,
+    user_metadata: { full_name: email.split("@")[0] },
+  });
+  if (authError) throw authError;
+  // Deliberately do NOT set company_id — personal account (company_id IS NULL).
+  return { id: authData.user.id, email };
+}
+
+async function apiFetch(token, path, method = "POST", body = null) {
+  const headers = { Authorization: `Bearer ${token}` };
+  if (body) headers["Content-Type"] = "application/json";
+  const res = await fetch(`${TEST_BASE_URL}${path}`, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  return res;
+}
+
+/**
+ * Test 18: A personal account (company_id NULL) must receive 403 from /api/day-plan.
+ */
+async function testPersonalDayPlanForbidden(userId, token) {
+  console.log("\n🚫 Test 18: Personal account gets 403 from /api/day-plan");
+  let res;
+  try {
+    res = await apiFetch(token, "/api/day-plan", "POST", {
+      mission: "x",
+      unfinished: { high: [], medium: [], low: [] },
+    });
+  } catch (err) {
+    if (err.code === "ECONNREFUSED") {
+      console.log("  ⚠️  SKIPPED: dev server not running at", TEST_BASE_URL);
+      return;
+    }
+    throw err;
+  }
+  if (res.status !== 403) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Personal account got ${res.status} from /api/day-plan, expected 403: ${text}`);
+  }
+  console.log("  ✓ Personal account received 403 from /api/day-plan");
+}
+
+/**
+ * Test 19: A personal account (company_id NULL) must receive 403 from /api/push/subscribe.
+ */
+async function testPersonalPushSubscribeForbidden(userId, token) {
+  console.log("\n🚫 Test 19: Personal account gets 403 from /api/push/subscribe");
+  let res;
+  try {
+    res = await apiFetch(token, "/api/push/subscribe", "POST", {
+      endpoint: "https://push.example.com/personal",
+      keys: { p256dh: "abc", auth: "def" },
+      timezone: "UTC",
+    });
+  } catch (err) {
+    if (err.code === "ECONNREFUSED") {
+      console.log("  ⚠️  SKIPPED: dev server not running at", TEST_BASE_URL);
+      return;
+    }
+    throw err;
+  }
+  if (res.status !== 403) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Personal account got ${res.status} from /api/push/subscribe, expected 403: ${text}`);
+  }
+  console.log("  ✓ Personal account received 403 from /api/push/subscribe");
+}
+
+/**
+ * Test 20: A manager/coworker cannot read an employee's current_plan or task_history.
+ */
+async function testManagerCannotReadEmployeePlan(client, employeeUserId) {
+  console.log("\n🔒 Test 20: Manager cannot read employee's current_plan or task_history");
+  const { data, error } = await client
+    .from("profiles")
+    .select("current_plan, task_history")
+    .eq("id", employeeUserId)
+    .single();
+  if (!error && data) {
+    throw new Error("Manager can read employee's current_plan/task_history!");
+  }
+  console.log("  ✓ Manager cannot read employee's current_plan or task_history (RLS-blocked)");
 }
 
 main().catch((err) => {

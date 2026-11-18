@@ -15,6 +15,8 @@
  */
 import { createClient } from "@supabase/supabase-js";
 
+import { isPersonalAccount } from "@/lib/account-type";
+
 // ---------------------------------------------------------------------------
 // Response headers
 // ---------------------------------------------------------------------------
@@ -251,6 +253,45 @@ export async function requireApiAuth(request: Request): Promise<ApiActor | Respo
   } catch {
     return unauthorized();
   }
+}
+
+/**
+ * Authenticates the caller and ensures they belong to a company workspace
+ * (profiles.company_id IS NOT NULL). Personal accounts are rejected with 403.
+ * Returns { actor, companyId } or a 401/403/503 Response.
+ */
+export async function requireCompanyActor(
+  request: Request,
+): Promise<{ actor: ApiActor; companyId: string | null } | Response> {
+  const actor = await requireApiAuth(request);
+  if (actor instanceof Response) return actor;
+
+  const supabaseUrl = process.env["SUPABASE_URL"];
+  const supabaseKey =
+    process.env["SUPABASE_PUBLISHABLE_KEY"] ?? process.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
+
+  if (!supabaseUrl || !supabaseKey) return serviceUnavailable();
+
+  const supabase = createClient(supabaseUrl, supabaseKey, {
+    global: { headers: { Authorization: `Bearer ${actor.token}` } },
+    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+  });
+
+  const { data } = await supabase
+    .from("profiles")
+    .select("company_id")
+    .eq("id", actor.userId)
+    .maybeSingle();
+
+  const companyId = (data as { company_id: string | null } | null)?.company_id ?? null;
+  if (isPersonalAccount(companyId)) {
+    return new Response("Forbidden: company workspace required", {
+      status: 403,
+      headers: { "content-type": "text/plain; charset=utf-8" },
+    });
+  }
+
+  return { actor, companyId };
 }
 
 // ---------------------------------------------------------------------------
