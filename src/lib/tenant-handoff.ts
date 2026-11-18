@@ -15,6 +15,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { handleUnauthenticated } from "@/lib/api-auth";
 import { buildPlatformAppUrl, buildTenantAppUrl, normalizeTenantSlug } from "@/lib/tenant-host";
 
 const HANDOFF_CODE_PARAM = "handoff_code";
@@ -59,6 +60,11 @@ async function initiateHandoff(
     credentials: "include",
     body: JSON.stringify({ targetSlug }),
   });
+
+  if (handleUnauthenticated(response)) {
+    // Redirect already issued by handleUnauthenticated.
+    throw new Error("Authentication required: redirecting to sign in.");
+  }
 
   if (!response.ok) {
     const text = await response.text().catch(() => "");
@@ -108,6 +114,11 @@ export async function consumeTenantHandoff(): Promise<string | null> {
     credentials: "include",
     body: JSON.stringify({ code }),
   });
+
+  if (handleUnauthenticated(response)) {
+    // Redirect already issued by handleUnauthenticated.
+    return null;
+  }
 
   if (!response.ok) {
     const text = await response.text().catch(() => "");

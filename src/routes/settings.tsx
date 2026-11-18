@@ -2,6 +2,7 @@ import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Loader2, Bell, BellOff, Shield, CheckCircle2, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { handleUnauthenticated } from "@/lib/api-auth";
 import { VITE_VAPID_PUBLIC_KEY } from "@/lib/env";
 import { JarvisDisclaimer } from "@/components/JarvisNudge/JarvisDisclaimer";
 import { DataPrivacy } from "@/components/DataPrivacy";
@@ -91,6 +92,7 @@ function SettingsPage() {
         body: JSON.stringify(subscription.toJSON()),
       });
 
+      if (handleUnauthenticated(response)) return;
       if (!response.ok) {
         const text = await response.text();
         throw new Error(`Server error: ${response.status} ${text}`);
@@ -117,12 +119,13 @@ function SettingsPage() {
       }
 
       // Notify server
-      await fetch("/api/push/unsubscribe", {
+      const response = await fetch("/api/push/unsubscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
       });
 
+      if (handleUnauthenticated(response)) return;
       setSubscribed(false);
     } catch (err) {
       console.error("[Settings] Unsubscribe failed:", err);

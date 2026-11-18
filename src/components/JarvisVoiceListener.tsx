@@ -2,6 +2,7 @@
 
 import { Mic, MicOff, Square, Zap, Loader2, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { handleUnauthenticated } from "@/lib/api-auth";
 import { cn } from "@/lib/utils";
 import { JarvisNudgeCard } from "@/components/JarvisNudge/JarvisNudgeCard";
 import type { JarvisSuggestion } from "@/services/jarvis";
@@ -232,10 +233,12 @@ export function JarvisVoiceListener({
       });
 
       if (!response.ok) {
+        if (handleUnauthenticated(response)) {
+          setState("idle");
+          return;
+        }
         if (response.status === 403) {
           setError("Jarvis voice requires an active subscription.");
-        } else if (response.status === 401) {
-          setError("Please sign in to use Jarvis voice.");
         } else if (response.status === 400) {
           setError("No speech detected. Please try again.");
         } else {

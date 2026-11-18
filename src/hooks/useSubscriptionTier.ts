@@ -61,6 +61,9 @@ export function useSubscriptionTier(): SubscriptionState {
 
     const channel = supabase
       .channel(`profile-tier-${userId}`)
+      // IMPORTANT: `.on('postgres_changes', ...)` MUST be chained BEFORE
+      // `.subscribe()`. Calling subscribe() first throws:
+      // "cannot add 'postgres_changes' callbacks after subscribe()".
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "profiles", filter: `id=eq.${userId}` },

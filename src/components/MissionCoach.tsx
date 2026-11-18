@@ -1,5 +1,6 @@
 import { useChat } from "@ai-sdk/react";
 import { extractText } from "@/lib/document-parser";
+import { handleUnauthenticated } from "@/lib/api-auth";
 import { type UIMessage } from "ai";
 import {
   Lock,
@@ -469,6 +470,7 @@ function CoachPanel({
             }),
           });
 
+          if (handleUnauthenticated(response)) return;
           if (!response.ok) {
             controller.appendData({
               type: "error",
@@ -800,6 +802,7 @@ ${CANARY_STRING}`;
         },
         body: JSON.stringify({ mission: uploadedText }),
       });
+      if (handleUnauthenticated(response)) return;
       if (!response.ok) throw new Error(`Mission Planner processing failure: ${response.status}`);
       const plan = (await response.json()) as DayPlanProposal & { mission?: string };
 
