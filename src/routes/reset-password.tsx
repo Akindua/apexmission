@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ArrowRight, CheckCircle, KeyRound, Loader2, ShieldAlert } from "lucide-react";
-import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
+import { TurnstileWidget, type TurnstileHandle } from "@/components/TurnstileWidget";
 import { supabase } from "@/integrations/supabase/client";
 import { setStorageScope } from "@/lib/user-storage";
 
@@ -21,7 +21,7 @@ function ResetPasswordPage() {
   const [success, setSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  const turnstileRef = useRef<TurnstileInstance | null>(null);
+  const turnstileWidgetRef = useRef<TurnstileHandle | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -94,7 +94,7 @@ function ResetPasswordPage() {
       setBusy(false);
       // Single-use token consumed (or attempt failed) — re-challenge.
       setTurnstileToken(null);
-      turnstileRef.current?.reset();
+      turnstileWidgetRef.current?.reset();
     }
   }
 
@@ -194,16 +194,13 @@ function ResetPasswordPage() {
                 </div>
 
                 {TURNSTILE_SITE_KEY && (
-                  <div className="flex justify-center">
-                    <Turnstile
-                      ref={turnstileRef}
-                      siteKey={TURNSTILE_SITE_KEY}
-                      onSuccess={setTurnstileToken}
-                      onExpire={() => setTurnstileToken(null)}
-                      onError={() => setTurnstileToken(null)}
-                      options={{ theme: "dark", size: "flexible" }}
-                    />
-                  </div>
+                  <TurnstileWidget
+                    ref={turnstileWidgetRef}
+                    siteKey={TURNSTILE_SITE_KEY}
+                    onSuccess={setTurnstileToken}
+                    onExpire={() => setTurnstileToken(null)}
+                    onError={() => setTurnstileToken(null)}
+                  />
                 )}
 
                 <button

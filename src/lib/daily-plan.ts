@@ -10,6 +10,7 @@
  */
 
 import { authHeaders } from "@/lib/api-auth";
+import { UnauthorizedError } from "@/lib/auth-redirect";
 import {
   MAX_TASKS_PER_TIER,
   todayKey,
@@ -159,6 +160,10 @@ export async function requestAiDayPlan(input: DayPlanInput): Promise<DayPlanProp
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      throw new UnauthorizedError("Session expired — sign in required.");
+    }
+
     throw new Error(`Day planner failed: ${response.status}`);
   }
 

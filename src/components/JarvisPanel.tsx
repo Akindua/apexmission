@@ -96,6 +96,7 @@ export function JarvisPanel({
           setError("Jarvis requires an active subscription.");
         } else if (response.status === 401) {
           setError("Please sign in to use Jarvis.");
+          navigate({ to: "/auth", search: { mode: "signin" } });
         } else {
           setError("Jarvis is temporarily unavailable.");
         }

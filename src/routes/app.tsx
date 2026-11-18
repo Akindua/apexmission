@@ -79,6 +79,7 @@ import {
   type DayPlanProposal,
 } from "@/lib/daily-plan";
 import { generateMissionPlan } from "@/lib/mission-planner";
+import { UnauthorizedError } from "@/lib/auth-redirect";
 import {
   canUseTenantSubdomains,
   extractSubdomainSlug,
@@ -326,6 +327,11 @@ function ApexMission() {
 
       if (focusUntouchedBefore) setDailyDraft(merged.dailyAction);
     } catch (error) {
+      // Session expired — send user to sign-in.
+      if (error instanceof UnauthorizedError) {
+        navigate({ to: "/auth", search: { mode: "signin" } });
+        return;
+      }
       // AI is an enhancement, never a dependency. Keep the deterministic plan.
       console.warn("[DayPlan] AI refinement unavailable; keeping local plan:", error);
       setScopedItem(attemptedKey, "true");
@@ -1135,6 +1141,11 @@ function ApexMission() {
       setScopedItem("apexmission-mission-plan-generated", "true");
       setHasGeneratedMissionPlan(true);
     } catch (error) {
+      // Session expired — send user to sign-in.
+      if (error instanceof UnauthorizedError) {
+        navigate({ to: "/auth", search: { mode: "signin" } });
+        return;
+      }
       console.error("Mission plan generation failed:", error);
     } finally {
       setIsGeneratingMissionPlan(false);

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
+import { TurnstileWidget, type TurnstileHandle } from "@/components/TurnstileWidget";
 import { supabase } from "@/integrations/supabase/client";
 import { setStorageScope } from "@/lib/user-storage";
 import { TACTICAL_BRIEFING_SESSION_KEY } from "@/lib/synthetic-briefing";
@@ -120,12 +120,12 @@ function AuthConsolePage() {
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [passkeyBusy, setPasskeyBusy] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
-  const turnstileRef = useRef<TurnstileInstance | null>(null);
+  const turnstileWidgetRef = useRef<TurnstileHandle | null>(null);
 
   /** Turnstile tokens are single-use — clear and re-challenge after each attempt. */
   function resetChallenge() {
     setTurnstileToken(null);
-    turnstileRef.current?.reset();
+    turnstileWidgetRef.current?.reset();
   }
 
   useEffect(() => {
@@ -501,19 +501,13 @@ function AuthConsolePage() {
               >
                 Security Challenge — Complete to proceed
               </label>
-              <div
-                id="turnstile-widget"
-                className="flex justify-center rounded-xl border border-emerald-500/20 bg-[#04100b]/60 p-3"
-              >
-                <Turnstile
-                  ref={turnstileRef}
-                  siteKey={TURNSTILE_SITE_KEY}
-                  onSuccess={setTurnstileToken}
-                  onExpire={() => setTurnstileToken(null)}
-                  onError={() => setTurnstileToken(null)}
-                  options={{ theme: "dark", size: "flexible" }}
-                />
-              </div>
+              <TurnstileWidget
+                ref={turnstileWidgetRef}
+                siteKey={TURNSTILE_SITE_KEY}
+                onSuccess={setTurnstileToken}
+                onExpire={() => setTurnstileToken(null)}
+                onError={() => setTurnstileToken(null)}
+              />
             </div>
           ) : null}
 

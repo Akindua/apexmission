@@ -1,6 +1,6 @@
 import React, { useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
+import { TurnstileWidget, type TurnstileHandle } from "@/components/TurnstileWidget";
 import { supabase } from "@/integrations/supabase/client";
 import { Mail, ArrowRight, Loader2, ShieldAlert, KeyRound } from "lucide-react";
 
@@ -18,7 +18,7 @@ function ForgotPasswordPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successTransmission, setSuccessTransmission] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  const turnstileRef = useRef<TurnstileInstance | null>(null);
+  const turnstileWidgetRef = useRef<TurnstileHandle | null>(null);
 
   const handlePasswordRecovery = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,7 +48,7 @@ function ForgotPasswordPage() {
       setBusy(false);
       // Single-use token consumed — re-challenge.
       setTurnstileToken(null);
-      turnstileRef.current?.reset();
+      turnstileWidgetRef.current?.reset();
     }
   };
 
@@ -101,6 +101,18 @@ function ForgotPasswordPage() {
                 />
               </div>
             </div>
+
+            {TURNSTILE_SITE_KEY && (
+              <div className="w-full space-y-2">
+                <TurnstileWidget
+                  ref={turnstileWidgetRef}
+                  siteKey={TURNSTILE_SITE_KEY}
+                  onSuccess={setTurnstileToken}
+                  onExpire={() => setTurnstileToken(null)}
+                  onError={() => setTurnstileToken(null)}
+                />
+              </div>
+            )}
 
             <button type="submit" disabled={busy} className="btn-glass-primary w-full h-12 mt-2">
               {busy ? (
