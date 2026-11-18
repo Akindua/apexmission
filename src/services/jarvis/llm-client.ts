@@ -13,7 +13,9 @@ const SUGGEST_ENDPOINT = "/api/jarvis/suggest";
  * Submits operator context to the Jarvis suggestion API and returns
  * sanitized suggestions.
  */
-export async function generateJarvisSuggestions(context: JarvisContext): Promise<JarvisSuggestion[]> {
+export async function generateJarvisSuggestions(
+  context: JarvisContext,
+): Promise<JarvisSuggestion[]> {
   const response = await fetch(SUGGEST_ENDPOINT, {
     method: "POST",
     headers: {

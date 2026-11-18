@@ -96,9 +96,11 @@ export function getConsecutiveMissedDays(state: MissionState): number {
  */
 function checkDailyCompletion(state: MissionState, date: string): boolean {
   if (state.streak?.lastCompletedDate === date) return true;
-  return state.reflectionHistory?.some(
-    (entry) => entry.date === date && entry.actionCompleted === true,
-  ) ?? false;
+  return (
+    state.reflectionHistory?.some(
+      (entry) => entry.date === date && entry.actionCompleted === true,
+    ) ?? false
+  );
 }
 
 /**
@@ -114,15 +116,9 @@ function hasForgivenessBeenOfferedThisWeek(): boolean {
     return (
       lastDate.getFullYear() === today.getFullYear() &&
       Math.floor(
-        (lastDate.getTime() - new Date(lastDate.getFullYear(), 0, 1).getTime()) /
-          86400000 /
-          7,
+        (lastDate.getTime() - new Date(lastDate.getFullYear(), 0, 1).getTime()) / 86400000 / 7,
       ) ===
-        Math.floor(
-          (today.getTime() - new Date(today.getFullYear(), 0, 1).getTime()) /
-            86400000 /
-            7,
-        )
+        Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 1).getTime()) / 86400000 / 7)
     );
   } catch {
     return false;

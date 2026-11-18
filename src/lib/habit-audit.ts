@@ -71,9 +71,10 @@ export function computeWeeklyStats(state: MissionState): WeeklyStats {
   const dailyCompletion: Array<{ date: string; completed: number; total: number }> = [];
   for (let i = 6; i >= 0; i--) {
     const date = daysAgoKey(i);
-    const dayCompletions = state.reflectionHistory?.filter(
-      (entry) => entry.date === date && entry.actionCompleted === true
-    ).length ?? 0;
+    const dayCompletions =
+      state.reflectionHistory?.filter(
+        (entry) => entry.date === date && entry.actionCompleted === true,
+      ).length ?? 0;
     dailyCompletion.push({
       date,
       completed: dayCompletions,
@@ -111,10 +112,7 @@ export function computeWeeklyStats(state: MissionState): WeeklyStats {
 /**
  * Build a Jarvis context from weekly stats for the habit audit prompt.
  */
-export function buildHabitAuditContext(
-  state: MissionState,
-  stats: WeeklyStats,
-): JarvisContext {
+export function buildHabitAuditContext(state: MissionState, stats: WeeklyStats): JarvisContext {
   return {
     firstName: (state.userName ?? "Operator").split(" ")[0] ?? "",
     mission: state.mission ?? null,
@@ -152,15 +150,9 @@ export function hasWeeklyAuditThisWeek(): boolean {
     return (
       lastDate.getFullYear() === today.getFullYear() &&
       Math.floor(
-        (lastDate.getTime() - new Date(lastDate.getFullYear(), 0, 1).getTime()) /
-          86400000 /
-          7,
+        (lastDate.getTime() - new Date(lastDate.getFullYear(), 0, 1).getTime()) / 86400000 / 7,
       ) ===
-        Math.floor(
-          (today.getTime() - new Date(today.getFullYear(), 0, 1).getTime()) /
-            86400000 /
-            7,
-        )
+        Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 1).getTime()) / 86400000 / 7)
     );
   } catch {
     return false;
@@ -171,9 +163,7 @@ export function hasWeeklyAuditThisWeek(): boolean {
  * Generate a weekly habit audit using Jarvis.
  * Returns the audit text or null if already generated this week.
  */
-export async function generateWeeklyHabitAudit(
-  state: MissionState,
-): Promise<string | null> {
+export async function generateWeeklyHabitAudit(state: MissionState): Promise<string | null> {
   if (hasWeeklyAuditThisWeek()) return null;
 
   const stats = computeWeeklyStats(state);
@@ -196,10 +186,7 @@ export async function generateWeeklyHabitAudit(
 /**
  * Build a human-readable weekly audit text from stats and Jarvis suggestions.
  */
-function buildAuditText(
-  stats: WeeklyStats,
-  suggestions: Array<{ body: string }>,
-): string {
+function buildAuditText(stats: WeeklyStats, suggestions: Array<{ body: string }>): string {
   const lines: string[] = [];
 
   lines.push("Here's how your week went:");
@@ -207,9 +194,7 @@ function buildAuditText(
     `You completed ${stats.completedTasks} of ${stats.totalTasks} tasks (${stats.completionRate}% completion rate).`,
   );
   lines.push(
-    `Your current streak is ${stats.streakCount} day${
-      stats.streakCount === 1 ? "" : "s"
-    }.`,
+    `Your current streak is ${stats.streakCount} day${stats.streakCount === 1 ? "" : "s"}.`,
   );
 
   if (stats.bestDay) {

@@ -10,7 +10,7 @@ const CRITICAL_FILES = [
   "src/routes/daily-briefing.tsx",
   "src/routes/verify-email.tsx",
   "src/routes/night-reflection.tsx",
-  "public/accountability-worker.js"
+  "public/accountability-worker.js",
 ];
 
 let failed = false;
@@ -24,14 +24,18 @@ CRITICAL_FILES.forEach((fileFile) => {
     // Audit internal content structure to trap unclosed variable states
     const codeBody = fs.readFileSync(targetPath, "utf8");
     if (codeBody.includes("const milestones =;") || codeBody.includes("cat <<")) {
-      console.error(`🚨 SYNTAX CORRUPTION: Broken expression tokens discovered inside: ${fileFile}`);
+      console.error(
+        `🚨 SYNTAX CORRUPTION: Broken expression tokens discovered inside: ${fileFile}`,
+      );
       failed = true;
     }
   }
 });
 
 if (failed) {
-  console.log("❌ Compilation validation halted. Repair broken token configurations before deployment.");
+  console.log(
+    "❌ Compilation validation halted. Repair broken token configurations before deployment.",
+  );
   process.exit(1);
 } else {
   console.log("✅ Core files verified. All build targets are safe and stable.");

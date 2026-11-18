@@ -82,9 +82,7 @@ export function DayPlanBriefing({
             </div>
           </div>
 
-          <p className="mt-3 text-[11px] font-medium leading-relaxed text-zinc-500">
-            {rationale}
-          </p>
+          <p className="mt-3 text-[11px] font-medium leading-relaxed text-zinc-500">{rationale}</p>
 
           <div className="mt-3 flex flex-col gap-2 sm:flex-row">
             <button

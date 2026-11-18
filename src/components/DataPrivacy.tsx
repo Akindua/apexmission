@@ -11,9 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Button,
-} from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { exportAndDownload } from "@/lib/data-export";
 import { performDataWipe } from "@/lib/data-wipe";
 
@@ -54,9 +52,7 @@ export function DataPrivacy() {
       // Auto-dismiss success after 5 seconds
       setTimeout(() => setExportSuccess(false), 5000);
     } catch (err) {
-      setExportError(
-        err instanceof Error ? err.message : "Export failed. Please try again."
-      );
+      setExportError(err instanceof Error ? err.message : "Export failed. Please try again.");
     } finally {
       setExportLoading(false);
     }
@@ -92,9 +88,8 @@ export function DataPrivacy() {
             Data Export &amp; Deletion
           </h2>
           <p className="mt-1 text-[10px] font-medium leading-relaxed text-zinc-500">
-            Export your local data or permanently delete it. These actions
-            affect only data stored on this device — they do not change your
-            Supabase account or server-side records.
+            Export your local data or permanently delete it. These actions affect only data stored
+            on this device — they do not change your Supabase account or server-side records.
           </p>
         </div>
       </div>
@@ -108,8 +103,8 @@ export function DataPrivacy() {
               Export Your Data
             </h3>
             <p className="mt-1 text-[10px] leading-relaxed text-zinc-500">
-              Download a JSON copy of all locally stored data, including your
-              task matrix, mission, streak, and coach history.
+              Download a JSON copy of all locally stored data, including your task matrix, mission,
+              streak, and coach history.
             </p>
           </div>
         </div>
@@ -129,18 +124,12 @@ export function DataPrivacy() {
           <div className="mb-3 rounded-xl border border-rose-500/20 bg-rose-950/10 p-3">
             <div className="flex items-center gap-2">
               <X className="size-3.5 text-rose-400" />
-              <span className="text-[10px] font-bold text-rose-300">
-                {exportError}
-              </span>
+              <span className="text-[10px] font-bold text-rose-300">{exportError}</span>
             </div>
           </div>
         )}
 
-        <Button
-          onClick={handleExport}
-          disabled={exportLoading}
-          className="w-full"
-        >
+        <Button onClick={handleExport} disabled={exportLoading} className="w-full">
           {exportLoading ? (
             <>
               <Loader2 className="size-3.5 animate-spin mr-2" />
@@ -164,8 +153,8 @@ export function DataPrivacy() {
               Wipe Local Data
             </h3>
             <p className="mt-1 text-[10px] leading-relaxed text-zinc-500">
-              Permanently delete all locally stored data from this device.
-              This action cannot be undone.
+              Permanently delete all locally stored data from this device. This action cannot be
+              undone.
             </p>
           </div>
         </div>
@@ -193,11 +182,7 @@ export function DataPrivacy() {
           </p>
         </div>
 
-        <Button
-          onClick={() => setWipeOpen(true)}
-          variant="destructive"
-          className="w-full"
-        >
+        <Button onClick={() => setWipeOpen(true)} variant="destructive" className="w-full">
           Wipe All Local Data
         </Button>
 
@@ -208,10 +193,9 @@ export function DataPrivacy() {
             <DialogHeader>
               <DialogTitle>Delete All Local Data?</DialogTitle>
               <DialogDescription>
-                This will permanently delete all locally stored ApexMissions
-                data from this device. This includes your task matrix, mission,
-                streak, coach history, and cached preferences. This action
-                cannot be undone.
+                This will permanently delete all locally stored ApexMissions data from this device.
+                This includes your task matrix, mission, streak, coach history, and cached
+                preferences. This action cannot be undone.
               </DialogDescription>
             </DialogHeader>
             <div className="mb-4">
@@ -229,11 +213,7 @@ export function DataPrivacy() {
               />
             </div>
             <DialogFooter>
-              <Button
-                type="button"
-                onClick={() => setWipeOpen(false)}
-                className="w-full"
-              >
+              <Button type="button" onClick={() => setWipeOpen(false)} className="w-full">
                 Cancel
               </Button>
               <Button
@@ -265,33 +245,31 @@ export function DataPrivacy() {
         </Dialog>
 
         {/* Wipe result dialog */}
-        <Dialog open={wipeResult !== null} onOpenChange={(open) => {
-          if (!open) setWipeResult(null);
-        }}>
+        <Dialog
+          open={wipeResult !== null}
+          onOpenChange={(open) => {
+            if (!open) setWipeResult(null);
+          }}
+        >
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>
-                {wipeResult?.success ? "Data Wiped" : "Wipe Failed"}
-              </DialogTitle>
+              <DialogTitle>{wipeResult?.success ? "Data Wiped" : "Wipe Failed"}</DialogTitle>
             </DialogHeader>
             <div className="mb-4">
               {wipeResult ? (
                 wipeResult.success ? (
                   <>
                     <p className="text-[10px] leading-relaxed text-zinc-400">
-                      All local data has been permanently deleted from this
-                      device.
+                      All local data has been permanently deleted from this device.
                     </p>
                     {wipeResult.deletedDbNames.length > 0 && (
                       <p className="mt-1 text-[10px] text-zinc-500">
-                        Databases removed:{" "}
-                        {wipeResult.deletedDbNames.join(", ")}
+                        Databases removed: {wipeResult.deletedDbNames.join(", ")}
                       </p>
                     )}
                     {wipeResult.clearedLocalStorageKeys.length > 0 && (
                       <p className="mt-1 text-[10px] text-zinc-500">
-                        LocalStorage keys cleared:{" "}
-                        {wipeResult.clearedLocalStorageKeys.join(", ")}
+                        LocalStorage keys cleared: {wipeResult.clearedLocalStorageKeys.join(", ")}
                       </p>
                     )}
                   </>

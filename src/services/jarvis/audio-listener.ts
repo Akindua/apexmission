@@ -8,12 +8,7 @@
  */
 
 export type AudioListenerState =
-  | "idle"
-  | "requesting-permission"
-  | "listening"
-  | "processing"
-  | "ready"
-  | "error";
+  "idle" | "requesting-permission" | "listening" | "processing" | "ready" | "error";
 
 export interface AudioListenerConfig {
   /** Maximum recording duration in seconds. */
@@ -101,9 +96,7 @@ export class LocalAudioListener {
 
   private updateAudioLevel(): void {
     if (!this.analyser || !this.dataArray) return;
-    this.analyser.getByteFrequencyData(
-      this.dataArray as unknown as Uint8Array<ArrayBuffer>
-    );
+    this.analyser.getByteFrequencyData(this.dataArray as unknown as Uint8Array<ArrayBuffer>);
     let sum = 0;
     const len = this.dataArray.length;
     for (let i = 0; i < len; i++) {
@@ -147,8 +140,7 @@ export class LocalAudioListener {
       // Set up audio level visualization.
       const AudioCtor =
         window.AudioContext ||
-        (window as unknown as { webkitAudioContext?: typeof AudioContext })
-          .webkitAudioContext;
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!AudioCtor) {
         throw new Error("Web Audio API not available");
       }
@@ -211,7 +203,7 @@ export class LocalAudioListener {
       this.events.onError?.(
         err instanceof Error
           ? `Microphone access failed: ${err.message}`
-          : "Microphone access failed. Please retry."
+          : "Microphone access failed. Please retry.",
       );
     }
   }

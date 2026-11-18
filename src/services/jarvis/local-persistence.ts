@@ -52,7 +52,7 @@ export function getPendingSuggestions(): JarvisSuggestion[] {
  */
 export function applySuggestion(id: string): void {
   const suggestions = getJarvisSuggestions().map((s) =>
-    s.id === id ? { ...s, status: "applied" as const } : s
+    s.id === id ? { ...s, status: "applied" as const } : s,
   );
   setJarvisSuggestions(suggestions);
 }
@@ -62,7 +62,7 @@ export function applySuggestion(id: string): void {
  */
 export function dismissSuggestion(id: string): void {
   const suggestions = getJarvisSuggestions().map((s) =>
-    s.id === id ? { ...s, status: "dismissed" as const } : s
+    s.id === id ? { ...s, status: "dismissed" as const } : s,
   );
   setJarvisSuggestions(suggestions);
 }

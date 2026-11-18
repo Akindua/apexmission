@@ -18,10 +18,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { createFileRoute } from "@tanstack/react-router";
 import { convertToModelMessages, generateText, type UIMessage } from "ai";
 
-import {
-  chooseModel,
-  type ModelConfig,
-} from "@/lib/ai-model-router";
+import { chooseModel, type ModelConfig } from "@/lib/ai-model-router";
 import {
   enforceRateLimit,
   fenceUntrustedContent,
@@ -111,8 +108,7 @@ export const Route = createFileRoute("/api/jarvis/suggest")({
         // Subscription gate: Jarvis is premium-only.
         const supabaseUrl = process.env["SUPABASE_URL"];
         const supabaseKey =
-          process.env["SUPABASE_PUBLISHABLE_KEY"] ??
-          process.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
+          process.env["SUPABASE_PUBLISHABLE_KEY"] ?? process.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
         if (!supabaseUrl || !supabaseKey) {
           console.error("[Jarvis] Missing Supabase env vars.");
           return new Response("Service unavailable", { status: 503 });
@@ -131,10 +127,7 @@ export const Route = createFileRoute("/api/jarvis/suggest")({
           .maybeSingle();
 
         const tier =
-          (profile?.subscription_tier as
-            | "free"
-            | "premium_active"
-            | "lifetime") ?? "free";
+          (profile?.subscription_tier as "free" | "premium_active" | "lifetime") ?? "free";
         if (tier !== "premium_active" && tier !== "lifetime") {
           return new Response("Jarvis requires an active subscription.", {
             status: 403,
@@ -155,23 +148,14 @@ export const Route = createFileRoute("/api/jarvis/suggest")({
           limit: JARVIS_HOURLY_LIMIT,
           windowMs: JARVIS_HOURLY_WINDOW_MS,
         });
-        const ipBurst = rateLimit(
-          `jarvis:ip:${getClientIp(request)}`,
-          10,
-          JARVIS_BURST_WINDOW_MS,
-        );
+        const ipBurst = rateLimit(`jarvis:ip:${getClientIp(request)}`, 10, JARVIS_BURST_WINDOW_MS);
         const daily = await persistentRateLimit(
           actor,
           "jarvis:user:daily",
           JARVIS_DAILY_LIMIT,
           JARVIS_DAILY_WINDOW_SECONDS,
         );
-        if (
-          !burst.ok ||
-          !hourly.ok ||
-          !ipBurst.ok ||
-          (daily && !daily.ok)
-        ) {
+        if (!burst.ok || !hourly.ok || !ipBurst.ok || (daily && !daily.ok)) {
           return rateLimitedResponse(
             Math.max(
               burst.retryAfterSeconds,
@@ -278,8 +262,7 @@ export const Route = createFileRoute("/api/jarvis/suggest")({
           ]),
         });
 
-        const replyText =
-          typeof result.text === "string" ? result.text : String(result.text ?? "");
+        const replyText = typeof result.text === "string" ? result.text : String(result.text ?? "");
 
         // Parse the JSON response from the model.
         let suggestions: any[] = [];
@@ -328,17 +311,13 @@ export const Route = createFileRoute("/api/jarvis/suggest")({
               s.appliesTo === "routine"
                 ? s.appliesTo
                 : "focus",
-            confidence: Math.max(
-              0,
-              Math.min(100, Number(s.confidence) || 70),
-            ),
+            confidence: Math.max(0, Math.min(100, Number(s.confidence) || 70)),
           }))
           .slice(0, 3);
 
         // Log token counts only — never message text or context.
         const usage = result.usage as
-          | { inputTokens?: number; outputTokens?: number; totalTokens?: number }
-          | undefined;
+          { inputTokens?: number; outputTokens?: number; totalTokens?: number } | undefined;
         console.log("[Jarvis] Suggestions generated", {
           model: modelConfig.model,
           count: cleanSuggestions.length,
@@ -347,16 +326,13 @@ export const Route = createFileRoute("/api/jarvis/suggest")({
           totalTokens: usage?.totalTokens ?? 0,
         });
 
-        return new Response(
-          JSON.stringify({ suggestions: cleanSuggestions }),
-          {
-            status: 200,
-            headers: {
-              "content-type": "application/json; charset=utf-8",
-              ...getAIPrivacyHeaders(),
-            },
+        return new Response(JSON.stringify({ suggestions: cleanSuggestions }), {
+          status: 200,
+          headers: {
+            "content-type": "application/json; charset=utf-8",
+            ...getAIPrivacyHeaders(),
           },
-        );
+        });
       },
     },
   },

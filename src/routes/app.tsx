@@ -598,9 +598,7 @@ function ApexMission() {
           const serverState = { ...state, tasks: serverMatrix, planDate: todayKey() };
           setState(serverState);
           saveState(serverState);
-          setDayPlan(
-            buildLocalDayPlan({ mission: serverState.mission, tasks: serverState.tasks }),
-          );
+          setDayPlan(buildLocalDayPlan({ mission: serverState.mission, tasks: serverState.tasks }));
         }
       }
 
@@ -624,7 +622,6 @@ function ApexMission() {
       setProfileError("Couldn't load your profile. Retry.");
     }
   }, [currentUserId, state, profileRetryCount]);
-
 
   const handleOnboardingComplete = async () => {
     // Flip the UI immediately, then persist the permanent database flag.
@@ -1787,7 +1784,11 @@ function ApexMission() {
                 }}
                 className="mt-2 flex items-center gap-2 rounded-lg bg-emerald-500 px-3 py-2 text-[10px] font-bold text-black hover:bg-emerald-400"
               >
-                <Loader2 className={profileRetryCount > 0 ? "size-3.5 shrink-0 animate-spin" : "size-3.5 shrink-0"} />
+                <Loader2
+                  className={
+                    profileRetryCount > 0 ? "size-3.5 shrink-0 animate-spin" : "size-3.5 shrink-0"
+                  }
+                />
                 {profileRetryCount > 0 ? `Retrying...` : "Retry"}
               </button>
             </div>

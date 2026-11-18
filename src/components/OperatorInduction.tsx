@@ -207,8 +207,8 @@ export function OperatorInduction({
             {step === 0 && (
               <div className="space-y-4 text-left">
                 <p className="text-sm leading-relaxed text-zinc-400">
-                  Your mission is the filter. If an objective does not move it forward, it does
-                  not belong in your matrix. Write it as a measurable outcome, not a mood.
+                  Your mission is the filter. If an objective does not move it forward, it does not
+                  belong in your matrix. Write it as a measurable outcome, not a mood.
                 </p>
                 <label htmlFor="induction-mission" className="glass-input-label block">
                   Master Vision Statement

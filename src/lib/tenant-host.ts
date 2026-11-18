@@ -32,7 +32,10 @@ function normalizeHostname(hostname: string): string {
 }
 
 /** True for the apex domain, `www`, and local development hosts. */
-export function isPlatformHostname(hostname: string, rootDomain: string = TENANT_ROOT_DOMAIN): boolean {
+export function isPlatformHostname(
+  hostname: string,
+  rootDomain: string = TENANT_ROOT_DOMAIN,
+): boolean {
   const host = normalizeHostname(hostname);
   const root = normalizeHostname(rootDomain);
   return host === root || host === `www.${root}` || host === "localhost" || host === "127.0.0.1";

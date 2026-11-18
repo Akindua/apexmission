@@ -17,9 +17,9 @@ export function JarvisDisclaimer() {
         <div>
           <h3 className="text-sm font-bold text-white">About Jarvis AI</h3>
           <p className="mt-1 text-[10px] leading-relaxed text-zinc-500">
-            Jarvis is an AI-powered suggestive copilot that generates proactive
-            nudges, workflow recommendations, and scheduling suggestions based
-            on your mission, tasks, and execution data.
+            Jarvis is an AI-powered suggestive copilot that generates proactive nudges, workflow
+            recommendations, and scheduling suggestions based on your mission, tasks, and execution
+            data.
           </p>
         </div>
       </div>
@@ -29,11 +29,10 @@ export function JarvisDisclaimer() {
           Important Disclaimer
         </h4>
         <p className="text-[10px] leading-relaxed text-zinc-500">
-          Jarvis provides informational self-improvement guidance only. It does
-          not constitute professional, medical, legal, or financial advice. All
-          AI-generated suggestions require your explicit approval before any
-          change is made to your data — Jarvis never acts autonomously. Use
-          your own judgment when evaluating suggestions.
+          Jarvis provides informational self-improvement guidance only. It does not constitute
+          professional, medical, legal, or financial advice. All AI-generated suggestions require
+          your explicit approval before any change is made to your data — Jarvis never acts
+          autonomously. Use your own judgment when evaluating suggestions.
         </p>
       </div>
 
@@ -42,11 +41,9 @@ export function JarvisDisclaimer() {
           Privacy
         </h4>
         <p className="text-[10px] leading-relaxed text-zinc-500">
-          Jarvis suggestions are stored locally on your device. When AI
-          generation is used, prompts are sanitized and sent with zero-data-
-          retention / zero-training headers. No personally identifiable
-          information (email, tenant IDs, or account IDs) is included in LLM
-          prompts.
+          Jarvis suggestions are stored locally on your device. When AI generation is used, prompts
+          are sanitized and sent with zero-data- retention / zero-training headers. No personally
+          identifiable information (email, tenant IDs, or account IDs) is included in LLM prompts.
         </p>
       </div>
     </div>

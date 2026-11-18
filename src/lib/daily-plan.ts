@@ -99,11 +99,7 @@ function normalizeAiPlan(raw: unknown): DayPlanProposal | null {
   const candidate = raw as RawPlan;
 
   const tier = (value: unknown): string[] =>
-    cap(
-      (Array.isArray(value) ? value : [])
-        .map((entry) => clean(entry))
-        .filter(Boolean),
-    );
+    cap((Array.isArray(value) ? value : []).map((entry) => clean(entry)).filter(Boolean));
 
   const high = tier(candidate.high);
   const medium = tier(candidate.medium);
@@ -194,9 +190,7 @@ function makeTask(text: string, tier: ImpactTier, index: number): Task {
 /** Replaces today's matrix with the accepted plan. */
 export function applyDayPlan(state: MissionState, plan: DayPlanProposal): MissionState {
   const matrix = (items: string[], tier: ImpactTier): Task[] =>
-    items
-      .slice(0, MAX_TASKS_PER_TIER)
-      .map((text, index) => makeTask(text, tier, index));
+    items.slice(0, MAX_TASKS_PER_TIER).map((text, index) => makeTask(text, tier, index));
 
   const dailyText = clean(plan.dailyAction) || state.daily.text;
 

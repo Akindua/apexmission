@@ -74,14 +74,7 @@ export function TacticalBriefing({
         profile: operatorProfile,
         leaderboard,
       }),
-    [
-      userName,
-      operatorProfile,
-      userRank,
-      state,
-      behaviorAnalytics,
-      leaderboard,
-    ],
+    [userName, operatorProfile, userRank, state, behaviorAnalytics, leaderboard],
   );
 
   const [missionDraft, setMissionDraft] = useState(dossier.mission);
@@ -180,7 +173,9 @@ export function TacticalBriefing({
         <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-8 sm:py-6">
           <div className={`rounded-xl border p-4 text-left ${riskTone.shell}`}>
             <div className="flex items-start gap-3">
-              <span className={`mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg border border-current/20 bg-black/30 ${riskTone.icon}`}>
+              <span
+                className={`mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg border border-current/20 bg-black/30 ${riskTone.icon}`}
+              >
                 {dossier.riskLevel === "LOW" ? (
                   <CheckCircle2 className="size-4" />
                 ) : (
@@ -188,7 +183,9 @@ export function TacticalBriefing({
                 )}
               </span>
               <div className="min-w-0">
-                <p className={`font-mono text-[10px] font-black uppercase tracking-[0.2em] ${riskTone.text}`}>
+                <p
+                  className={`font-mono text-[10px] font-black uppercase tracking-[0.2em] ${riskTone.text}`}
+                >
                   Discipline Audit · {dossier.riskLevel}
                 </p>
                 <p className="mt-1 text-xs font-medium leading-relaxed text-zinc-300">
@@ -201,7 +198,9 @@ export function TacticalBriefing({
                         key={habit}
                         className="flex items-start gap-1.5 text-[11px] font-medium leading-relaxed text-zinc-400"
                       >
-                        <span className={`mt-1.5 size-1 shrink-0 rounded-full ${riskTone.text} bg-current`} />
+                        <span
+                          className={`mt-1.5 size-1 shrink-0 rounded-full ${riskTone.text} bg-current`}
+                        />
                         <span className="min-w-0 break-words">{habit}</span>
                       </li>
                     ))}
@@ -261,7 +260,9 @@ export function TacticalBriefing({
                   </button>
                 </div>
               ) : (
-                <p className={`mt-1.5 break-words text-sm font-bold ${dossier.missionDeclared ? "text-white" : "text-amber-400"}`}>
+                <p
+                  className={`mt-1.5 break-words text-sm font-bold ${dossier.missionDeclared ? "text-white" : "text-amber-400"}`}
+                >
                   {dossier.mission}
                 </p>
               )}
@@ -404,7 +405,10 @@ export function TacticalBriefing({
             </summary>
             <div className="max-h-80 space-y-3 overflow-y-auto border-t border-emerald-500/10 p-4">
               {dossier.sections.map((section, index) => (
-                <div key={`${section.role}-${index}`} className="rounded-lg border border-zinc-900 bg-black/40 p-3">
+                <div
+                  key={`${section.role}-${index}`}
+                  className="rounded-lg border border-zinc-900 bg-black/40 p-3"
+                >
                   <p className="mb-1.5 font-mono text-[8px] font-black uppercase tracking-[0.2em] text-zinc-600">
                     Section {String(index + 1).padStart(2, "0")}
                   </p>

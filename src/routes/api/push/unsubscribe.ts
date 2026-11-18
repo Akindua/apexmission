@@ -23,7 +23,8 @@ export const Route = createFileRoute("/api/push/unsubscribe")({
         }
 
         const supabaseUrl = process.env["SUPABASE_URL"];
-        const supabaseKey = process.env["SUPABASE_PUBLISHABLE_KEY"] ?? process.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
+        const supabaseKey =
+          process.env["SUPABASE_PUBLISHABLE_KEY"] ?? process.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
         if (!supabaseUrl || !supabaseKey) {
           console.error("[PushUnsubscribe] Missing Supabase env vars");
           return new Response("Service unavailable", { status: 503 });
@@ -36,7 +37,10 @@ export const Route = createFileRoute("/api/push/unsubscribe")({
         });
 
         // Delete subscription (user_id comes from auth.uid() via RLS)
-        const { error } = await supabase.from("push_subscriptions").delete().eq("user_id", actor.userId);
+        const { error } = await supabase
+          .from("push_subscriptions")
+          .delete()
+          .eq("user_id", actor.userId);
 
         if (error) {
           console.error("[PushUnsubscribe] DB error:", error);

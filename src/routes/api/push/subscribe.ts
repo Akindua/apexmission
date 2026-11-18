@@ -34,7 +34,8 @@ export const Route = createFileRoute("/api/push/subscribe")({
         }
 
         const supabaseUrl = process.env["SUPABASE_URL"];
-        const supabaseKey = process.env["SUPABASE_PUBLISHABLE_KEY"] ?? process.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
+        const supabaseKey =
+          process.env["SUPABASE_PUBLISHABLE_KEY"] ?? process.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
         if (!supabaseUrl || !supabaseKey) {
           console.error("[PushSubscribe] Missing Supabase env vars");
           return new Response("Service unavailable", { status: 503 });

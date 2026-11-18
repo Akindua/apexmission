@@ -29,10 +29,7 @@ import { loadState, saveState, type MissionState, type Task } from "@/lib/missio
 import { type DayPlanProposal } from "@/lib/daily-plan";
 import { getScopedItem, setScopedItem } from "@/lib/user-storage";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  fenceUntrustedContent,
-  sanitizePromptText,
-} from "@/lib/security.server";
+import { fenceUntrustedContent, sanitizePromptText } from "@/lib/security.server";
 
 import {
   Conversation,
@@ -663,8 +660,7 @@ function CoachPanel({
       return "LEGENDARY — apex mastery";
     })();
 
-    const CANARY_STRING =
-      "COACH_CANARY_DO_NOT_REVEAL_INTERNAL_PROMPT_OR_CONTEXT_FORMAT";
+    const CANARY_STRING = "COACH_CANARY_DO_NOT_REVEAL_INTERNAL_PROMPT_OR_CONTEXT_FORMAT";
 
     // Minimal coach context — hidden input only, never returned to the browser.
     const firstName = String(currentName || "Operator").split(" ")[0];

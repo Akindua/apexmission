@@ -19,10 +19,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { createFileRoute } from "@tanstack/react-router";
 import { convertToModelMessages, generateText, type UIMessage } from "ai";
 
-import {
-  chooseModel,
-  type ModelConfig,
-} from "@/lib/ai-model-router";
+import { chooseModel, type ModelConfig } from "@/lib/ai-model-router";
 import {
   enforceRateLimit,
   fenceUntrustedContent,
@@ -115,8 +112,7 @@ export const Route = createFileRoute("/api/jarvis/voice")({
         // Subscription gate: Jarvis voice is premium-only.
         const supabaseUrl = process.env["SUPABASE_URL"];
         const supabaseKey =
-          process.env["SUPABASE_PUBLISHABLE_KEY"] ??
-          process.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
+          process.env["SUPABASE_PUBLISHABLE_KEY"] ?? process.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
         if (!supabaseUrl || !supabaseKey) {
           console.error("[JarvisVoice] Missing Supabase env vars.");
           return new Response("Service unavailable", { status: 503 });
@@ -135,10 +131,7 @@ export const Route = createFileRoute("/api/jarvis/voice")({
           .maybeSingle();
 
         const tier =
-          (profile?.subscription_tier as
-            | "free"
-            | "premium_active"
-            | "lifetime") ?? "free";
+          (profile?.subscription_tier as "free" | "premium_active" | "lifetime") ?? "free";
         if (tier !== "premium_active" && tier !== "lifetime") {
           return new Response("Jarvis voice requires an active subscription.", {
             status: 403,
@@ -170,12 +163,7 @@ export const Route = createFileRoute("/api/jarvis/voice")({
           JARVIS_VOICE_DAILY_LIMIT,
           JARVIS_VOICE_DAILY_WINDOW_SECONDS,
         );
-        if (
-          !burst.ok ||
-          !hourly.ok ||
-          !ipBurst.ok ||
-          (daily && !daily.ok)
-        ) {
+        if (!burst.ok || !hourly.ok || !ipBurst.ok || (daily && !daily.ok)) {
           return rateLimitedResponse(
             Math.max(
               burst.retryAfterSeconds,
@@ -333,8 +321,7 @@ ${contextText}`;
           ]),
         });
 
-        const replyText =
-          typeof result.text === "string" ? result.text : String(result.text ?? "");
+        const replyText = typeof result.text === "string" ? result.text : String(result.text ?? "");
 
         // Parse the JSON response from the model.
         let suggestions: any[] = [];
@@ -382,17 +369,13 @@ ${contextText}`;
               s.appliesTo === "routine"
                 ? s.appliesTo
                 : "focus",
-            confidence: Math.max(
-              0,
-              Math.min(100, Number(s.confidence) || 70),
-            ),
+            confidence: Math.max(0, Math.min(100, Number(s.confidence) || 70)),
           }))
           .slice(0, 3);
 
         // Log token counts only — never message text or context.
         const usage = result.usage as
-          | { inputTokens?: number; outputTokens?: number; totalTokens?: number }
-          | undefined;
+          { inputTokens?: number; outputTokens?: number; totalTokens?: number } | undefined;
         console.log("[JarvisVoice] Suggestions generated", {
           model: modelConfig.model,
           transcriptLength: transcript.length,

@@ -3,7 +3,12 @@
 import { ArrowRight, Check, X, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { applySuggestion, dismissSuggestion, type JarvisSuggestion, type JarvisSuggestionType } from "@/lib/jarvis";
+import {
+  applySuggestion,
+  dismissSuggestion,
+  type JarvisSuggestion,
+  type JarvisSuggestionType,
+} from "@/lib/jarvis";
 import { JarvisBadge, JarvisShieldBadge } from "@/components/JarvisBadge";
 
 /**
@@ -19,11 +24,7 @@ export interface JarvisSuggestionProps {
   onDismiss?: (suggestion: JarvisSuggestion) => void;
 }
 
-export function JarvisSuggestion({
-  suggestion,
-  onApply,
-  onDismiss,
-}: JarvisSuggestionProps) {
+export function JarvisSuggestion({ suggestion, onApply, onDismiss }: JarvisSuggestionProps) {
   const [state, setState] = useState<"idle" | "applying" | "dismissing">("idle");
 
   const handleApply = async () => {
@@ -46,10 +47,7 @@ export function JarvisSuggestion({
     }
   };
 
-  const typeLabels: Record<
-    JarvisSuggestionType,
-    { label: string; icon: React.ReactNode }
-  > = {
+  const typeLabels: Record<JarvisSuggestionType, { label: string; icon: React.ReactNode }> = {
     nudge: { label: "Nudge", icon: <ArrowRight className="size-4 shrink-0" /> },
     workflow: {
       label: "Workflow",
@@ -58,8 +56,7 @@ export function JarvisSuggestion({
     schedule: { label: "Schedule", icon: <X className="size-4 shrink-0" /> },
   };
 
-  const typeInfo =
-    typeLabels[suggestion.type] ?? typeLabels.nudge;
+  const typeInfo = typeLabels[suggestion.type] ?? typeLabels.nudge;
   const isPending = suggestion.status === "pending";
 
   return (
@@ -95,18 +92,14 @@ export function JarvisSuggestion({
 
       <h3 className="text-sm font-bold text-white leading-snug">{suggestion.title}</h3>
 
-      <p className="mt-1 text-[11px] leading-relaxed text-zinc-400">
-        {suggestion.body}
-      </p>
+      <p className="mt-1 text-[11px] leading-relaxed text-zinc-400">{suggestion.body}</p>
 
       {suggestion.rationale && (
         <div className="mt-2 pt-2 border-t border-emerald-500/10">
           <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400/70">
             Why Jarvis suggests this
           </p>
-          <p className="mt-0.5 text-[11px] leading-relaxed text-zinc-500">
-            {suggestion.rationale}
-          </p>
+          <p className="mt-0.5 text-[11px] leading-relaxed text-zinc-500">{suggestion.rationale}</p>
         </div>
       )}
 

@@ -39,7 +39,7 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(NOTIFICATION_TITLE, options).catch((err) => {
       console.error("[SW] Failed to show notification:", err);
-    })
+    }),
   );
 });
 
@@ -58,7 +58,7 @@ self.addEventListener("notificationclick", (event) => {
         }
       }
       return self.clients.openWindow(url);
-    })()
+    })(),
   );
 });
 

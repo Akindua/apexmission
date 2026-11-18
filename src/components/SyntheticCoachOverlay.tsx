@@ -1,9 +1,22 @@
 import { useState, useEffect, useRef } from "react";
-import { X, MessageCircle, Send, Sparkles, Target, Flame, Trophy, Activity, Zap, Brain, Shield, AlertTriangle, ChevronDown, ChevronRight, BookOpen } from "lucide-react";
 import {
-  generateSyntheticBriefing,
-  type LeaderboardSnapshot,
-} from "@/lib/synthetic-briefing";
+  X,
+  MessageCircle,
+  Send,
+  Sparkles,
+  Target,
+  Flame,
+  Trophy,
+  Activity,
+  Zap,
+  Brain,
+  Shield,
+  AlertTriangle,
+  ChevronDown,
+  ChevronRight,
+  BookOpen,
+} from "lucide-react";
+import { generateSyntheticBriefing, type LeaderboardSnapshot } from "@/lib/synthetic-briefing";
 
 interface SyntheticCoachOverlayProps {
   userName: string;
@@ -73,7 +86,7 @@ export function SyntheticCoachOverlay({
         id: `initial-${idx}-${Date.now()}`,
         role: item.role,
         content: item.content,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       }));
 
       // If first signup, use onboarding mode with step-by-step display
@@ -87,7 +100,18 @@ export function SyntheticCoachOverlay({
         setMessages(initialMessages);
       }
     }
-  }, [isOpen, messages.length, userName, operatorName, userRank, state, behaviorAnalytics, isFirstSignup, companyId, leaderboard]);
+  }, [
+    isOpen,
+    messages.length,
+    userName,
+    operatorName,
+    userRank,
+    state,
+    behaviorAnalytics,
+    isFirstSignup,
+    companyId,
+    leaderboard,
+  ]);
 
   useEffect(() => {
     if (messagesEndRef.current && !isMinimized) {
@@ -121,7 +145,7 @@ export function SyntheticCoachOverlay({
       const nextMessage = allOnboardingMessages[nextStep];
       if (!nextMessage) return;
       setOnboardingStep(nextStep);
-      setMessages(prev => [...prev, nextMessage]);
+      setMessages((prev) => [...prev, nextMessage]);
     } else {
       // Onboarding complete; permanently disable it in the profile database.
       finalizeOnboarding();
@@ -136,32 +160,35 @@ export function SyntheticCoachOverlay({
       id: `user-${Date.now()}`,
       role: "user",
       content: trimmed,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsTyping(true);
 
     // Generate synthetic response based on keywords (zero API cost)
-    setTimeout(() => {
-      const response = generateSyntheticResponse(
-        trimmed,
-        operatorName || userName,
-        userRank,
-        state,
-        behaviorAnalytics,
-        companyId !== null,
-      );
-      const assistantMessage: Message = {
-        id: `assistant-${Date.now()}`,
-        role: "assistant",
-        content: response,
-        timestamp: Date.now()
-      };
-      setMessages(prev => [...prev, assistantMessage]);
-      setIsTyping(false);
-    }, 800 + Math.random() * 500);
+    setTimeout(
+      () => {
+        const response = generateSyntheticResponse(
+          trimmed,
+          operatorName || userName,
+          userRank,
+          state,
+          behaviorAnalytics,
+          companyId !== null,
+        );
+        const assistantMessage: Message = {
+          id: `assistant-${Date.now()}`,
+          role: "assistant",
+          content: response,
+          timestamp: Date.now(),
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
+        setIsTyping(false);
+      },
+      800 + Math.random() * 500,
+    );
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -207,7 +234,9 @@ export function SyntheticCoachOverlay({
                 {isOnboardingMode ? "Onboarding Tutorial" : "Mission Coach"}
               </h2>
               <p className="text-[9px] text-emerald-400 font-mono">
-                {isOnboardingMode ? `Step ${onboardingStep + 1}/${allOnboardingMessages.length}` : "Zero-API Synthetic"}
+                {isOnboardingMode
+                  ? `Step ${onboardingStep + 1}/${allOnboardingMessages.length}`
+                  : "Zero-API Synthetic"}
               </p>
             </div>
           </div>
@@ -247,7 +276,10 @@ export function SyntheticCoachOverlay({
               >
                 <p className="text-xs whitespace-pre-wrap leading-relaxed">{message.content}</p>
                 <p className="text-[9px] mt-1 opacity-60">
-                  {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(message.timestamp).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                 </p>
               </div>
             </div>
@@ -256,9 +288,18 @@ export function SyntheticCoachOverlay({
             <div className="flex justify-start">
               <div className="bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5">
                 <div className="flex gap-1">
-                  <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <div
+                    className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce"
+                    style={{ animationDelay: "0ms" }}
+                  />
+                  <div
+                    className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce"
+                    style={{ animationDelay: "150ms" }}
+                  />
+                  <div
+                    className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce"
+                    style={{ animationDelay: "300ms" }}
+                  />
                 </div>
               </div>
             </div>
@@ -323,7 +364,11 @@ function generateSyntheticResponse(
   const firstName = operatorName.split(" ")[0];
 
   // Task-related queries
-  if (lowerMessage.includes("task") || lowerMessage.includes("to do") || lowerMessage.includes("work")) {
+  if (
+    lowerMessage.includes("task") ||
+    lowerMessage.includes("to do") ||
+    lowerMessage.includes("work")
+  ) {
     const highTasks = state.tasks?.high || [];
     const mediumTasks = state.tasks?.medium || [];
     const lowTasks = state.tasks?.low || [];
@@ -331,70 +376,104 @@ function generateSyntheticResponse(
     const completedMedium = mediumTasks.filter((t: any) => t.done).length;
     const completedLow = lowTasks.filter((t: any) => t.done).length;
 
-    return `CURRENT TASK STATUS REPORT, ${firstName}:\n\n` +
+    return (
+      `CURRENT TASK STATUS REPORT, ${firstName}:\n\n` +
       `⚡ HIGH-IMPACT: ${completedHigh}/${highTasks.length} completed\n` +
       `📊 MEDIUM-IMPACT: ${completedMedium}/${mediumTasks.length} completed\n` +
       `🔧 LOW-IMPACT: ${completedLow}/${lowTasks.length} completed\n\n` +
       `Total execution rate: ${Math.round(((completedHigh + completedMedium + completedLow) / (highTasks.length + mediumTasks.length + lowTasks.length || 1)) * 100)}%\n\n` +
-      `Recommendation: Focus on completing high-impact objectives first to maximize your point multiplier.`;
+      `Recommendation: Focus on completing high-impact objectives first to maximize your point multiplier.`
+    );
   }
 
   // Mission-related queries
-  if (lowerMessage.includes("mission") || lowerMessage.includes("vision") || lowerMessage.includes("goal")) {
-    return `MISSION DIRECTIVE STATUS, ${firstName}:\n\n` +
+  if (
+    lowerMessage.includes("mission") ||
+    lowerMessage.includes("vision") ||
+    lowerMessage.includes("goal")
+  ) {
+    return (
+      `MISSION DIRECTIVE STATUS, ${firstName}:\n\n` +
       `Current Master Vision: ${state.mission || "NOT ESTABLISHED - CRITICAL PRIORITY"}\n\n` +
       `State: ${state.mission ? "ACTIVE" : "PENDING INITIALIZATION"}\n\n` +
-      `Your mission is your operational foundation. Without it, execution lacks strategic direction. Establish your core vision statement to unlock full operational potential.`;
+      `Your mission is your operational foundation. Without it, execution lacks strategic direction. Establish your core vision statement to unlock full operational potential.`
+    );
   }
 
   // Streak-related queries
-  if (lowerMessage.includes("streak") || lowerMessage.includes("consistency") || lowerMessage.includes("day")) {
+  if (
+    lowerMessage.includes("streak") ||
+    lowerMessage.includes("consistency") ||
+    lowerMessage.includes("day")
+  ) {
     const streak = state.streak?.count || 0;
-    return `STREAK ANALYSIS, ${firstName}:\n\n` +
+    return (
+      `STREAK ANALYSIS, ${firstName}:\n\n` +
       `Current Streak: ${streak} days\n` +
       `Status: ${streak === 0 ? "INACTIVE - Start today" : streak >= 7 ? "ELITE - 7+ day multiplier active" : "BUILDING - Continue execution"}\n\n` +
       `Daily Action: ${state.daily?.done ? "✅ COMPLETED" : "⏳ PENDING"}\n\n` +
       (isCorporate
         ? "Maintain consistency to protect your task completion trend."
-        : "Maintain consistency to unlock streak bonuses and advance your operational rank.");
+        : "Maintain consistency to unlock streak bonuses and advance your operational rank.")
+    );
   }
 
   // Leaderboard/rank queries
-  if (lowerMessage.includes("rank") || lowerMessage.includes("leaderboard") || lowerMessage.includes("position")) {
+  if (
+    lowerMessage.includes("rank") ||
+    lowerMessage.includes("leaderboard") ||
+    lowerMessage.includes("position")
+  ) {
     if (isCorporate) {
-      return `CHANNEL SCOPE NOTICE, ${firstName}:\n\n` +
+      return (
+        `CHANNEL SCOPE NOTICE, ${firstName}:\n\n` +
         `Public ranking telemetry is outside this operator channel. It is not available in your corporate track.\n\n` +
         `Authorized metrics: task completion trends, execution rate, streak consistency, and Priority Matrix status.\n\n` +
-        `Ask about tasks, mission alignment, or performance patterns.`;
+        `Ask about tasks, mission alignment, or performance patterns.`
+      );
     }
 
-    return `LEADERBOARD INTELLIGENCE, ${firstName}:\n\n` +
+    return (
+      `LEADERBOARD INTELLIGENCE, ${firstName}:\n\n` +
       `Current Position: ${userRank}\n` +
       `Operational Status: ${getOperationalStatus(state)}\n` +
       `Credits: ${(state as any).points || 0}\n\n` +
-      `Advance your position by completing high-impact tasks and maintaining your streak consistency.`;
+      `Advance your position by completing high-impact tasks and maintaining your streak consistency.`
+    );
   }
 
   // Behavior/performance queries
-  if (lowerMessage.includes("behavior") || lowerMessage.includes("performance") || lowerMessage.includes("how am i doing")) {
-    return `BEHAVIORAL PERFORMANCE REPORT, ${firstName}:\n\n` +
+  if (
+    lowerMessage.includes("behavior") ||
+    lowerMessage.includes("performance") ||
+    lowerMessage.includes("how am i doing")
+  ) {
+    return (
+      `BEHAVIORAL PERFORMANCE REPORT, ${firstName}:\n\n` +
       `Sessions Logged: ${behaviorAnalytics.sessionCount}\n` +
       `Tasks Completed: ${behaviorAnalytics.totalTasksCompleted}\n` +
       `Procrastination Events: ${behaviorAnalytics.procrastinationEvents}\n` +
       `Peak Productivity Hour: ${behaviorAnalytics.peakProductivityHour}:00\n` +
       `Insight Level: ${getInsightLevel(behaviorAnalytics.sessionCount)}\n\n` +
-      `Analysis: ${behaviorAnalytics.procrastinationEvents > 3 ? "Elevated procrastination detected. Re-align focus immediately." : "Execution patterns are within optimal parameters."}`;
+      `Analysis: ${behaviorAnalytics.procrastinationEvents > 3 ? "Elevated procrastination detected. Re-align focus immediately." : "Execution patterns are within optimal parameters."}`
+    );
   }
 
   // Help/guidance queries
-  if (lowerMessage.includes("help") || lowerMessage.includes("what should i do") || lowerMessage.includes("advice")) {
-    return `TACTICAL GUIDANCE, ${firstName}:\n\n` +
+  if (
+    lowerMessage.includes("help") ||
+    lowerMessage.includes("what should i do") ||
+    lowerMessage.includes("advice")
+  ) {
+    return (
+      `TACTICAL GUIDANCE, ${firstName}:\n\n` +
       `Current Phase: ${getProductivityPhase(new Date().getHours())}\n\n` +
       `Immediate Actions:\n` +
       `1. ${!state.mission ? "ESTABLISH your Master Vision Statement" : "Review your mission alignment"}\n` +
       `2. ${!state.daily?.done ? "COMPLETE your daily focus action" : "Maintain execution momentum"}\n` +
       `3. ${state.tasks?.high?.filter((t: any) => !t.done).length > 0 ? "Execute pending high-impact tasks" : "Plan next strategic objectives"}\n\n` +
-      `Type specific questions about your mission, tasks, or performance for detailed analysis.`;
+      `Type specific questions about your mission, tasks, or performance for detailed analysis.`
+    );
   }
 
   // Default response
@@ -407,9 +486,11 @@ function generateSyntheticResponse(
     "Tactical guidance and recommendations",
   ];
 
-  return `Message received, ${firstName}. I can provide analysis on:\n\n` +
+  return (
+    `Message received, ${firstName}. I can provide analysis on:\n\n` +
     defaultTopics.map((topic) => `• ${topic}`).join("\n") +
-    `\n\nAsk about any of these areas for detailed intelligence.`;
+    `\n\nAsk about any of these areas for detailed intelligence.`
+  );
 }
 
 function getOperationalStatus(state: any): string {

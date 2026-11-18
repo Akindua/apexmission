@@ -25,4 +25,3 @@ export const Route = createFileRoute("/")({
 function HomeRedirect() {
   return <Navigate to="/welcome" />;
 }
-

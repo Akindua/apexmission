@@ -42,7 +42,11 @@ function localDateKey(date: Date): string {
   ).padStart(2, "0")}`;
 }
 
-function countWithin(entries: TaskHistoryEntryLike[], fromOffset: number, toOffset: number): number {
+function countWithin(
+  entries: TaskHistoryEntryLike[],
+  fromOffset: number,
+  toOffset: number,
+): number {
   const from = localDateKey(startOfLocalDay(fromOffset));
   const to = localDateKey(startOfLocalDay(toOffset));
   return entries.filter((entry) => entry.date >= from && entry.date <= to).length;
@@ -68,7 +72,10 @@ function normalizeHistory(raw: TaskHistoryEntryLike[] | undefined): TaskHistoryE
       entry &&
       typeof entry.date === "string" &&
       /^\d{4}-\d{2}-\d{2}$/.test(entry.date) &&
-      (entry.tier === undefined || entry.tier === "high" || entry.tier === "medium" || entry.tier === "low"),
+      (entry.tier === undefined ||
+        entry.tier === "high" ||
+        entry.tier === "medium" ||
+        entry.tier === "low"),
   );
 }
 
@@ -84,7 +91,10 @@ function peakExecutionWindowPattern(entries: TaskHistoryEntryLike[]): PersonalPa
   const highTimed = entries.filter(
     (entry) => entry.tier === "high" && getCompletionHour(entry) !== null,
   );
-  const source = highTimed.length >= 2 ? highTimed : entries.filter((entry) => getCompletionHour(entry) !== null);
+  const source =
+    highTimed.length >= 2
+      ? highTimed
+      : entries.filter((entry) => getCompletionHour(entry) !== null);
   if (source.length < 2) return null;
 
   const buckets = new Map<string, number>();
@@ -120,12 +130,15 @@ function tierStrengthPattern(entries: TaskHistoryEntryLike[]): PersonalPattern |
   if (tiered.length < 3) return null;
 
   const counts = countByTier(tiered);
-  const ranked = (Object.entries(counts) as Array<[ImpactTier, number]>).sort((a, b) => b[1] - a[1]);
+  const ranked = (Object.entries(counts) as Array<[ImpactTier, number]>).sort(
+    (a, b) => b[1] - a[1],
+  );
   const [tier, count] = ranked[0] ?? ["high", 0];
   if (!count) return null;
 
   const percent = Math.round((count / tiered.length) * 100);
-  const label = tier === "high" ? "High-impact" : tier === "medium" ? "Medium-impact" : "Low-impact";
+  const label =
+    tier === "high" ? "High-impact" : tier === "medium" ? "Medium-impact" : "Low-impact";
 
   if (tier === "high") {
     return {
@@ -153,12 +166,21 @@ function weeklyMomentumPattern(entries: TaskHistoryEntryLike[]): PersonalPattern
 
   const delta = current - previous;
   const direction =
-    delta > 0 ? `up ${delta} from the week before` : delta < 0 ? `down ${Math.abs(delta)} from the week before` : "level with the week before";
+    delta > 0
+      ? `up ${delta} from the week before`
+      : delta < 0
+        ? `down ${Math.abs(delta)} from the week before`
+        : "level with the week before";
   const tone: PatternTone = delta > 0 ? "emerald" : delta < 0 ? "amber" : "sky";
 
   return {
     id: "weekly-momentum",
-    title: delta > 0 ? "Momentum is rising" : delta < 0 ? "Momentum needs a reset" : "Momentum is holding",
+    title:
+      delta > 0
+        ? "Momentum is rising"
+        : delta < 0
+          ? "Momentum needs a reset"
+          : "Momentum is holding",
     detail: `You closed ${current} priorit${current === 1 ? "y" : "ies"} in the last 7 days — ${direction}.`,
     tone,
   };
@@ -192,7 +214,9 @@ function weekdayPeakPattern(entries: TaskHistoryEntryLike[]): PersonalPattern | 
   };
 }
 
-function todayProgressPattern(tasks: Record<ImpactTier, Task[]> | undefined): PersonalPattern | null {
+function todayProgressPattern(
+  tasks: Record<ImpactTier, Task[]> | undefined,
+): PersonalPattern | null {
   const high = Array.isArray(tasks?.high) ? tasks.high : [];
   const total = high.length;
   if (total === 0) return null;

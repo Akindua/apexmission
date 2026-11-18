@@ -39,7 +39,12 @@ function screenRequest(request: Request): Response | null {
   // API clients (curl, SDKs) keep working. Skip page-agent block for
   // requests that carry a valid bearer token (authenticated Supabase clients).
   const bearerPresent = authHeader.startsWith("Bearer ");
-  if (request.method === "GET" && !pathname.startsWith("/api/") && !bearerPresent && isBlockedPageAgent(userAgent)) {
+  if (
+    request.method === "GET" &&
+    !pathname.startsWith("/api/") &&
+    !bearerPresent &&
+    isBlockedPageAgent(userAgent)
+  ) {
     return new Response(FORBIDDEN_PAGE, {
       status: 403,
       headers: { "content-type": "text/html; charset=utf-8" },

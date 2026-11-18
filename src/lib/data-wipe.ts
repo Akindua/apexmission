@@ -21,9 +21,7 @@ async function discoverDatabaseNames(): Promise<string[]> {
   if (typeof indexedDB !== "undefined" && typeof indexedDB.databases === "function") {
     try {
       const dbs = await indexedDB.databases();
-      return (dbs ?? [])
-        .map((db) => db.name)
-        .filter((name): name is string => Boolean(name));
+      return (dbs ?? []).map((db) => db.name).filter((name): name is string => Boolean(name));
     } catch {
       // Fall through to known-name probing
     }

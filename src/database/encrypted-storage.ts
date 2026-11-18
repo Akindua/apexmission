@@ -78,7 +78,11 @@ function openDatabase(storeNames: string[]): Promise<IDBDatabase> {
   });
 }
 
-function getStore(db: IDBDatabase, name: string, mode: IDBTransactionMode = "readonly"): IDBObjectStore {
+function getStore(
+  db: IDBDatabase,
+  name: string,
+  mode: IDBTransactionMode = "readonly",
+): IDBObjectStore {
   return db.transaction([name], mode).objectStore(name);
 }
 
@@ -91,7 +95,12 @@ async function getRecord(db: IDBDatabase, store: string, key: string): Promise<u
   });
 }
 
-async function setRecord(db: IDBDatabase, store: string, key: string, value: unknown): Promise<void> {
+async function setRecord(
+  db: IDBDatabase,
+  store: string,
+  key: string,
+  value: unknown,
+): Promise<void> {
   return new Promise((resolve, reject) => {
     const tx = db.transaction([store], "readwrite");
     const request = tx.objectStore(store).put(value, key);
@@ -129,7 +138,7 @@ async function deriveKeyFromPassphrase(passphrase: string, salt: Uint8Array): Pr
     new TextEncoder().encode(passphrase),
     { name: "PBKDF2" },
     false,
-    ["deriveKey"]
+    ["deriveKey"],
   );
 
   return crypto.subtle.deriveKey(
@@ -142,7 +151,7 @@ async function deriveKeyFromPassphrase(passphrase: string, salt: Uint8Array): Pr
     keyMaterial,
     { name: "AES-GCM", length: 256 },
     false, // KEK is not extractable either
-    ["wrapKey", "unwrapKey"]
+    ["wrapKey", "unwrapKey"],
   );
 }
 
@@ -155,7 +164,7 @@ async function generateDEK(): Promise<CryptoKey> {
   return crypto.subtle.generateKey(
     { name: "AES-GCM", length: 256 },
     false, // extractable: false — hardware-backed where available
-    ["encrypt", "decrypt"]
+    ["encrypt", "decrypt"],
   );
 }
 
@@ -177,7 +186,7 @@ async function unwrapDEK(wrapped: ArrayBuffer, kek: CryptoKey): Promise<CryptoKe
     { name: "AES-GCM" },
     { name: "AES-GCM", length: 256 },
     false, // extractable: false
-    ["encrypt", "decrypt"]
+    ["encrypt", "decrypt"],
   );
 }
 
@@ -211,19 +220,13 @@ export class EncryptedStorage {
    */
   async init(options?: EncryptedStorageOptions): Promise<void> {
     if (!hasWebCrypto()) {
-      throw new Error(
-        "Database: Web Crypto API is unavailable in this environment."
-      );
+      throw new Error("Database: Web Crypto API is unavailable in this environment.");
     }
     if (!hasIndexedDB()) {
-      throw new Error(
-        "Database: IndexedDB is unavailable in this environment."
-      );
+      throw new Error("Database: IndexedDB is unavailable in this environment.");
     }
     if (!isSecureContext()) {
-      throw new Error(
-        "Database: requires a secure context (HTTPS or localhost)."
-      );
+      throw new Error("Database: requires a secure context (HTTPS or localhost).");
     }
 
     if (options?.scope) {
@@ -233,16 +236,10 @@ export class EncryptedStorage {
     this.db = await openDatabase([STORE_NAME, DEK_STORE_NAME]);
 
     // Attempt to load an existing DEK; otherwise generate a fresh one.
-    const existingWrapped = (await getRecord(
-      this.db,
-      DEK_STORE_NAME,
-      WRAPPED_DEK_RECORD_KEY
-    )) as ArrayBuffer | undefined;
-    const existingSalt = (await getRecord(
-      this.db,
-      DEK_STORE_NAME,
-      SALT_RECORD_KEY
-    )) as Uint8Array | undefined;
+    const existingWrapped = (await getRecord(this.db, DEK_STORE_NAME, WRAPPED_DEK_RECORD_KEY)) as
+      ArrayBuffer | undefined;
+    const existingSalt = (await getRecord(this.db, DEK_STORE_NAME, SALT_RECORD_KEY)) as
+      Uint8Array | undefined;
 
     const passphrase = options?.passphrase;
 
@@ -289,11 +286,7 @@ export class EncryptedStorage {
 
     const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
     const encoded = new TextEncoder().encode(value);
-    const ciphertext = await crypto.subtle.encrypt(
-      { name: "AES-GCM", iv },
-      this.dek!,
-      encoded
-    );
+    const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, this.dek!, encoded);
 
     const combined = new Uint8Array(iv.length + ciphertext.byteLength);
     combined.set(iv);
@@ -313,11 +306,7 @@ export class EncryptedStorage {
     const iv = combined.slice(0, IV_LENGTH);
     const ciphertext = combined.slice(IV_LENGTH);
 
-    const decrypted = await crypto.subtle.decrypt(
-      { name: "AES-GCM", iv },
-      this.dek!,
-      ciphertext
-    );
+    const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, this.dek!, ciphertext);
     return new TextDecoder().decode(decrypted);
   }
 
@@ -327,12 +316,7 @@ export class EncryptedStorage {
   async set(id: string, value: string): Promise<void> {
     if (!this.db) throw new Error("Database: database not open.");
     const encrypted = await this.encrypt(value);
-    await setRecord(
-      this.db,
-      STORE_NAME,
-      `${this.scope}${SCOPE_SEPARATOR}${id}`,
-      encrypted
-    );
+    await setRecord(this.db, STORE_NAME, `${this.scope}${SCOPE_SEPARATOR}${id}`, encrypted);
   }
 
   /**
@@ -341,9 +325,7 @@ export class EncryptedStorage {
   async get(id: string): Promise<string | null> {
     if (!this.db) throw new Error("Database: database not open.");
     const scopedKey = `${this.scope}${SCOPE_SEPARATOR}${id}`;
-    const raw = (await getRecord(this.db, STORE_NAME, scopedKey)) as
-      | string
-      | undefined;
+    const raw = (await getRecord(this.db, STORE_NAME, scopedKey)) as string | undefined;
     if (raw === undefined) return null;
     return this.decrypt(raw);
   }
@@ -353,11 +335,7 @@ export class EncryptedStorage {
    */
   async remove(id: string): Promise<void> {
     if (!this.db) throw new Error("Database: database not open.");
-    await deleteRecord(
-      this.db,
-      STORE_NAME,
-      `${this.scope}${SCOPE_SEPARATOR}${id}`
-    );
+    await deleteRecord(this.db, STORE_NAME, `${this.scope}${SCOPE_SEPARATOR}${id}`);
   }
 
   /**
@@ -373,11 +351,7 @@ export class EncryptedStorage {
       request.onsuccess = () => {
         const prefix = `${this.scope}${SCOPE_SEPARATOR}`;
         const allKeys = request.result as string[];
-        resolve(
-          allKeys
-            .filter((k) => k.startsWith(prefix))
-            .map((k) => k.slice(prefix.length))
-        );
+        resolve(allKeys.filter((k) => k.startsWith(prefix)).map((k) => k.slice(prefix.length)));
       };
       request.onerror = () => reject(request.error);
     });
@@ -413,7 +387,7 @@ let encryptedStorage: EncryptedStorage | null = null;
  * access. Accepts an optional passphrase for durable key wrapping.
  */
 export async function getEncryptedStorage(
-  options?: EncryptedStorageOptions
+  options?: EncryptedStorageOptions,
 ): Promise<EncryptedStorage> {
   if (!encryptedStorage) {
     encryptedStorage = new EncryptedStorage(options);
@@ -430,7 +404,7 @@ export async function getEncryptedStorage(
 export async function encryptedSet(
   id: string,
   value: string,
-  options?: EncryptedStorageOptions
+  options?: EncryptedStorageOptions,
 ): Promise<void> {
   const store = await getEncryptedStorage(options);
   await store.set(id, value);
@@ -441,7 +415,7 @@ export async function encryptedSet(
  */
 export async function encryptedGet(
   id: string,
-  options?: EncryptedStorageOptions
+  options?: EncryptedStorageOptions,
 ): Promise<string | null> {
   const store = await getEncryptedStorage(options);
   return store.get(id);

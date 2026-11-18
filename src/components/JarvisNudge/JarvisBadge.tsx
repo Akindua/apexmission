@@ -2,12 +2,7 @@
 
 import { Sparkles, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  jarvisBadgeBase,
-  jarvisBadgeSm,
-  jarvisBadgeMd,
-  jarvisShieldBadgeBase,
-} from "./styles";
+import { jarvisBadgeBase, jarvisBadgeSm, jarvisBadgeMd, jarvisShieldBadgeBase } from "./styles";
 
 /**
  * JarvisBadge — Visual transparency indicator for all AI-generated outputs.
@@ -22,11 +17,7 @@ export interface JarvisBadgeProps {
 }
 
 export function JarvisBadge({ size = "sm", className }: JarvisBadgeProps = {}) {
-  const base = cn(
-    jarvisBadgeBase,
-    size === "sm" ? jarvisBadgeSm : jarvisBadgeMd,
-    className
-  );
+  const base = cn(jarvisBadgeBase, size === "sm" ? jarvisBadgeSm : jarvisBadgeMd, className);
 
   return (
     <span className={base} aria-label="Jarvis AI suggestion">

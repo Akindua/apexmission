@@ -19,7 +19,7 @@ export interface JarvisVoiceResult {
  */
 export async function submitJarvisVoice(
   audioBlob: Blob,
-  context: JarvisContext
+  context: JarvisContext,
 ): Promise<JarvisVoiceResult> {
   const formData = new FormData();
   formData.append("audio", audioBlob, "voice.webm");

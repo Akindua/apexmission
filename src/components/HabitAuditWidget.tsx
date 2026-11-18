@@ -68,13 +68,19 @@ export function HabitAuditWidget({ state, userName }: HabitAuditWidgetProps) {
             Jarvis-generated summary of your week
           </p>
         </div>
-        <span className={cn(
-          "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-wider",
-          loading
-            ? "border-amber-500/30 bg-amber-950/20 text-amber-400 animate-pulse"
-            : "border-zinc-700/30 bg-zinc-950/20 text-zinc-400"
-        )}>
-          {loading ? <Sparkles className="size-3 shrink-0 animate-pulse" /> : <Sparkles className="size-3 shrink-0" />}
+        <span
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-wider",
+            loading
+              ? "border-amber-500/30 bg-amber-950/20 text-amber-400 animate-pulse"
+              : "border-zinc-700/30 bg-zinc-950/20 text-zinc-400",
+          )}
+        >
+          {loading ? (
+            <Sparkles className="size-3 shrink-0 animate-pulse" />
+          ) : (
+            <Sparkles className="size-3 shrink-0" />
+          )}
           Weekly
         </span>
       </div>
@@ -83,7 +89,10 @@ export function HabitAuditWidget({ state, userName }: HabitAuditWidgetProps) {
       <div className="grid gap-2 sm:grid-cols-4 mb-4">
         <StatCard label="Completed" value={`${stats.completedTasks}/${stats.totalTasks}`} />
         <StatCard label="Rate" value={`${stats.completionRate}%`} />
-        <StatCard label="Streak" value={`${stats.streakCount} day${stats.streakCount === 1 ? "" : "s"}`} />
+        <StatCard
+          label="Streak"
+          value={`${stats.streakCount} day${stats.streakCount === 1 ? "" : "s"}`}
+        />
         <StatCard label="Best Day" value={stats.bestDay || "—"} />
       </div>
 
@@ -96,7 +105,9 @@ export function HabitAuditWidget({ state, userName }: HabitAuditWidgetProps) {
               Jarvis Weekly Recap
             </p>
           </div>
-          <p className="mt-1 text-[11px] leading-relaxed text-zinc-300 whitespace-pre-wrap">{auditText}</p>
+          <p className="mt-1 text-[11px] leading-relaxed text-zinc-300 whitespace-pre-wrap">
+            {auditText}
+          </p>
         </div>
       )}
 
@@ -107,10 +118,10 @@ export function HabitAuditWidget({ state, userName }: HabitAuditWidgetProps) {
             Weekly Summary
           </p>
           <p className="text-[11px] leading-relaxed text-zinc-300">
-            You completed {stats.completedTasks} of {stats.totalTasks} tasks this week
-            ({stats.completionRate}%). Your streak is {stats.streakCount} day${
-              stats.streakCount === 1 ? "" : "s"
-            }. Jarvis will generate a full weekly recap on Sunday evenings.
+            You completed {stats.completedTasks} of {stats.totalTasks} tasks this week (
+            {stats.completionRate}%). Your streak is {stats.streakCount} day$
+            {stats.streakCount === 1 ? "" : "s"}. Jarvis will generate a full weekly recap on Sunday
+            evenings.
           </p>
         </div>
       )}

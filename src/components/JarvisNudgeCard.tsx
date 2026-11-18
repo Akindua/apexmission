@@ -75,27 +75,30 @@ export function JarvisNudgeCard({
         "group relative flex flex-col gap-3 rounded-xl border p-4 text-left backdrop-blur-xl transition-colors duration-300",
         applied
           ? "border-emerald-500/30 bg-emerald-950/10 shadow-[0_0_20px_rgba(16,185,129,0.08)]"
-          : "border-zinc-800/30 bg-zinc-900/50 hover:border-zinc-700/50"
+          : "border-zinc-800/30 bg-zinc-900/50 hover:border-zinc-700/50",
       )}
     >
       {/* Header: transparency badge + type chip */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <ShieldAlert className="size-4 shrink-0 text-emerald-400/70" />
-          <span className={cn(
-            "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider",
-            "border-emerald-500/30 bg-emerald-950/20 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.15)]"
-          )}>
-            <Zap className="size-3 shrink-0" />
-            ✨ Jarvis AI Suggestion
+          <span
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider",
+              "border-emerald-500/30 bg-emerald-950/20 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.15)]",
+            )}
+          >
+            <Zap className="size-3 shrink-0" />✨ Jarvis AI Suggestion
           </span>
         </div>
 
         {confidence !== undefined && (
-          <span className={cn(
-            "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-bold tracking-wider",
-            "border-zinc-700/30 bg-zinc-900/30 text-zinc-400"
-          )}>
+          <span
+            className={cn(
+              "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-bold tracking-wider",
+              "border-zinc-700/30 bg-zinc-900/30 text-zinc-400",
+            )}
+          >
             <span className="flex h-1 w-1 rounded-full bg-zinc-500" />
             {Math.round(confidence)}% match
           </span>
@@ -111,9 +114,7 @@ export function JarvisNudgeCard({
           <p className="text-[9px] font-bold uppercase tracking-wider text-zinc-500/70">
             Why Jarvis suggests this
           </p>
-          <p className="mt-0.5 text-[10px] leading-relaxed text-zinc-500">
-            {rationale}
-          </p>
+          <p className="mt-0.5 text-[10px] leading-relaxed text-zinc-500">{rationale}</p>
         </div>
       )}
 
@@ -129,10 +130,12 @@ export function JarvisNudgeCard({
       {/* Action row */}
       <div className="mt-4 flex items-center justify-between gap-2">
         {applied ? (
-          <span className={cn(
-            "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider",
-            "border-emerald-500/30 bg-emerald-950/20 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.15)]"
-          )}>
+          <span
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider",
+              "border-emerald-500/30 bg-emerald-950/20 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.15)]",
+            )}
+          >
             <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
             Applied
           </span>
@@ -146,7 +149,7 @@ export function JarvisNudgeCard({
               className={cn(
                 "flex items-center justify-center gap-2 flex-1 rounded-xl border border-zinc-700 px-3 py-2 text-[10px] font-bold text-zinc-400 transition-colors",
                 "hover:bg-zinc-800 hover:text-white disabled:opacity-50 disabled:pointer-events-none",
-                isProcessing && "animate-pulse"
+                isProcessing && "animate-pulse",
               )}
             >
               {isProcessing ? (
@@ -165,7 +168,7 @@ export function JarvisNudgeCard({
               className={cn(
                 "flex items-center justify-center gap-2 flex-1 rounded-xl bg-emerald-500 px-3 py-2 text-[10px] font-bold text-black shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all",
                 "hover:bg-emerald-400 active:scale-95 disabled:opacity-50 disabled:pointer-events-none",
-                isProcessing && "animate-pulse"
+                isProcessing && "animate-pulse",
               )}
             >
               {isProcessing ? (

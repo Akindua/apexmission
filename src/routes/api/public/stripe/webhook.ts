@@ -64,8 +64,8 @@ export const Route = createFileRoute("/api/public/stripe/webhook")({
         ) {
           const periodEnd =
             (obj["current_period_end"] as number | undefined) ??
-            ((obj["lines"] as { data?: Array<{ period?: { end?: number } }> } | undefined)?.data?.[0]
-              ?.period?.end as number | undefined);
+            ((obj["lines"] as { data?: Array<{ period?: { end?: number } }> } | undefined)
+              ?.data?.[0]?.period?.end as number | undefined);
           await supabaseAdmin
             .from("entitlements")
             .update({

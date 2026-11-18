@@ -36,7 +36,9 @@ async function main() {
   const userA2 = await createUser("usera2@test.local", companyA.id);
   const userB1 = await createUser("userb1@test.local", companyB.id);
   const userB2 = await createUser("userb2@test.local", companyB.id);
-  console.log(`Created users: A1=${userA1.id}, A2=${userA2.id}, B1=${userB1.id}, B2=${userB2.id}\n`);
+  console.log(
+    `Created users: A1=${userA1.id}, A2=${userA2.id}, B1=${userB1.id}, B2=${userB2.id}\n`,
+  );
 
   // Create clients for each user (using anon key + JWT)
   const clientA1 = await createUserClient(userA1.id);
@@ -45,7 +47,10 @@ async function main() {
   const clientB2 = await createUserClient(userB2.id);
 
   // Anon client (no JWT)
-  const anonClient = createClient(SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "");
+  const anonClient = createClient(
+    SUPABASE_URL,
+    process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "",
+  );
 
   // Test 1: profiles table isolation
   await testProfilesIsolation(clientA1, clientB1, userA1.id, userB1.id);
@@ -81,7 +86,15 @@ async function main() {
   await testPushSubscriptionsIsolation(clientA1, clientB1, userA1.id, userB1.id);
 
   // Test 12: entitlements table isolation
-  await testEntitlementsIsolation(clientA1, clientB1, userA1.id, userB1.id, companyA.id, companyB.id, admin);
+  await testEntitlementsIsolation(
+    clientA1,
+    clientB1,
+    userA1.id,
+    userB1.id,
+    companyA.id,
+    companyB.id,
+    admin,
+  );
 
   // Test 13: Privilege lockdown - authenticated users cannot write to protected tables
   await testAuthenticatedPrivilegeLockdown(clientA1);
@@ -90,18 +103,39 @@ async function main() {
   await testAnonPrivilegeLockdown();
 
   // Test 15: profiles column-level restrictions
-  await testProfilesColumnLockdown(clientA1, clientB1, userA1.id, userB1.id, companyA.id, companyB.id);
+  await testProfilesColumnLockdown(
+    clientA1,
+    clientB1,
+    userA1.id,
+    userB1.id,
+    companyA.id,
+    companyB.id,
+  );
 
   // Test 16: points_ledger and handoff_codes write lockdown
   await testWriteLockdown(clientA1, userA1.id);
 
   // Test 17: Coworker cannot read another profile row; cannot move task to another company
-  await testCoworkerProfileAndTaskLockdown(clientA1, clientA2, userA1.id, userA2.id, companyA.id, companyB.id);
+  await testCoworkerProfileAndTaskLockdown(
+    clientA1,
+    clientA2,
+    userA1.id,
+    userA2.id,
+    companyA.id,
+    companyB.id,
+  );
 
   console.log("\n✅ All RLS isolation tests passed!");
 }
 
-async function testProfilesColumnLockdown(clientA, clientB, userAId, userBId, companyAId, companyBId) {
+async function testProfilesColumnLockdown(
+  clientA,
+  clientB,
+  userAId,
+  userBId,
+  companyAId,
+  companyBId,
+) {
   console.log("\n🔒 Test 15: Profiles column-level lockdown");
 
   // (a) SELECT on profiles returns only own row
@@ -169,7 +203,11 @@ async function testWriteLockdown(client, userId) {
   // INSERT into handoff_codes fails (no client grants at all)
   const { error: handoffInsertError } = await client
     .from("handoff_codes")
-    .insert({ user_id: userId, target_slug: "platform", expires_at: new Date(Date.now() + 60000).toISOString() });
+    .insert({
+      user_id: userId,
+      target_slug: "platform",
+      expires_at: new Date(Date.now() + 60000).toISOString(),
+    });
   if (!handoffInsertError) throw new Error("User can INSERT into handoff_codes!");
   console.log("  ✓ User cannot INSERT into handoff_codes");
 }
@@ -180,7 +218,7 @@ async function testCoworkerProfileAndTaskLockdown(
   userA1Id,
   userA2Id,
   companyAId,
-  companyBId
+  companyBId,
 ) {
   console.log("\n👥 Test 17: Coworker profile and task lockdown");
 
@@ -217,7 +255,12 @@ async function testCoworkerProfileAndTaskLockdown(
   // First create a task for user A1
   const { data: taskA, error: taskCreateError } = await clientA1
     .from("tasks")
-    .insert({ user_id: userA1Id, company_id: companyAId, task_text: "Move test", impact_tier: "high" })
+    .insert({
+      user_id: userA1Id,
+      company_id: companyAId,
+      task_text: "Move test",
+      impact_tier: "high",
+    })
     .select()
     .single();
   if (taskCreateError) throw new Error(`Cannot create test task: ${taskCreateError.message}`);
@@ -232,6 +275,8 @@ async function testCoworkerProfileAndTaskLockdown(
   // Cleanup: delete the test task
   await clientA1.from("tasks").delete().eq("id", taskA.id);
 }
+
+async function createCompany(name) {
   const { data, error } = await admin
     .from("companies")
     .insert({ name, slug: name.toLowerCase().replace(/\s+/g, "-") })
@@ -269,10 +314,14 @@ async function createUserClient(userId) {
   });
   if (error) throw error;
 
-  return createClient(SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "", {
-    global: { headers: { Authorization: `Bearer ${data.session.access_token}` } },
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  return createClient(
+    SUPABASE_URL,
+    process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "",
+    {
+      global: { headers: { Authorization: `Bearer ${data.session.access_token}` } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    },
+  );
 }
 
 async function testProfilesIsolation(clientA, clientB, userAId, userBId) {
@@ -358,24 +407,30 @@ async function testTasksIsolation(clientA, clientB, userAId, userBId, companyAId
   // User B creates their own task
   const { data: taskB, error: taskBError } = await clientB
     .from("tasks")
-    .insert({ user_id: userBId, company_id: companyBId, task_text: "Task B", impact_tier: "medium" })
+    .insert({
+      user_id: userBId,
+      company_id: companyBId,
+      task_text: "Task B",
+      impact_tier: "medium",
+    })
     .select()
     .single();
   if (taskBError) throw new Error(`User B cannot create task: ${taskBError.message}`);
 
   // User A cannot read User B's task
-  const { data: otherTask2 } = await clientA
-    .from("tasks")
-    .select("*")
-    .eq("id", taskB.id)
-    .single();
+  const { data: otherTask2 } = await clientA.from("tasks").select("*").eq("id", taskB.id).single();
   if (otherTask2) throw new Error("User A can read User B's task!");
   console.log("  ✓ User A cannot read User B's task");
 
   // User A cannot insert task with Company B's company_id
   const { error: crossInsertError } = await clientA
     .from("tasks")
-    .insert({ user_id: userAId, company_id: companyBId, task_text: "Cross-tenant", impact_tier: "low" });
+    .insert({
+      user_id: userAId,
+      company_id: companyBId,
+      task_text: "Cross-tenant",
+      impact_tier: "low",
+    });
   if (!crossInsertError) throw new Error("User A can insert task for Company B!");
   console.log("  ✓ User A cannot insert task for Company B");
 }
@@ -421,12 +476,16 @@ async function testGetMyCompanyRoute(clientA, clientB, companyAId, companyBId) {
 async function testCompanyAnalyticsIsolation(clientA, clientB) {
   console.log("\n📊 Test 6: get_company_execution_analytics RPC isolation");
 
-  const { data: analyticsA, error: errorA } = await clientA.rpc("get_company_execution_analytics", { p_days: 7 });
+  const { data: analyticsA, error: errorA } = await clientA.rpc("get_company_execution_analytics", {
+    p_days: 7,
+  });
   if (errorA) throw new Error(`Analytics failed for A: ${errorA.message}`);
   if (!analyticsA) throw new Error("User A got null analytics");
   console.log("  ✓ User A gets own company analytics");
 
-  const { data: analyticsB, error: errorB } = await clientB.rpc("get_company_execution_analytics", { p_days: 7 });
+  const { data: analyticsB, error: errorB } = await clientB.rpc("get_company_execution_analytics", {
+    p_days: 7,
+  });
   if (errorB) throw new Error(`Analytics failed for B: ${errorB.message}`);
   if (!analyticsB) throw new Error("User B got null analytics");
   console.log("  ✓ User B gets own company analytics");
@@ -456,7 +515,9 @@ async function testLeaderboardIsolation(clientA, clientB, userAId, userBId) {
   // But we verify they can see each other (global scope)
   const aSeesB = lbA?.some((u) => u.id === userBId);
   const bSeesA = lbB?.some((u) => u.id === userAId);
-  console.log(`  ✓ Global leaderboard visible to both (by design): A sees B=${aSeesB}, B sees A=${bSeesA}`);
+  console.log(
+    `  ✓ Global leaderboard visible to both (by design): A sees B=${aSeesB}, B sees A=${bSeesA}`,
+  );
 }
 
 async function testWorkspaceAccessIsolation(clientA, clientB) {
@@ -477,7 +538,9 @@ async function testHandoffCodesIsolation(clientA, clientB) {
   console.log("\n🔑 Test 9: handoff_codes table isolation");
 
   // User A issues a handoff code
-  const { data: codeA, error: errorA } = await clientA.rpc("issue_handoff_code", { p_target_slug: "platform" });
+  const { data: codeA, error: errorA } = await clientA.rpc("issue_handoff_code", {
+    p_target_slug: "platform",
+  });
   if (errorA) throw new Error(`issue_handoff_code failed for A: ${errorA.message}`);
   console.log("  ✓ User A issued handoff code");
 
@@ -492,7 +555,8 @@ async function testHandoffCodesIsolation(clientA, clientB) {
   // User A cannot read User B's handoff codes (should be empty)
   const { data: codesA } = await clientA.from("handoff_codes").select("*");
   // User A should only see their own unconsumed codes
-  const userACodes = codesA?.filter((c) => c.user_id === (await clientA.auth.getUser()).data.user?.id) ?? [];
+  const { data: me } = await clientA.auth.getUser();
+  const userACodes = codesA?.filter((c) => c.user_id === me?.user?.id) ?? [];
   console.log(`  ✓ User A sees ${userACodes.length} own handoff codes`);
 }
 
@@ -500,14 +564,18 @@ async function testInviteTokenLookup(clientA, tokenA, tokenB) {
   console.log("\n🎫 Test 10: invite token lookup isolation & rate limit");
 
   // User A can look up their own company's invite token
-  const { data: routeA, error: errorA } = await clientA.rpc("get_company_route_by_invite_token", { p_token: tokenA });
+  const { data: routeA, error: errorA } = await clientA.rpc("get_company_route_by_invite_token", {
+    p_token: tokenA,
+  });
   if (errorA) throw new Error(`Invite lookup failed for A: ${errorA.message}`);
   if (!routeA || routeA.length === 0) throw new Error("User A got no route for own invite token");
   console.log("  ✓ User A can resolve own invite token");
 
   // User A CAN look up Company B's invite token (public branding only, possession = auth)
   // This is by design - invite tokens are meant to be shared
-  const { data: routeB, error: errorB } = await clientA.rpc("get_company_route_by_invite_token", { p_token: tokenB });
+  const { data: routeB, error: errorB } = await clientA.rpc("get_company_route_by_invite_token", {
+    p_token: tokenB,
+  });
   if (errorB) throw new Error(`Invite lookup failed for B's token: ${errorB.message}`);
   if (!routeB || routeB.length === 0) {
     console.log("  ✓ User A gets empty result for B's token (if token invalid or rate limited)");
@@ -519,7 +587,9 @@ async function testInviteTokenLookup(clientA, tokenA, tokenB) {
   console.log("  📈 Testing rate limit (10 req/min)...");
   let rateLimited = false;
   for (let i = 0; i < 12; i++) {
-    const { error } = await clientA.rpc("get_company_route_by_invite_token", { p_token: "invalid-token" });
+    const { error } = await clientA.rpc("get_company_route_by_invite_token", {
+      p_token: "invalid-token",
+    });
     if (error) {
       rateLimited = true;
       console.log(`    Request ${i + 1}: rate limited (${error.message})`);
@@ -549,7 +619,10 @@ async function testPushSubscriptionsIsolation(clientA, clientB, userAId, userBId
   console.log("  ✓ User A inserted own subscription");
 
   // User B cannot read User A's subscription
-  const { data: subB, error: readErrorB } = await clientB.from("push_subscriptions").select("*").eq("user_id", userAId);
+  const { data: subB, error: readErrorB } = await clientB
+    .from("push_subscriptions")
+    .select("*")
+    .eq("user_id", userAId);
   if (readErrorB) throw new Error(`User B read failed: ${readErrorB.message}`);
   if (subB && subB.length > 0) throw new Error("User B can read User A's subscription!");
   console.log("  ✓ User B cannot read User A's subscription");
@@ -567,13 +640,19 @@ async function testPushSubscriptionsIsolation(clientA, clientB, userAId, userBId
   console.log("  ✓ User B inserted own subscription");
 
   // User A cannot read User B's subscription
-  const { data: subARead, error: readErrorA } = await clientA.from("push_subscriptions").select("*").eq("user_id", userBId);
+  const { data: subARead, error: readErrorA } = await clientA
+    .from("push_subscriptions")
+    .select("*")
+    .eq("user_id", userBId);
   if (readErrorA) throw new Error(`User A read failed: ${readErrorA.message}`);
   if (subARead && subARead.length > 0) throw new Error("User A can read User B's subscription!");
   console.log("  ✓ User A cannot read User B's subscription");
 
   // User A can read their own subscription
-  const { data: subAOwn, error: readErrorAOwn } = await clientA.from("push_subscriptions").select("*").eq("user_id", userAId);
+  const { data: subAOwn, error: readErrorAOwn } = await clientA
+    .from("push_subscriptions")
+    .select("*")
+    .eq("user_id", userAId);
   if (readErrorAOwn) throw new Error(`User A read own failed: ${readErrorAOwn.message}`);
   if (!subAOwn || subAOwn.length !== 1 || subAOwn[0].endpoint !== subA.endpoint) {
     throw new Error("User A cannot read own subscription correctly!");
@@ -581,22 +660,40 @@ async function testPushSubscriptionsIsolation(clientA, clientB, userAId, userBId
   console.log("  ✓ User A can read own subscription");
 
   // User A can delete their own subscription
-  const { error: deleteErrorA } = await clientA.from("push_subscriptions").delete().eq("user_id", userAId);
+  const { error: deleteErrorA } = await clientA
+    .from("push_subscriptions")
+    .delete()
+    .eq("user_id", userAId);
   if (deleteErrorA) throw new Error(`User A delete failed: ${deleteErrorA.message}`);
   console.log("  ✓ User A deleted own subscription");
 
   // User B cannot delete User A's subscription (already deleted, but verify no error)
-  const { error: deleteErrorB } = await clientB.from("push_subscriptions").delete().eq("user_id", userAId);
+  const { error: deleteErrorB } = await clientB
+    .from("push_subscriptions")
+    .delete()
+    .eq("user_id", userAId);
   // Should not error, just affect 0 rows
   console.log("  ✓ User B cannot delete User A's subscription (no-op)");
 
   // Verify User B's subscription still exists
-  const { data: subBRemaining } = await clientB.from("push_subscriptions").select("*").eq("user_id", userBId);
-  if (!subBRemaining || subBRemaining.length !== 1) throw new Error("User B's subscription was affected!");
+  const { data: subBRemaining } = await clientB
+    .from("push_subscriptions")
+    .select("*")
+    .eq("user_id", userBId);
+  if (!subBRemaining || subBRemaining.length !== 1)
+    throw new Error("User B's subscription was affected!");
   console.log("  ✓ User B's subscription unaffected");
 }
 
-async function testEntitlementsIsolation(clientA, clientB, userAId, userBId, companyAId, companyBId, admin) {
+async function testEntitlementsIsolation(
+  clientA,
+  clientB,
+  userAId,
+  userBId,
+  companyAId,
+  companyBId,
+  admin,
+) {
   console.log("\n📋 Test 12: entitlements table isolation");
 
   // Admin creates personal entitlement for User A
@@ -606,7 +703,8 @@ async function testEntitlementsIsolation(clientA, clientB, userAId, userBId, com
     status: "active",
     astra_credits_balance: 0,
   });
-  if (insertErrorA) throw new Error(`Admin insert personal entitlement failed: ${insertErrorA.message}`);
+  if (insertErrorA)
+    throw new Error(`Admin insert personal entitlement failed: ${insertErrorA.message}`);
   console.log("  ✓ Admin created personal entitlement for User A");
 
   // Admin creates company entitlement for Company A
@@ -617,44 +715,72 @@ async function testEntitlementsIsolation(clientA, clientB, userAId, userBId, com
     astra_credits_balance: 100,
     credits_reset_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
   });
-  if (insertErrorCompA) throw new Error(`Admin insert company entitlement failed: ${insertErrorCompA.message}`);
+  if (insertErrorCompA)
+    throw new Error(`Admin insert company entitlement failed: ${insertErrorCompA.message}`);
   console.log("  ✓ Admin created company entitlement for Company A");
 
   // User A can read their own personal entitlement
-  const { data: entA, error: readErrorA } = await clientA.from("entitlements").select("*").eq("user_id", userAId).single();
+  const { data: entA, error: readErrorA } = await clientA
+    .from("entitlements")
+    .select("*")
+    .eq("user_id", userAId)
+    .single();
   if (readErrorA) throw new Error(`User A read own entitlement failed: ${readErrorA.message}`);
   if (!entA || entA.plan !== "standard") throw new Error("User A entitlement mismatch!");
   console.log("  ✓ User A can read own personal entitlement");
 
   // User B cannot read User A's personal entitlement
-  const { data: entBRead, error: readErrorB } = await clientB.from("entitlements").select("*").eq("user_id", userAId);
+  const { data: entBRead, error: readErrorB } = await clientB
+    .from("entitlements")
+    .select("*")
+    .eq("user_id", userAId);
   if (readErrorB) throw new Error(`User B read personal entitlement failed: ${readErrorB.message}`);
-  if (entBRead && entBRead.length > 0) throw new Error("User B can read User A's personal entitlement!");
+  if (entBRead && entBRead.length > 0)
+    throw new Error("User B can read User A's personal entitlement!");
   console.log("  ✓ User B cannot read User A's personal entitlement");
 
   // User A cannot read Company A's entitlement directly (no company_id in their profile for Company A)
   // But User A1 is in Company A, so they CAN read it
-  const { data: entCompA, error: readErrorCompA } = await clientA.from("entitlements").select("*").eq("company_id", companyAId).single();
-  if (readErrorCompA) throw new Error(`User A read company entitlement failed: ${readErrorCompA.message}`);
-  if (!entCompA || entCompA.plan !== "company_core") throw new Error("User A company entitlement mismatch!");
+  const { data: entCompA, error: readErrorCompA } = await clientA
+    .from("entitlements")
+    .select("*")
+    .eq("company_id", companyAId)
+    .single();
+  if (readErrorCompA)
+    throw new Error(`User A read company entitlement failed: ${readErrorCompA.message}`);
+  if (!entCompA || entCompA.plan !== "company_core")
+    throw new Error("User A company entitlement mismatch!");
   console.log("  ✓ User A (company member) can read Company A entitlement");
 
   // User B (Company B) cannot read Company A's entitlement
-  const { data: entCompBRead, error: readErrorCompB } = await clientB.from("entitlements").select("*").eq("company_id", companyAId);
-  if (readErrorCompB) throw new Error(`User B read company entitlement failed: ${readErrorCompB.message}`);
-  if (entCompBRead && entCompBRead.length > 0) throw new Error("User B can read Company A's entitlement!");
+  const { data: entCompBRead, error: readErrorCompB } = await clientB
+    .from("entitlements")
+    .select("*")
+    .eq("company_id", companyAId);
+  if (readErrorCompB)
+    throw new Error(`User B read company entitlement failed: ${readErrorCompB.message}`);
+  if (entCompBRead && entCompBRead.length > 0)
+    throw new Error("User B can read Company A's entitlement!");
   console.log("  ✓ User B (different company) cannot read Company A entitlement");
 
   // Users cannot write entitlements (no INSERT/UPDATE/DELETE policies)
-  const { error: writeErrorA } = await clientA.from("entitlements").insert({ user_id: userAId, plan: "astra_elite", status: "active" });
+  const { error: writeErrorA } = await clientA
+    .from("entitlements")
+    .insert({ user_id: userAId, plan: "astra_elite", status: "active" });
   if (!writeErrorA) throw new Error("User A was able to insert entitlement!");
   console.log("  ✓ User A cannot write entitlements");
 
-  const { error: updateErrorA } = await clientA.from("entitlements").update({ plan: "astra_elite" }).eq("user_id", userAId);
+  const { error: updateErrorA } = await clientA
+    .from("entitlements")
+    .update({ plan: "astra_elite" })
+    .eq("user_id", userAId);
   if (!updateErrorA) throw new Error("User A was able to update entitlement!");
   console.log("  ✓ User A cannot update entitlements");
 
-  const { error: deleteErrorA } = await clientA.from("entitlements").delete().eq("user_id", userAId);
+  const { error: deleteErrorA } = await clientA
+    .from("entitlements")
+    .delete()
+    .eq("user_id", userAId);
   if (!deleteErrorA) throw new Error("User A was able to delete entitlement!");
   console.log("  ✓ User A cannot delete entitlements");
 }
@@ -696,7 +822,10 @@ async function testAuthenticatedPrivilegeLockdown(client) {
     // UPDATE should fail on tables without client UPDATE policy
     const noUpdateTables = ["companies", "entitlements", "rate_limit_buckets"];
     if (noUpdateTables.includes(table)) {
-      const { error } = await client.from(table).update({}).eq("id", "00000000-0000-0000-0000-000000000000");
+      const { error } = await client
+        .from(table)
+        .update({})
+        .eq("id", "00000000-0000-0000-0000-000000000000");
       if (!error) throw new Error(`Authenticated UPDATE on ${table} should fail!`);
       console.log(`  ✓ Authenticated UPDATE on ${table} rejected`);
     }
@@ -704,7 +833,10 @@ async function testAuthenticatedPrivilegeLockdown(client) {
     // DELETE should fail on tables without client DELETE policy
     const noDeleteTables = ["companies", "entitlements", "rate_limit_buckets", "points_ledger"];
     if (noDeleteTables.includes(table)) {
-      const { error } = await client.from(table).delete().eq("id", "00000000-0000-0000-0000-000000000000");
+      const { error } = await client
+        .from(table)
+        .delete()
+        .eq("id", "00000000-0000-0000-0000-000000000000");
       if (!error) throw new Error(`Authenticated DELETE on ${table} should fail!`);
       console.log(`  ✓ Authenticated DELETE on ${table} rejected`);
     }
@@ -714,7 +846,8 @@ async function testAuthenticatedPrivilegeLockdown(client) {
     if (noSelectTables.includes(table)) {
       const { data, error } = await client.from(table).select("*");
       if (error) throw new Error(`Authenticated SELECT on ${table} failed: ${error.message}`);
-      if (data && data.length > 0) throw new Error(`Authenticated SELECT on ${table} returned ${data.length} rows!`);
+      if (data && data.length > 0)
+        throw new Error(`Authenticated SELECT on ${table} returned ${data.length} rows!`);
       console.log(`  ✓ Authenticated SELECT on ${table} returns 0 rows`);
     }
   }
@@ -723,7 +856,9 @@ async function testAuthenticatedPrivilegeLockdown(client) {
   const { data: profiles, error: profError } = await client.from("profiles").select("*");
   if (profError) throw new Error(`Authenticated SELECT on profiles failed: ${profError.message}`);
   // Should only see own row (RLS)
-  console.log(`  ✓ Authenticated SELECT on profiles returns ${profiles?.length ?? 0} row(s) (RLS-limited)`);
+  console.log(
+    `  ✓ Authenticated SELECT on profiles returns ${profiles?.length ?? 0} row(s) (RLS-limited)`,
+  );
 
   // entitlements: authenticated can SELECT but not INSERT/UPDATE/DELETE
   const { error: entInsert } = await client.from("entitlements").insert({ plan: "standard" });
@@ -748,7 +883,7 @@ async function testAnonPrivilegeLockdown() {
 
   const anonClient = createClient(
     process.env.SUPABASE_URL,
-    process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? ""
+    process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "",
   );
 
   const tables = [
@@ -780,13 +915,19 @@ async function testAnonPrivilegeLockdown() {
     }
 
     // UPDATE should fail
-    const { error: updError } = await anonClient.from(table).update({}).eq("id", "00000000-0000-0000-0000-000000000000");
+    const { error: updError } = await anonClient
+      .from(table)
+      .update({})
+      .eq("id", "00000000-0000-0000-0000-000000000000");
     if (updError) {
       console.log(`  ✓ Anon UPDATE on ${table} rejected`);
     }
 
     // DELETE should fail
-    const { error: delError } = await anonClient.from(table).delete().eq("id", "00000000-0000-0000-0000-000000000000");
+    const { error: delError } = await anonClient
+      .from(table)
+      .delete()
+      .eq("id", "00000000-0000-0000-0000-000000000000");
     if (delError) {
       console.log(`  ✓ Anon DELETE on ${table} rejected`);
     }

@@ -66,8 +66,7 @@ function NightReflectionPage() {
           completedToday: actionCompleted,
           wins: synthesizedReflection,
           blockers: couldImprove.trim() || currentStore.reflection.blockers,
-          tomorrowAction:
-            takeIntoTomorrow.trim() || currentStore.reflection.tomorrowAction,
+          tomorrowAction: takeIntoTomorrow.trim() || currentStore.reflection.tomorrowAction,
           date: todayKey(),
         },
         reflectionHistory: appendReflectionEntry(currentStore.reflectionHistory, {
@@ -75,8 +74,7 @@ function NightReflectionPage() {
           phase: "night",
           wins: synthesizedReflection,
           blockers: couldImprove.trim() || currentStore.reflection.blockers,
-          tomorrowAction:
-            takeIntoTomorrow.trim() || currentStore.reflection.tomorrowAction,
+          tomorrowAction: takeIntoTomorrow.trim() || currentStore.reflection.tomorrowAction,
           actionCompleted,
           createdAt: new Date().toISOString(),
         }),

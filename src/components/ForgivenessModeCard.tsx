@@ -35,11 +35,7 @@ export interface ForgivenessModeCardProps {
  *
  * Returns null if forgiveness mode is not active.
  */
-export function ForgivenessModeCard({
-  state,
-  userName,
-  onGoalAdjusted,
-}: ForgivenessModeCardProps) {
+export function ForgivenessModeCard({ state, userName, onGoalAdjusted }: ForgivenessModeCardProps) {
   const [suggestions, setSuggestions] = useState<Array<{ body: string }>>([]);
   const [loading, setLoading] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -87,7 +83,9 @@ export function ForgivenessModeCard({
   if (!shouldShow) return null;
 
   const missedDays = consecutiveMissed;
-  const suggestionText = suggestions[0]?.body || "Consider scaling back your goals this week to make them more achievable.";
+  const suggestionText =
+    suggestions[0]?.body ||
+    "Consider scaling back your goals this week to make them more achievable.";
 
   const handleApply = () => {
     setApplied(true);
@@ -109,9 +107,7 @@ export function ForgivenessModeCard({
           ? "You missed yesterday. No sweat — everyone has off days."
           : `You've missed ${missedDays} days in a row. Be kind to yourself. Progress isn't linear, and coming back is what matters.`
       }
-      rationale={
-        `Your streak is currently at ${state.streak?.count ?? 0}. Jarvis noticed you haven't completed your daily action for ${missedDays} consecutive day${missedDays === 1 ? "" : "s"}.`
-      }
+      rationale={`Your streak is currently at ${state.streak?.count ?? 0}. Jarvis noticed you haven't completed your daily action for ${missedDays} consecutive day${missedDays === 1 ? "" : "s"}.`}
       suggestedAction="Scale back your weekly goal so you can ease back in without pressure."
       confidence={85}
       onApply={handleApply}

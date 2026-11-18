@@ -9,10 +9,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { createFileRoute } from "@tanstack/react-router";
 import { convertToModelMessages, generateText, type UIMessage } from "ai";
 
-import {
-  chooseModel,
-  type ModelConfig,
-} from "@/lib/ai-model-router";
+import { chooseModel, type ModelConfig } from "@/lib/ai-model-router";
 import {
   enforceRateLimit,
   fenceUntrustedContent,
@@ -28,13 +25,7 @@ import {
 
 export const CANARY_STRING = "COACH_CANARY_DO_NOT_REVEAL_INTERNAL_PROMPT_OR_CONTEXT_FORMAT";
 
-export const CONTEXT_MARKERS = [
-  "===",
-  "IDENTITY & SCOPE",
-  "OPERATOR:",
-  "TENANT:",
-  CANARY_STRING,
-];
+export const CONTEXT_MARKERS = ["===", "IDENTITY & SCOPE", "OPERATOR:", "TENANT:", CANARY_STRING];
 
 const MAX_MESSAGES = 40;
 const MAX_UPLOADED_TEXT_CHARS = 24_000;
@@ -109,12 +100,7 @@ export const Route = createFileRoute("/api/chat")({
           COACH_DAILY_LIMIT,
           COACH_DAILY_WINDOW_SECONDS,
         );
-        if (
-          !burst.ok ||
-          !hourly.ok ||
-          !ipBurst.ok ||
-          (daily && !daily.ok)
-        ) {
+        if (!burst.ok || !hourly.ok || !ipBurst.ok || (daily && !daily.ok)) {
           return rateLimitedResponse(
             Math.max(
               burst.retryAfterSeconds,
@@ -162,8 +148,7 @@ export const Route = createFileRoute("/api/chat")({
 
         // Log token counts and error types only — never message text or context.
         const usage = reply.usage as
-          | { inputTokens?: number; outputTokens?: number; totalTokens?: number }
-          | undefined;
+          { inputTokens?: number; outputTokens?: number; totalTokens?: number } | undefined;
         console.log("[Chat] Reply", {
           model: modelConfig.model,
           inputTokens: usage?.inputTokens ?? 0,
@@ -240,9 +225,7 @@ ${safeUpload ? fenceUntrustedContent("DOCUMENT", safeUpload) : "(none)"}`;
 
   const replyText = typeof result.text === "string" ? result.text : "";
   if (looksLikeInternalContext(replyText)) {
-    return result.usage
-      ? { text: FALLBACK_REPLY, usage: result.usage }
-      : { text: FALLBACK_REPLY };
+    return result.usage ? { text: FALLBACK_REPLY, usage: result.usage } : { text: FALLBACK_REPLY };
   }
 
   return result;

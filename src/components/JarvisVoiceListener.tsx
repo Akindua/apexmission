@@ -41,12 +41,7 @@ export interface JarvisVoiceListenerProps {
 }
 
 type ListenerState =
-  | "idle"
-  | "requesting-permission"
-  | "listening"
-  | "processing"
-  | "ready"
-  | "error";
+  "idle" | "requesting-permission" | "listening" | "processing" | "ready" | "error";
 
 export function JarvisVoiceListener({
   context,
@@ -147,9 +142,10 @@ export function JarvisVoiceListener({
       streamRef.current = stream;
 
       // Set up audio level visualization.
-      const audioCtx = new (window.AudioContext ||
-        (window as unknown as { webkitAudioContext?: typeof AudioContext })
-          .webkitAudioContext)();
+      const audioCtx = new (
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+      )();
       const analyser = audioCtx.createAnalyser();
       analyser.fftSize = 256;
       const source = audioCtx.createMediaStreamSource(stream);
@@ -252,13 +248,11 @@ export function JarvisVoiceListener({
       const data = await response.json();
       setTranscript(data.transcript || "");
 
-      const suggestions: JarvisSuggestion[] = (data.suggestions ?? []).map(
-        (s: any) => ({
-          ...s,
-          status: "pending" as const,
-          createdAt: s.createdAt || new Date().toISOString(),
-        }),
-      );
+      const suggestions: JarvisSuggestion[] = (data.suggestions ?? []).map((s: any) => ({
+        ...s,
+        status: "pending" as const,
+        createdAt: s.createdAt || new Date().toISOString(),
+      }));
 
       onSuggestionsReceived?.(suggestions);
       setState("ready");
@@ -308,9 +302,7 @@ export function JarvisVoiceListener({
           <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-1">
             Subscription Required
           </p>
-          <p className="text-[10px] text-zinc-400 mb-2">
-            Upgrade to premium to use Jarvis voice.
-          </p>
+          <p className="text-[10px] text-zinc-400 mb-2">Upgrade to premium to use Jarvis voice.</p>
           <button
             type="button"
             className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-emerald-500 px-3 py-1.5 text-[10px] font-bold text-black hover:bg-emerald-400 transition-colors"
@@ -348,9 +340,7 @@ export function JarvisVoiceListener({
           <div className="flex size-12 items-center justify-center rounded-full border border-zinc-700 bg-zinc-900/50">
             <Loader2 className="size-5 animate-spin text-zinc-400" />
           </div>
-          <p className="text-[10px] font-bold text-zinc-400">
-            Requesting microphone access…
-          </p>
+          <p className="text-[10px] font-bold text-zinc-400">Requesting microphone access…</p>
         </div>
       )}
 
@@ -371,9 +361,7 @@ export function JarvisVoiceListener({
               style={{ width: `${Math.min(levelBarWidth, 100)}%` }}
             />
           </div>
-          <p className="text-[9px] text-zinc-500">
-            Speak naturally. Click stop when finished.
-          </p>
+          <p className="text-[9px] text-zinc-500">Speak naturally. Click stop when finished.</p>
           <button
             type="button"
             onClick={stopListening}
@@ -412,9 +400,7 @@ export function JarvisVoiceListener({
             </button>
           </div>
           <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-3 mb-3">
-            <p className="text-[11px] leading-relaxed text-zinc-300">
-              {transcript}
-            </p>
+            <p className="text-[11px] leading-relaxed text-zinc-300">{transcript}</p>
           </div>
         </div>
       )}

@@ -23,13 +23,7 @@ import type { UIMessage } from "ai";
 const mockGenerateText = vi.mocked(generateText);
 const mockChooseModel = vi.mocked(chooseModel);
 
-const forbiddenPhrases = [
-  "===",
-  "IDENTITY & SCOPE",
-  "OPERATOR:",
-  "TENANT:",
-  CANARY_STRING,
-];
+const forbiddenPhrases = ["===", "IDENTITY & SCOPE", "OPERATOR:", "TENANT:", CANARY_STRING];
 
 const uuidPattern = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
 
@@ -52,9 +46,7 @@ describe("looksLikeInternalContext", () => {
   });
 
   it("detects 'IDENTITY & SCOPE'", () => {
-    expect(
-      looksLikeInternalContext("Some text IDENTITY & SCOPE more text"),
-    ).toBe(true);
+    expect(looksLikeInternalContext("Some text IDENTITY & SCOPE more text")).toBe(true);
   });
 
   it("detects 'OPERATOR:'", () => {
@@ -76,12 +68,8 @@ describe("looksLikeInternalContext", () => {
   });
 
   it("returns false for normal coaching replies", () => {
-    expect(
-      looksLikeInternalContext("What is your top priority for today?"),
-    ).toBe(false);
-    expect(
-      looksLikeInternalContext("Close your high-impact task first."),
-    ).toBe(false);
+    expect(looksLikeInternalContext("What is your top priority for today?")).toBe(false);
+    expect(looksLikeInternalContext("Close your high-impact task first.")).toBe(false);
     expect(looksLikeInternalContext("")).toBe(false);
     expect(looksLikeInternalContext("   ")).toBe(false);
   });
@@ -118,9 +106,7 @@ describe("Minimal coach context safety", () => {
     streak: number,
     dailyText: string,
   ): string => {
-    const highTitles = highTasks
-      .map((t) => `[${t.done ? "done" : "open"}] ${t.text}`)
-      .join("; ");
+    const highTitles = highTasks.map((t) => `[${t.done ? "done" : "open"}] ${t.text}`).join("; ");
     return `First name: Operator\nMaster Vision: ${mission || "Not declared"}\nToday's High-Impact Tasks: ${highTitles || "None"}\nToday's Medium Tasks: None\nToday's Low Tasks: None\nCurrent Streak: ${streak} days\nToday's Daily Action: ${dailyText || "None"}`;
   };
 
@@ -169,7 +155,7 @@ describe("generateCoachReply with mocked model", () => {
   });
 
   const userMessage = (content: string): UIMessage =>
-    ({ role: "user", parts: [{ type: "text", text: content }] } as UIMessage);
+    ({ role: "user", parts: [{ type: "text", text: content }] }) as UIMessage;
 
   it.each(coachPrompts)("reply for %s contains no forbidden phrases", async (prompt) => {
     mockGenerateText.mockResolvedValue({

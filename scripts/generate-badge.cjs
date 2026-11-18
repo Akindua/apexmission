@@ -16,9 +16,9 @@ const HEIGHT = 72;
 
 // Triangle vertices (x, y)
 const TRI = [
-  { x: 36, y: 8 },   // top
-  { x: 8, y: 64 },   // bottom-left
-  { x: 64, y: 64 },  // bottom-right
+  { x: 36, y: 8 }, // top
+  { x: 8, y: 64 }, // bottom-left
+  { x: 64, y: 64 }, // bottom-right
 ];
 
 /**
@@ -57,7 +57,7 @@ function generatePixels() {
       const idx = (y * WIDTH + x) * 4;
       if (pointInTriangle(x + 0.5, y + 0.5, a, b, c)) {
         // White with full opacity
-        pixels[idx] = 255;     // R
+        pixels[idx] = 255; // R
         pixels[idx + 1] = 255; // G
         pixels[idx + 2] = 255; // B
         pixels[idx + 3] = 255; // A
@@ -94,7 +94,7 @@ const CRC_TABLE = (() => {
   for (let i = 0; i < 256; i++) {
     let c = i;
     for (let j = 0; j < 8; j++) {
-      c = (c & 1) ? 0xEDB88320 ^ (c >>> 1) : c >>> 1;
+      c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
     }
     table[i] = c >>> 0;
   }
@@ -117,8 +117,8 @@ function createPNG(pixels) {
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(WIDTH, 0);
   ihdr.writeUInt32BE(HEIGHT, 4);
-  ihdr[8] = 8;  // bit depth
-  ihdr[9] = 6;  // color type: RGBA
+  ihdr[8] = 8; // bit depth
+  ihdr[9] = 6; // color type: RGBA
   ihdr[10] = 0; // compression
   ihdr[11] = 0; // filter
   ihdr[12] = 0; // interlace

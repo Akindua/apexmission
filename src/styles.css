@@ -82,7 +82,9 @@
   --glass-border: rgba(52, 211, 153, 0.18);
   --glass-border-hover: rgba(52, 211, 153, 0.4);
   --glass-shadow: 0 24px 60px rgba(0, 8, 5, 0.78), inset 0 1px 2px rgba(52, 211, 153, 0.14);
-  --glass-shadow-hover: 0 32px 70px rgba(0, 8, 5, 0.88), 0 0 35px rgba(16, 185, 129, 0.22), inset 0 1px 3px rgba(52, 211, 153, 0.24);
+  --glass-shadow-hover:
+    0 32px 70px rgba(0, 8, 5, 0.88), 0 0 35px rgba(16, 185, 129, 0.22),
+    inset 0 1px 3px rgba(52, 211, 153, 0.24);
   --glass-blur: blur(20px) saturate(150%);
   --glass-input-bg: rgba(3, 11, 7, 0.55);
   --glass-input-border: rgba(52, 211, 153, 0.14);
@@ -124,7 +126,9 @@
    * and the glass wrapper opts out so its shared padding is not doubled.
    */
   :where(
-    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="hidden"]),
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not(
+        [type="file"]
+      ):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="hidden"]),
     textarea,
     select
   ):not(.glass-input-field) {
@@ -139,8 +143,12 @@
   }
 
   @keyframes cockpitRadarScan {
-    0% { background-position: 0 0; }
-    100% { background-position: 0 100%; }
+    0% {
+      background-position: 0 0;
+    }
+    100% {
+      background-position: 0 100%;
+    }
   }
 }
 
@@ -182,11 +190,16 @@
     -webkit-backdrop-filter: var(--glass-blur);
     border: 1px solid var(--glass-border);
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 32px 80px rgba(0, 0, 0, 0.9), inset 0 1px 2px rgba(52, 211, 153, 0.12);
+    box-shadow:
+      0 32px 80px rgba(0, 0, 0, 0.9),
+      inset 0 1px 2px rgba(52, 211, 153, 0.12);
   }
 
   .glass-panel-elevated:hover {
-    box-shadow: 0 40px 100px rgba(0, 0, 0, 0.95), 0 0 40px rgba(16, 185, 129, 0.15), inset 0 1px 3px rgba(52, 211, 153, 0.2);
+    box-shadow:
+      0 40px 100px rgba(0, 0, 0, 0.95),
+      0 0 40px rgba(16, 185, 129, 0.15),
+      inset 0 1px 3px rgba(52, 211, 153, 0.2);
   }
 
   .glass-panel-subtle {
@@ -194,12 +207,17 @@
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
     border: 1px solid rgba(52, 211, 153, 0.1);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(52, 211, 153, 0.08);
+    box-shadow:
+      0 12px 40px rgba(0, 0, 0, 0.6),
+      inset 0 1px 1px rgba(52, 211, 153, 0.08);
   }
 
   .glass-panel-subtle:hover {
     border-color: rgba(52, 211, 153, 0.25);
-    box-shadow: 0 16px 50px rgba(0, 0, 0, 0.7), 0 0 20px rgba(16, 185, 129, 0.08), inset 0 1px 2px rgba(52, 211, 153, 0.15);
+    box-shadow:
+      0 16px 50px rgba(0, 0, 0, 0.7),
+      0 0 20px rgba(16, 185, 129, 0.08),
+      inset 0 1px 2px rgba(52, 211, 153, 0.15);
   }
 
   /* Glass input fields */
@@ -216,7 +234,9 @@
   .glass-input:focus-within {
     border-color: var(--glass-input-border-focus);
     background: var(--glass-input-bg-focus);
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.12), inset 0 2px 4px rgba(0, 0, 0, 0.8);
+    box-shadow:
+      0 0 20px rgba(16, 185, 129, 0.12),
+      inset 0 2px 4px rgba(0, 0, 0, 0.8);
     outline: none;
   }
 
@@ -229,11 +249,16 @@
     @apply flex items-center justify-center gap-1.5 rounded-xl font-bold text-sm transition-all duration-300 ease-out;
     background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     color: #020203;
-    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.15);
+    box-shadow:
+      0 4px 20px rgba(16, 185, 129, 0.3),
+      inset 0 1px 1px rgba(255, 255, 255, 0.15);
   }
 
   .btn-glass-primary:hover:not(:disabled) {
-    box-shadow: 0 6px 30px rgba(16, 185, 129, 0.45), 0 0 25px rgba(16, 185, 129, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+    box-shadow:
+      0 6px 30px rgba(16, 185, 129, 0.45),
+      0 0 25px rgba(16, 185, 129, 0.35),
+      inset 0 1px 1px rgba(255, 255, 255, 0.2);
     transform: scale(1.02);
   }
 
@@ -286,21 +311,30 @@
   }
 
   .btn-glass-destructive:hover:not(:disabled) {
-    box-shadow: 0 6px 30px rgba(244, 63, 94, 0.45), 0 0 25px rgba(244, 63, 94, 0.35);
+    box-shadow:
+      0 6px 30px rgba(244, 63, 94, 0.45),
+      0 0 25px rgba(244, 63, 94, 0.35);
   }
 
   /* Accent glow utilities */
   .emerald-glow {
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.25), inset 0 1px 1px rgba(52, 211, 153, 0.1);
+    box-shadow:
+      0 0 20px rgba(16, 185, 129, 0.25),
+      inset 0 1px 1px rgba(52, 211, 153, 0.1);
   }
 
   .emerald-glow-strong {
-    box-shadow: 0 0 30px rgba(16, 185, 129, 0.35), 0 0 60px rgba(16, 185, 129, 0.15), inset 0 1px 2px rgba(52, 211, 153, 0.15);
+    box-shadow:
+      0 0 30px rgba(16, 185, 129, 0.35),
+      0 0 60px rgba(16, 185, 129, 0.15),
+      inset 0 1px 2px rgba(52, 211, 153, 0.15);
   }
 
   .emerald-border-glow {
     border-color: rgba(52, 211, 153, 0.4);
-    box-shadow: 0 0 15px rgba(16, 185, 129, 0.2), inset 0 1px 1px rgba(52, 211, 153, 0.1);
+    box-shadow:
+      0 0 15px rgba(16, 185, 129, 0.2),
+      inset 0 1px 1px rgba(52, 211, 153, 0.1);
   }
 
   /* Text gradient utilities */
@@ -386,18 +420,33 @@
 
   /* Animations */
   @keyframes fade-in-up {
-    0% { opacity: 0; transform: translateY(16px); }
-    100% { opacity: 1; transform: translateY(0); }
+    0% {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   @keyframes fade-in {
-    0% { opacity: 0; }
-    100% { opacity: 1; }
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
   }
 
   @keyframes pulse-glow {
-    0%, 100% { opacity: 0.6; }
-    50% { opacity: 1; }
+    0%,
+    100% {
+      opacity: 0.6;
+    }
+    50% {
+      opacity: 1;
+    }
   }
 
   .animate-fade-in-up {
@@ -412,17 +461,33 @@
     animation: pulse-glow 2s ease-in-out infinite;
   }
 
-  .delay-100 { animation-delay: 100ms; }
-  .delay-200 { animation-delay: 200ms; }
-  .delay-300 { animation-delay: 300ms; }
-  .delay-400 { animation-delay: 400ms; }
-  .delay-500 { animation-delay: 500ms; }
+  .delay-100 {
+    animation-delay: 100ms;
+  }
+  .delay-200 {
+    animation-delay: 200ms;
+  }
+  .delay-300 {
+    animation-delay: 300ms;
+  }
+  .delay-400 {
+    animation-delay: 400ms;
+  }
+  .delay-500 {
+    animation-delay: 500ms;
+  }
 
   /* Task completion pop */
   @keyframes task-complete-pop {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.25); }
-    100% { transform: scale(1); }
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.25);
+    }
+    100% {
+      transform: scale(1);
+    }
   }
 
   .animate-task-pop {
@@ -431,8 +496,13 @@
 
   /* Streak flame */
   @keyframes streak-flame {
-    0%, 100% { transform: scale(1) rotate(-2deg); }
-    50% { transform: scale(1.08) rotate(2deg); }
+    0%,
+    100% {
+      transform: scale(1) rotate(-2deg);
+    }
+    50% {
+      transform: scale(1.08) rotate(2deg);
+    }
   }
 
   .animate-streak {
@@ -568,7 +638,9 @@
     -webkit-backdrop-filter: var(--glass-blur);
     border: 1px solid var(--glass-border);
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 32px 80px rgba(0, 0, 0, 0.9), inset 0 1px 2px rgba(52, 211, 153, 0.12);
+    box-shadow:
+      0 32px 80px rgba(0, 0, 0, 0.9),
+      inset 0 1px 2px rgba(52, 211, 153, 0.12);
   }
 
   @media (min-width: 768px) {
@@ -607,7 +679,9 @@
   .glass-input-wrapper:focus-within {
     border-color: var(--glass-input-border-focus);
     background: var(--glass-input-bg-focus);
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.12), inset 0 2px 4px rgba(0, 0, 0, 0.8);
+    box-shadow:
+      0 0 20px rgba(16, 185, 129, 0.12),
+      inset 0 2px 4px rgba(0, 0, 0, 0.8);
   }
 
   .glass-input-wrapper .input-icon {
@@ -718,6 +792,8 @@
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
     border: 1px solid rgba(52, 211, 153, 0.1);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(52, 211, 153, 0.08);
+    box-shadow:
+      0 12px 40px rgba(0, 0, 0, 0.6),
+      inset 0 1px 1px rgba(52, 211, 153, 0.08);
   }
 }

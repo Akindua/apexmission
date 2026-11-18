@@ -6,7 +6,10 @@ const supabase = createClient(VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY, 
 });
 
 export async function saveVoiceLogToSupabase(transcript: string): Promise<void> {
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
 
   if (authError || !user) {
     console.error("[VoiceLog] Auth error:", authError);

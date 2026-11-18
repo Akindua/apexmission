@@ -1,12 +1,21 @@
 # APEXMISSIONS
+
 # TERMS OF SERVICE & PRIVACY POLICY
+
 # Last Updated: October 30, 2026
+
 # Website: https://www.apexmissions.app
+
 # Contact: akindua@apexmissions.app
-# 
+
+#
+
 # These Terms of Service and Privacy Policy (collectively, the "Agreement") govern access to and use of the ApexMissions website, software, applications, and related services (collectively, the "Service").
+
 # The Service is operated by ApexMissions ("ApexMissions," "we," "us," or "our").
+
 # By creating an account, accessing the Service, or using any of its features, you ("User," "you," or "your") acknowledge that you have read and understood this Agreement and agree to be bound by its applicable provisions.
+
 # If you are accessing the Service on behalf of a business, company, or other organization, you represent that you are authorized to accept this Agreement on that organization's behalf.
 
 ---
@@ -18,6 +27,7 @@
 ApexMissions is a productivity, task-accountability, and performance-management platform designed to support individuals, teams, managers, and organizations.
 
 Depending on the subscription or account configuration, the Service may provide:
+
 - Individual productivity workspaces.
 - Organizational and employee accountability dashboards.
 - Daily task submissions and milestone tracking.

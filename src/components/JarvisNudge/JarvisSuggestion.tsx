@@ -24,11 +24,7 @@ export interface JarvisSuggestionProps {
   onDismiss?: (suggestion: JarvisSuggestion) => void;
 }
 
-export function JarvisSuggestion({
-  suggestion,
-  onApply,
-  onDismiss,
-}: JarvisSuggestionProps) {
+export function JarvisSuggestion({ suggestion, onApply, onDismiss }: JarvisSuggestionProps) {
   const [state, setState] = useState<"idle" | "applying" | "dismissing">("idle");
 
   const handleApply = async () => {
@@ -51,10 +47,7 @@ export function JarvisSuggestion({
     }
   };
 
-  const typeLabels: Record<
-    JarvisSuggestionType,
-    { label: string; icon: React.ReactNode }
-  > = {
+  const typeLabels: Record<JarvisSuggestionType, { label: string; icon: React.ReactNode }> = {
     nudge: { label: "Nudge", icon: <ArrowRight className="size-4 shrink-0" /> },
     workflow: {
       label: "Workflow",
@@ -63,8 +56,7 @@ export function JarvisSuggestion({
     schedule: { label: "Schedule", icon: <X className="size-4 shrink-0" /> },
   };
 
-  const typeInfo =
-    typeLabels[suggestion.type] ?? typeLabels.nudge;
+  const typeInfo = typeLabels[suggestion.type] ?? typeLabels.nudge;
   const isPending = suggestion.status === "pending";
 
   return (
@@ -79,22 +71,24 @@ export function JarvisSuggestion({
       {/* Header: type badge + AI transparency badge + status */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className={cn(
-            "flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider",
-          )}>
+          <span
+            className={cn(
+              "flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider",
+            )}
+          >
             <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
             {typeInfo.label}
           </span>
           <JarvisBadge size="sm" />
         </div>
-        {suggestion.status === "applied" && (
-          <JarvisShieldBadge />
-        )}
+        {suggestion.status === "applied" && <JarvisShieldBadge />}
         {suggestion.status === "dismissed" && (
-          <span className={cn(
-            "flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider",
-            "border-zinc-600/30 bg-zinc-900/30 text-zinc-500"
-          )}>
+          <span
+            className={cn(
+              "flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider",
+              "border-zinc-600/30 bg-zinc-900/30 text-zinc-500",
+            )}
+          >
             <span className="flex h-1.5 w-1.5 rounded-full bg-zinc-500" />
             Dismissed
           </span>
@@ -103,18 +97,14 @@ export function JarvisSuggestion({
 
       <h3 className="text-sm font-bold text-white leading-snug">{suggestion.title}</h3>
 
-      <p className="mt-1 text-[11px] leading-relaxed text-zinc-400">
-        {suggestion.body}
-      </p>
+      <p className="mt-1 text-[11px] leading-relaxed text-zinc-400">{suggestion.body}</p>
 
       {suggestion.rationale && (
         <div className="mt-2 pt-2 border-t border-emerald-500/10">
           <p className="text-[9px] font-bold uppercase tracking-wider text-emerald-400/70">
             Why Jarvis suggests this
           </p>
-          <p className="mt-0.5 text-[11px] leading-relaxed text-zinc-500">
-            {suggestion.rationale}
-          </p>
+          <p className="mt-0.5 text-[11px] leading-relaxed text-zinc-500">{suggestion.rationale}</p>
         </div>
       )}
 
@@ -129,7 +119,7 @@ export function JarvisSuggestion({
             className={cn(
               "flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-3 py-2 text-[10px] font-bold text-black shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all",
               "hover:bg-emerald-400 active:scale-95 disabled:opacity-50 disabled:pointer-events-none",
-              state === "applying" && "animate-pulse"
+              state === "applying" && "animate-pulse",
             )}
           >
             {state === "applying" ? (
@@ -151,7 +141,7 @@ export function JarvisSuggestion({
             className={cn(
               "flex items-center justify-center gap-2 rounded-xl border border-zinc-700 px-3 py-2 text-[10px] font-bold text-zinc-400 transition-colors",
               "hover:bg-zinc-800 hover:text-white disabled:opacity-50 disabled:pointer-events-none",
-              state === "dismissing" && "animate-pulse"
+              state === "dismissing" && "animate-pulse",
             )}
           >
             {state === "dismissing" ? (

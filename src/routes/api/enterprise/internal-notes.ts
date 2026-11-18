@@ -20,7 +20,7 @@ export const Route = createFileRoute("/api/enterprise/internal-notes")({
           {
             status: 200,
             headers: { "content-type": "application/json" },
-          }
+          },
         );
       },
     },
