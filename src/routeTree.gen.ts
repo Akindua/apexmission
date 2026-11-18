@@ -43,6 +43,8 @@ import { Route as ApiEnterpriseTimeEntriesRouteImport } from './routes/api/enter
 import { Route as ApiEnterpriseTranscribeRouteImport } from './routes/api/enterprise/transcribe'
 import { Route as ApiHandoffConsumeRouteImport } from './routes/api/handoff/consume'
 import { Route as ApiHandoffIssueRouteImport } from './routes/api/handoff/issue'
+import { Route as ApiJarvisSuggestRouteImport } from './routes/api/jarvis/suggest'
+import { Route as ApiJarvisVoiceRouteImport } from './routes/api/jarvis/voice'
 import { Route as ApiPersonalDailyPlanRouteImport } from './routes/api/personal/daily-plan'
 import { Route as ApiPersonalFocusSessionsRouteImport } from './routes/api/personal/focus-sessions'
 import { Route as ApiPushSubscribeRouteImport } from './routes/api/push/subscribe'
@@ -227,6 +229,16 @@ const ApiHandoffIssueRoute = ApiHandoffIssueRouteImport.update({
   path: '/api/handoff/issue',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiJarvisSuggestRoute = ApiJarvisSuggestRouteImport.update({
+  id: '/api/jarvis/suggest',
+  path: '/api/jarvis/suggest',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiJarvisVoiceRoute = ApiJarvisVoiceRouteImport.update({
+  id: '/api/jarvis/voice',
+  path: '/api/jarvis/voice',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPersonalDailyPlanRoute = ApiPersonalDailyPlanRouteImport.update({
   id: '/api/personal/daily-plan',
   path: '/api/personal/daily-plan',
@@ -294,6 +306,8 @@ export interface FileRoutesByFullPath {
   '/api/enterprise/transcribe': typeof ApiEnterpriseTranscribeRoute
   '/api/handoff/consume': typeof ApiHandoffConsumeRoute
   '/api/handoff/issue': typeof ApiHandoffIssueRoute
+  '/api/jarvis/suggest': typeof ApiJarvisSuggestRoute
+  '/api/jarvis/voice': typeof ApiJarvisVoiceRoute
   '/api/personal/daily-plan': typeof ApiPersonalDailyPlanRoute
   '/api/personal/focus-sessions': typeof ApiPersonalFocusSessionsRoute
   '/api/push/subscribe': typeof ApiPushSubscribeRoute
@@ -336,6 +350,8 @@ export interface FileRoutesByTo {
   '/api/enterprise/transcribe': typeof ApiEnterpriseTranscribeRoute
   '/api/handoff/consume': typeof ApiHandoffConsumeRoute
   '/api/handoff/issue': typeof ApiHandoffIssueRoute
+  '/api/jarvis/suggest': typeof ApiJarvisSuggestRoute
+  '/api/jarvis/voice': typeof ApiJarvisVoiceRoute
   '/api/personal/daily-plan': typeof ApiPersonalDailyPlanRoute
   '/api/personal/focus-sessions': typeof ApiPersonalFocusSessionsRoute
   '/api/push/subscribe': typeof ApiPushSubscribeRoute
@@ -379,6 +395,8 @@ export interface FileRoutesById {
   '/api/enterprise/transcribe': typeof ApiEnterpriseTranscribeRoute
   '/api/handoff/consume': typeof ApiHandoffConsumeRoute
   '/api/handoff/issue': typeof ApiHandoffIssueRoute
+  '/api/jarvis/suggest': typeof ApiJarvisSuggestRoute
+  '/api/jarvis/voice': typeof ApiJarvisVoiceRoute
   '/api/personal/daily-plan': typeof ApiPersonalDailyPlanRoute
   '/api/personal/focus-sessions': typeof ApiPersonalFocusSessionsRoute
   '/api/push/subscribe': typeof ApiPushSubscribeRoute
@@ -423,6 +441,8 @@ export interface FileRouteTypes {
     | '/api/enterprise/transcribe'
     | '/api/handoff/consume'
     | '/api/handoff/issue'
+    | '/api/jarvis/suggest'
+    | '/api/jarvis/voice'
     | '/api/personal/daily-plan'
     | '/api/personal/focus-sessions'
     | '/api/push/subscribe'
@@ -465,6 +485,8 @@ export interface FileRouteTypes {
     | '/api/enterprise/transcribe'
     | '/api/handoff/consume'
     | '/api/handoff/issue'
+    | '/api/jarvis/suggest'
+    | '/api/jarvis/voice'
     | '/api/personal/daily-plan'
     | '/api/personal/focus-sessions'
     | '/api/push/subscribe'
@@ -507,6 +529,8 @@ export interface FileRouteTypes {
     | '/api/enterprise/transcribe'
     | '/api/handoff/consume'
     | '/api/handoff/issue'
+    | '/api/jarvis/suggest'
+    | '/api/jarvis/voice'
     | '/api/personal/daily-plan'
     | '/api/personal/focus-sessions'
     | '/api/push/subscribe'
@@ -550,6 +574,8 @@ export interface RootRouteChildren {
   ApiEnterpriseTranscribeRoute: typeof ApiEnterpriseTranscribeRoute
   ApiHandoffConsumeRoute: typeof ApiHandoffConsumeRoute
   ApiHandoffIssueRoute: typeof ApiHandoffIssueRoute
+  ApiJarvisSuggestRoute: typeof ApiJarvisSuggestRoute
+  ApiJarvisVoiceRoute: typeof ApiJarvisVoiceRoute
   ApiPersonalDailyPlanRoute: typeof ApiPersonalDailyPlanRoute
   ApiPersonalFocusSessionsRoute: typeof ApiPersonalFocusSessionsRoute
   ApiPushSubscribeRoute: typeof ApiPushSubscribeRoute
@@ -798,6 +824,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiHandoffIssueRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/jarvis/suggest': {
+      id: '/api/jarvis/suggest'
+      path: '/api/jarvis/suggest'
+      fullPath: '/api/jarvis/suggest'
+      preLoaderRoute: typeof ApiJarvisSuggestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/jarvis/voice': {
+      id: '/api/jarvis/voice'
+      path: '/api/jarvis/voice'
+      fullPath: '/api/jarvis/voice'
+      preLoaderRoute: typeof ApiJarvisVoiceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/personal/daily-plan': {
       id: '/api/personal/daily-plan'
       path: '/api/personal/daily-plan'
@@ -880,6 +920,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiEnterpriseTranscribeRoute: ApiEnterpriseTranscribeRoute,
   ApiHandoffConsumeRoute: ApiHandoffConsumeRoute,
   ApiHandoffIssueRoute: ApiHandoffIssueRoute,
+  ApiJarvisSuggestRoute: ApiJarvisSuggestRoute,
+  ApiJarvisVoiceRoute: ApiJarvisVoiceRoute,
   ApiPersonalDailyPlanRoute: ApiPersonalDailyPlanRoute,
   ApiPersonalFocusSessionsRoute: ApiPersonalFocusSessionsRoute,
   ApiPushSubscribeRoute: ApiPushSubscribeRoute,

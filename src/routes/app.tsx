@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate, Outlet } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
+  AlertTriangle,
   Check,
   Flame,
   Plus,
@@ -28,6 +29,9 @@ import { EnterpriseAnalyticsPanel } from "@/components/EnterpriseAnalyticsPanel"
 import { FivePmNudge } from "@/components/FivePmNudge";
 import { YourExecutionPatterns } from "@/components/YourExecutionPatterns";
 import { VoiceDayLogger } from "@/components/VoiceDayLogger";
+import { JarvisPanel } from "@/components/JarvisPanel";
+import { HabitAuditWidget } from "@/components/HabitAuditWidget";
+import { ForgivenessModeCard } from "@/components/ForgivenessModeCard";
 import {
   computeAverageCompletionsPerDay,
   fetchLeaderboardTelemetry,
@@ -98,6 +102,32 @@ export const Route = createFileRoute("/app")({
   component: ApexMission,
 });
 
+/**
+ * Retry a function with exponential backoff (1s, 3s, 9s). Max 3 attempts.
+ * On final failure, rejects with the last error.
+ */
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  onRetry: (attempt: number, delay: number) => void,
+): Promise<T> {
+  const delays = [1_000, 3_000, 9_000];
+  let lastError: unknown = null;
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      if (attempt < 2) {
+        const delay = delays[attempt]!;
+        onRetry(attempt + 1, delay);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+  }
+  throw lastError;
+}
+
 function ApexMission() {
   const [state, setState] = useState<MissionState>(() => defaultState());
   const [hydrated, setHydrated] = useState(false);
@@ -123,6 +153,7 @@ function ApexMission() {
   >("workspace");
   const mainRef = useRef<HTMLElement | null>(null);
   const [coachOpen, setCoachOpen] = useState(false);
+  const [jarvisOpen, setJarvisOpen] = useState(false);
   const [showInduction, setShowInduction] = useState(false);
   const [showTacticalBriefing, setShowTacticalBriefing] = useState(false);
   const [surpriseLoot, setSurpriseLoot] = useState<{
@@ -136,6 +167,9 @@ function ApexMission() {
   const [operatorProfile, setOperatorProfile] = useState<OperatorProfileMetadata | null>(null);
   const [leaderboardSnapshot, setLeaderboardSnapshot] = useState<LeaderboardSnapshot | null>(null);
   const [profileHydrated, setProfileHydrated] = useState(false);
+  const [profileState, setProfileState] = useState<"loading" | "loaded" | "error">("loading");
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [profileRetryCount, setProfileRetryCount] = useState(0);
   const [activeTenant, setActiveTenant] = useState<SessionTenant | null>(null);
   const [dayPlan, setDayPlan] = useState<DayPlanProposal | null>(null);
   const [rollover, setRollover] = useState<RolloverSummary | null>(null);
@@ -423,44 +457,45 @@ function ApexMission() {
 
         setHydrated(true);
 
-        const profile = await fetchOperatorProfileMetadata(user.id);
-        const metadataName =
-          typeof user.user_metadata?.["full_name"] === "string"
-            ? user.user_metadata["full_name"]
-            : "";
-        const emailHandle = user.email?.split("@")[0] || "";
-        const fallbackName = metadataName || emailHandle || "Operator";
-        const effectiveProfile: OperatorProfileMetadata = profile ?? {
-          id: user.id,
-          operatorName: fallbackName,
-          companyId: null,
-          onboardingCompleted: false,
-          credits: 0,
-          currentStreak: 0,
-          maxStreak: 0,
-          failureCount: 0,
-          operationalStatus: "OPERATIONAL",
-          lastActionLogged: "",
-        };
+        // Fetch profile with retry (max 3 attempts, backoff 1s/3s/9s).
+        // On final failure, show error UI — do NOT build default profile,
+        // do NOT open onboarding, do NOT run Mission Coach.
+        const profile = await retryWithBackoff(
+          () => fetchOperatorProfileMetadata(user.id),
+          (attempt) => setProfileRetryCount(attempt),
+        );
 
-        if (cancelled) return;
-        setOperatorProfile(effectiveProfile);
-        if (Array.isArray(effectiveProfile.taskHistory)) {
+        if (!profile) {
+          setProfileState("error");
+          setProfileError("Couldn't load your profile. Retry.");
+          setProfileHydrated(true);
+          return;
+        }
+
+        setProfileState("loaded");
+        if (!profile) {
+          setProfileState("error");
+          setProfileError("Couldn't load your profile. Retry.");
+          setProfileHydrated(true);
+          return;
+        }
+        setOperatorProfile(profile!);
+        if (Array.isArray(profile.taskHistory)) {
           setBehaviorAnalytics((prev) => ({
             ...prev,
-            taskHistory: effectiveProfile.taskHistory ?? [],
+            taskHistory: profile.taskHistory ?? [],
           }));
         }
-        setUserName(toDisplayName(effectiveProfile.operatorName));
+        setUserName(toDisplayName(profile!.operatorName));
         setState((current) => ({
           ...current,
-          points: effectiveProfile.credits,
+          points: profile!.credits,
         }));
 
         // A fresh device can adopt today's persisted matrix instead of
         // overwriting the company telemetry with an empty plan.
-        if (countTasks(stateForToday.tasks) === 0 && effectiveProfile.planDate === todayKey()) {
-          const serverMatrix = normalizeTaskMatrix(effectiveProfile.currentPlan);
+        if (countTasks(stateForToday.tasks) === 0 && profile!.planDate === todayKey()) {
+          const serverMatrix = normalizeTaskMatrix(profile!.currentPlan);
           if (countTasks(serverMatrix) > 0) {
             const serverState = { ...stateForToday, tasks: serverMatrix, planDate: todayKey() };
             setState(serverState);
@@ -472,7 +507,7 @@ function ApexMission() {
         }
 
         // Corporate operators belong on their company subdomain in production.
-        if (effectiveProfile.companyId && typeof window !== "undefined") {
+        if (profile.companyId && typeof window !== "undefined") {
           const hostname = window.location.hostname;
           if (isPlatformHostname(hostname) && canUseTenantSubdomains(hostname)) {
             try {
@@ -506,7 +541,7 @@ function ApexMission() {
 
         // Personal operators receive live rank intelligence. Corporate
         // operators never fetch the global leaderboard at all.
-        if (effectiveProfile.companyId === null) {
+        if (profile!.companyId === null) {
           const { operators, snapshot } = await fetchLeaderboardTelemetry(user.id);
           const normalizedData = operators.map((operator) => ({
             ...operator,
@@ -538,6 +573,64 @@ function ApexMission() {
       cancelled = true;
     };
   }, [navigate]);
+
+  // Retry profile fetch (used by the retry button in the error UI).
+  // Uses the same retry-with-backoff logic as the initial load.
+  const retryProfileFetch = useCallback(async () => {
+    if (!currentUserId) return;
+    setProfileRetryCount(0);
+    setProfileState("loading");
+    setProfileError(null);
+
+    try {
+      const profile = await retryWithBackoff(
+        () => fetchOperatorProfileMetadata(currentUserId),
+        (attempt) => setProfileRetryCount(attempt),
+      );
+
+      setProfileState("loaded");
+      setOperatorProfile(profile);
+      setUserName(toDisplayName(profile!.operatorName));
+      setState((current) => ({
+        ...current,
+        points: profile!.credits,
+      }));
+
+      // A fresh device can adopt today's persisted matrix instead of
+      // overwriting the company telemetry with an empty plan.
+      if (countTasks(state.tasks) === 0 && profile!.planDate === todayKey()) {
+        const serverMatrix = normalizeTaskMatrix(profile!.currentPlan);
+        if (countTasks(serverMatrix) > 0) {
+          const serverState = { ...state, tasks: serverMatrix, planDate: todayKey() };
+          setState(serverState);
+          saveState(serverState);
+          setDayPlan(
+            buildLocalDayPlan({ mission: serverState.mission, tasks: serverState.tasks }),
+          );
+        }
+      }
+
+      // Refresh leaderboard for personal accounts.
+      if (profile!.companyId === null) {
+        const { operators, snapshot } = await fetchLeaderboardTelemetry(currentUserId);
+        const normalizedData = operators.map((operator) => ({
+          ...operator,
+          full_name: operator.operator_name,
+          points: operator.credits,
+        }));
+        setLeaderboardOperators(normalizedData);
+        setLeaderboardSnapshot(snapshot);
+        setScopedItem("apexmission-leaderboard-cache", JSON.stringify(normalizedData));
+      } else {
+        setLeaderboardOperators([]);
+        setLeaderboardSnapshot(null);
+      }
+    } catch {
+      setProfileState("error");
+      setProfileError("Couldn't load your profile. Retry.");
+    }
+  }, [currentUserId, state, profileRetryCount]);
+
 
   const handleOnboardingComplete = async () => {
     if (!currentUserId) {
@@ -923,6 +1016,9 @@ function ApexMission() {
     if (!hydrated || !profileHydrated || !currentUserId || !operatorProfile) return;
     if (!Array.isArray(behaviorAnalytics.taskHistory) || behaviorAnalytics.taskHistory.length === 0)
       return;
+    // DATA-LOSS GUARD: only write after profile is confirmed loaded, and never
+    // overwrite non-empty saved task_history with an empty local default.
+    if (profileState !== "loaded") return;
 
     const timer = window.setTimeout(async () => {
       // task_history is user-editable; velocity_score is server-owned.
@@ -946,12 +1042,16 @@ function ApexMission() {
     profileHydrated,
     currentUserId,
     operatorProfile,
+    profileState,
   ]);
 
   // Persist today's priority matrix so company analytics can measure open
   // high-impact work and a fresh device can resume the same plan.
   useEffect(() => {
     if (!hydrated || !profileHydrated || !currentUserId) return;
+    // DATA-LOSS GUARD: only write after profile is confirmed loaded, and never
+    // overwrite non-empty saved current_plan with an empty local default.
+    if (profileState !== "loaded") return;
 
     const planDate =
       typeof state.planDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(state.planDate)
@@ -973,7 +1073,7 @@ function ApexMission() {
     }, 900);
 
     return () => window.clearTimeout(timer);
-  }, [hydrated, profileHydrated, currentUserId, state.tasks, state.planDate]);
+  }, [hydrated, profileHydrated, currentUserId, state.tasks, state.planDate, profileState]);
 
   function addTaskToMatrix(tier: ImpactTier, rawText: string): boolean {
     const text = rawText.trim();
@@ -1468,6 +1568,14 @@ function ApexMission() {
             <HelpCircle className="size-4 text-emerald-400" />
             <span>Support</span>
           </button>
+          <button
+            type="button"
+            onClick={() => setJarvisOpen(true)}
+            className="flex min-h-11 w-full items-center gap-3 rounded-xl border border-emerald-500/20 bg-emerald-950/10 px-4 py-3 text-xs font-bold text-zinc-300 transition-all hover:border-emerald-500/40 hover:bg-emerald-950/30 hover:text-emerald-400 font-mono uppercase tracking-wider shadow-[inset_0_1px_1px_rgba(52,211,153,0.1)]"
+          >
+            <Sparkles className="size-4 text-emerald-400" />
+            <span>Jarvis AI</span>
+          </button>
         </div>
       </aside>
 
@@ -1674,6 +1782,32 @@ function ApexMission() {
             </div>
           </header>
 
+          {/* Profile load error */}
+          {profileState === "error" && (
+            <div className="rounded-xl border border-rose-500/30 bg-rose-950/10 p-4 mb-6">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="size-4 text-rose-400" />
+                <span className="text-[10px] font-bold text-rose-400">Profile load error</span>
+              </div>
+              <p className="mt-1 text-[10px] text-zinc-400">{profileError}</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setProfileRetryCount(0);
+                  setProfileState("loading");
+                  setProfileError(null);
+                  void retryProfileFetch();
+                }}
+                className="mt-2 flex items-center gap-2 rounded-lg bg-emerald-500 px-3 py-2 text-[10px] font-bold text-black hover:bg-emerald-400"
+              >
+                <Loader2 className={profileRetryCount > 0 ? "size-3.5 shrink-0 animate-spin" : "size-3.5 shrink-0"} />
+                {profileRetryCount > 0 ? `Retrying...` : "Retry"}
+              </button>
+            </div>
+          )}
+
+          {/* WORKSPACE TAB */}
+          {activeTab === "workspace" && (
           {/* WORKSPACE TAB — personal accounts only */}
           {isPersonal && activeTab === "workspace" && (
             <div className="flex flex-col gap-6 animate-fade-in">
@@ -1751,6 +1885,9 @@ function ApexMission() {
                   </div>
                 </div>
               </section>
+
+              {/* Habit Audit — Weekly Recap */}
+              <HabitAuditWidget state={state} userName={userName} />
 
               {/* Profile Selector with Emerald Glass */}
               <div className="flex flex-col gap-2 rounded-2xl border border-emerald-500/20 bg-[#0D0D11]/80 p-3.5 text-left backdrop-blur-xl shadow-[0_8px_25px_0_rgba(0,0,0,0.5)] sm:flex-row sm:items-center sm:gap-3">
@@ -1867,6 +2004,19 @@ function ApexMission() {
                   </div>
                 ))}
               </section>
+
+              {/* Forgiveness Mode — Compassionate Nudge for Missed Days */}
+              <ForgivenessModeCard
+                state={state}
+                userName={userName}
+                onGoalAdjusted={() => {
+                  // Scale back: clear today's daily action and reduce load
+                  setState((s) => ({
+                    ...s,
+                    daily: { ...s.daily, text: "", done: false },
+                  }));
+                }}
+              />
 
               {/* Daily Action */}
               <section
@@ -2315,7 +2465,7 @@ function ApexMission() {
       )}
 
       {/* MISSION COACH — user-initiated chat only. No onboarding/login auto-open. */}
-      {hydrated && profileHydrated && (
+      {hydrated && profileHydrated && profileState === "loaded" && (
         <MissionCoach
           showLauncher={false}
           premium={premium}
@@ -2368,9 +2518,26 @@ function ApexMission() {
         />
       )}
 
+      {/* JARVIS AI ASSISTANT — suggestive copilot panel (premium only) */}
+      {hydrated && profileHydrated && (
+        <JarvisPanel
+          open={jarvisOpen}
+          onClose={() => setJarvisOpen(false)}
+          userName={userName}
+          mission={state.mission}
+          tasks={state.tasks}
+          daily={state.daily}
+          streak={state.streak}
+        />
+      )}
+
       {/* FIRST SESSION — deterministic, non-chat, zero-API induction wizard */}
       <OperatorInduction
-        open={showInduction && Boolean(operatorProfile && !operatorProfile.onboardingCompleted)}
+        open={
+          profileState === "loaded" &&
+          showInduction &&
+          Boolean(operatorProfile && !operatorProfile.onboardingCompleted)
+        }
         operatorName={operatorProfile?.operatorName ?? userName}
         mission={state.mission}
         dailyAction={state.daily.text}

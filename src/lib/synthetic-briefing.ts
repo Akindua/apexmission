@@ -223,7 +223,7 @@ export async function fetchOperatorProfileMetadata(
   userId: string,
 ): Promise<OperatorProfileMetadata | null> {
   const profileSelect =
-    "id, full_name, email, company_id, onboarding_completed, credits, current_streak, max_streak, failure_count, operational_status, last_action_logged, task_history, velocity_score, current_plan, plan_date";
+    "id, full_name, company_id, onboarding_completed, credits, current_streak, max_streak, failure_count, operational_status, last_action_logged, task_history, velocity_score, current_plan, plan_date";
 
   let result: { data: Record<string, unknown> | null; error: { message: string } | null } =
     await supabase.from("profiles").select(profileSelect).eq("id", userId).maybeSingle();
@@ -234,7 +234,7 @@ export async function fetchOperatorProfileMetadata(
     result = await supabase
       .from("profiles")
       .select(
-        "id, full_name, email, company_id, onboarding_completed, credits, current_streak, max_streak, failure_count, operational_status, last_action_logged, task_history, velocity_score",
+        "id, full_name, company_id, onboarding_completed, credits, current_streak, max_streak, failure_count, operational_status, last_action_logged, task_history, velocity_score",
       )
       .eq("id", userId)
       .maybeSingle();
@@ -251,7 +251,6 @@ export async function fetchOperatorProfileMetadata(
 
   const profile = data as unknown as {
     id: string;
-    email: string | null;
     full_name: string | null;
     company_id: string | null;
     onboarding_completed: boolean;
@@ -267,8 +266,7 @@ export async function fetchOperatorProfileMetadata(
     plan_date: string | null;
   };
 
-  const emailHandle = profile.email ? profile.email.split("@")[0] : "";
-  const operatorName = (profile.full_name || emailHandle || "OPERATOR").trim();
+  const operatorName = profile.full_name ?? "OPERATOR";
 
   return {
     id: profile.id,

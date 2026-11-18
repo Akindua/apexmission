@@ -9,6 +9,7 @@ import {
   isSpeechRecognitionSupported,
   MAX_VOICE_TRANSCRIPT_CHARS,
   normalizeTranscript,
+  saveVoiceLogToSupabase,
   type SpeechRecognitionLike,
   VOICE_CAPTURE_SECONDS,
 } from "@/lib/voice-log";
@@ -206,6 +207,7 @@ export function VoiceDayLogger({
     setMode("saving");
     setError(null);
     try {
+      await saveVoiceLogToSupabase(text);
       await onSave(text);
       setMode("saved");
       if (savedTimerRef.current) clearTimeout(savedTimerRef.current);

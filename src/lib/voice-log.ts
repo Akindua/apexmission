@@ -17,6 +17,9 @@
 export const VOICE_CAPTURE_SECONDS = 10;
 export const MAX_VOICE_TRANSCRIPT_CHARS = 2_000;
 
+import { saveVoiceLogToSupabase } from "@/lib/voice-storage";
+export { saveVoiceLogToSupabase } from "@/lib/voice-storage";
+
 /** Human-readable description of the speech engine in use. */
 export function getSpeechEngineDescription(): string {
   if (typeof window === "undefined") return "Unknown (server-side)";
