@@ -405,7 +405,32 @@ function ApexMission() {
         const {
           data: { session },
         } = await supabase.auth.getSession();
-        const user = session?.user ?? null;
+        let user = session?.user ?? null;
+
+        // If no session yet, listen for auth state changes as a fallback.
+        // This handles cases where the session cookie is still being propagated
+        // (e.g. after sign-in on another tab, SSR hydration, or cross-origin).
+        if (!user && typeof window !== "undefined") {
+          const resolvedId = await new Promise<string | null>((resolve) => {
+            const { data: sub } = supabase.auth.onAuthStateChange(
+              (_event, newSession) => {
+                if (newSession?.user) {
+                  resolve(newSession.user.id);
+                  sub.subscription.unsubscribe();
+                }
+              },
+            );
+            // Safety timeout: don't wait forever for a session that will never come.
+            setTimeout(() => resolve(null), 3000);
+          });
+
+          if (resolvedId) {
+            // Re-fetch the full session now that we know the user is signed in.
+            const retry = await supabase.auth.getSession();
+            user = retry.data?.session?.user ?? null;
+          }
+        }
+
         if (cancelled) return;
 
         if (!user) {
