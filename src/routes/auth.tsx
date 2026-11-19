@@ -138,7 +138,14 @@ function AuthConsolePage() {
     supabase.auth
       .getUser()
       .then(({ data: { user } }) => {
-        if (active) setCurrentEmail(user?.email ?? null);
+        if (active) {
+          setCurrentEmail(user?.email ?? null);
+          // If already signed in, redirect to dashboard instead of showing sign-in form.
+          // This breaks any redirect loop between /auth and /app.
+          if (user && typeof window !== "undefined") {
+            navigate({ to: "/app", replace: true });
+          }
+        }
       })
       .catch(() => {
         if (active) setCurrentEmail(null);

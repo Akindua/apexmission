@@ -129,6 +129,33 @@ async function retryWithBackoff<T>(
   throw lastError;
 }
 
+// Persistent auth state listener that survives component mounts/unmounts.
+// Prevents redirect loops when getSession() returns null briefly after sign-in
+// due to cookie propagation timing or SSR hydration.
+let currentAuthUserId: string | null = null;
+let authStateListeners: Array<(userId: string | null) => void> = [];
+
+function subscribeToAuthChanges(listener: (userId: string | null) => void) {
+  authStateListeners.push(listener);
+  return () => {
+    authStateListeners = authStateListeners.filter((l) => l !== listener);
+  };
+}
+
+function notifyAuthListeners(userId: string | null) {
+  currentAuthUserId = userId;
+  for (const listener of authStateListeners) {
+    listener(userId);
+  }
+}
+
+// Initialize the persistent auth listener on module load.
+if (typeof window !== "undefined") {
+  supabase.auth.onAuthStateChange((_event, session) => {
+    notifyAuthListeners(session?.user?.id ?? null);
+  });
+}
+
 function ApexMission() {
   const [state, setState] = useState<MissionState>(() => defaultState());
   const [hydrated, setHydrated] = useState(false);
@@ -396,52 +423,65 @@ function ApexMission() {
 
     const initializeAppSession = async () => {
       try {
-        // getSession reads/refreshes the local session without a network round
-        // trip, so a transient getUser failure cannot bounce a valid user.
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        let user = session?.user ?? null;
+        // Check the persistent auth listener first — it catches sessions
+        // established by sign-in on this or another tab before this component
+        // mounted, avoiding redirect loops caused by getSession() timing.
+        if (currentAuthUserId) {
+          setCurrentUserId(currentAuthUserId);
+          setStorageScope(currentAuthUserId);
+        } else {
+          // Fall back to getSession() for the initial check.
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+          const user = session?.user ?? null;
 
-        // If no session yet, listen for auth state changes as a fallback.
-        // This handles cases where the session cookie is still being propagated
-        // (e.g. after sign-in on another tab, SSR hydration, or cross-origin).
-        if (!user && typeof window !== "undefined") {
-          const resolvedId = await new Promise<string | null>((resolve) => {
-            const { data: sub } = supabase.auth.onAuthStateChange(
-              (_event, newSession) => {
-                if (newSession?.user) {
-                  resolve(newSession.user.id);
-                  sub.subscription.unsubscribe();
-                }
-              },
-            );
-            // Safety timeout: don't wait forever for a session that will never come.
-            setTimeout(() => resolve(null), 3000);
-          });
+          if (user) {
+            setCurrentUserId(user.id);
+            setStorageScope(user.id);
+          } else if (typeof window !== "undefined") {
+            // Wait briefly for onAuthStateChange to fire (covers cases where
+            // the session cookie is still propagating after sign-in).
+            const resolvedId = await new Promise<string | null>((resolve) => {
+              const { data: sub } = supabase.auth.onAuthStateChange(
+                (_event, newSession) => {
+                  if (newSession?.user) {
+                    resolve(newSession.user.id);
+                    sub.subscription.unsubscribe();
+                  }
+                },
+              );
+              setTimeout(() => resolve(null), 3000);
+            });
 
-          if (resolvedId) {
-            // Re-fetch the full session now that we know the user is signed in.
-            const retry = await supabase.auth.getSession();
-            user = retry.data?.session?.user ?? null;
+            if (resolvedId) {
+              setCurrentUserId(resolvedId);
+              setStorageScope(resolvedId);
+              const retry = await supabase.auth.getSession();
+              const retryUser = retry.data?.session?.user ?? null;
+              if (retryUser) {
+                setCurrentUserId(retryUser.id);
+                setStorageScope(retryUser.id);
+              }
+            }
+          }
+
+          if (cancelled) return;
+
+          const userId = currentAuthUserId;
+          if (!userId) {
+            // Never render another account's cached dashboard data for a guest.
+            setStorageScope(null);
+            setHydrated(true);
+            setProfileHydrated(true);
+            navigate({ to: "/auth", replace: true });
+            return;
           }
         }
 
         if (cancelled) return;
 
-        if (!user) {
-          // Never render another account's cached dashboard data for a guest.
-          setStorageScope(null);
-          setHydrated(true);
-          setProfileHydrated(true);
-          navigate({ to: "/auth", replace: true });
-          return;
-        }
-
-        // The account scope must be established before pulling any local
-        // mission, chat, theme, or analytics state.
-        setStorageScope(user.id);
-        setCurrentUserId(user.id);
+        const userId = currentAuthUserId!;
 
         // A cross-subdomain handoff must be applied after the auth guard reads
         // the session, because Supabase storage is per-origin and the consume
@@ -493,7 +533,7 @@ function ApexMission() {
         // On final failure, show error UI — do NOT build default profile,
         // do NOT open onboarding, do NOT run Mission Coach.
         const profile = await retryWithBackoff(
-          () => fetchOperatorProfileMetadata(user.id),
+          () => fetchOperatorProfileMetadata(userId),
           (attempt) => setProfileRetryCount(attempt),
         );
 
@@ -574,7 +614,7 @@ function ApexMission() {
         // Personal operators receive live rank intelligence. Corporate
         // operators never fetch the global leaderboard at all.
         if (profile!.companyId === null) {
-          const { operators, snapshot } = await fetchLeaderboardTelemetry(user.id);
+          const { operators, snapshot } = await fetchLeaderboardTelemetry(userId);
           const normalizedData = operators.map((operator) => ({
             ...operator,
             full_name: operator.operator_name,
