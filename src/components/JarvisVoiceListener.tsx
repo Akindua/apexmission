@@ -2,6 +2,7 @@
 
 import { Mic, MicOff, Square, Zap, Loader2, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { handleUnauthenticated } from "@/lib/api-auth";
 import { cn } from "@/lib/utils";
 import { JarvisNudgeCard } from "@/components/JarvisNudge/JarvisNudgeCard";
@@ -49,6 +50,7 @@ export function JarvisVoiceListener({
   onSuggestionsReceived,
   entitled,
 }: JarvisVoiceListenerProps) {
+  const navigate = useNavigate();
   const [state, setState] = useState<ListenerState>("idle");
   const [transcript, setTranscript] = useState("");
   [useState<JarvisSuggestion[]>([])]; // suggestions rendered by parent via JarvisNudgeCard

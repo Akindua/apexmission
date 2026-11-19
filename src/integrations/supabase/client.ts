@@ -32,7 +32,7 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
   };
 }
 
-function createSupabaseClient(): SupabaseClientType | null {
+function createSupabaseClient(): SupabaseClientType {
   // Use import.meta.env for client-side (Vite build-time replacement)
   // Fall back to process.env for SSR (server-side rendering)
   const SUPABASE_URL = import.meta.env["VITE_SUPABASE_URL"] || process.env["SUPABASE_URL"];
@@ -45,13 +45,15 @@ function createSupabaseClient(): SupabaseClientType | null {
   if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
     const missing = [
       ...(!SUPABASE_URL ? ["SUPABASE_URL"] : []),
-      ...(!SUPABASE_PUBLISHABLE_KEY ? ["SUPABASE_PUBLISHABLE_KEY (or SUPABASE_ANON_KEY)"] : []),
+      ...(!SUPABASE_PUBLISHABLE_KEY ? ["SUPABASE_PUBLISHABLE_KEY / SUPABASE_ANON_KEY"] : []),
     ];
-    const message = `Missing Supabase environment variable(s): ${missing.join(", ")}. Supabase client is disabled. Connect Supabase in Lovable Cloud.`;
-    // Warn instead of throwing so a missing env var cannot crash the React
-    // Error Boundary on first access. The lazy proxy below degrades to a noop.
-    console.warn(`[Supabase] ${message}`);
-    return null;
+    const message = `[Supabase] Missing environment variable(s): ${missing.join(
+      ", ",
+    )}. Supabase client will be disabled until you connect Supabase in Lovable Cloud.`;
+    // Log a clear warning instead of throwing so the React Error Boundary is
+    // not tripped during build/render when env vars are not yet configured.
+    console.warn(message);
+    return makeUnconfiguredSupabaseClient();
   }
 
   return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
@@ -66,27 +68,41 @@ function createSupabaseClient(): SupabaseClientType | null {
   });
 }
 
-let _supabase: SupabaseClientType | null = null;
-
-/** Noop stand-in used when Supabase env vars are missing: warns instead of crashing. */
-const noopSupabaseClient = new Proxy({} as SupabaseClientType, {
-  get() {
-    console.warn("[Supabase] Client not configured (missing env vars). Property access is a noop.");
-    return noopSupabaseClient;
-  },
-  apply() {
-    console.warn("[Supabase] Client not configured (missing env vars). Call is a noop.");
-    return { data: null, error: { message: "Supabase not configured" } as unknown };
-  },
-});
+// Graceful no-op client used when Supabase env vars are missing. Prevents
+// the component tree from crashing while surfacing a clear warning once.
+function makeUnconfiguredSupabaseClient(): SupabaseClient<Database> {
+  const noop = () => {
+    console.warn("[Supabase] Client not configured — operation ignored until env vars are set.");
+    return undefined;
+  };
+  return {
+    auth: {
+      getSession: noop,
+      getUser: noop,
+      signInWithPassword: noop,
+      signUp: noop,
+      signOut: noop,
+      resetPasswordForEmail: noop,
+      updateUser: noop,
+      signInWithPasskey: noop,
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+    },
+    from: noop,
+    rpc: noop,
+    channel: noop,
+    removeChannel: () => {},
+  } as unknown as ReturnType<typeof createSupabaseClient>;
+}
 
 // Use the lazy proxy everywhere so the Supabase client is only constructed
-// when a session actually needs it. When env vars are missing it degrades to
-// the noop client above rather than throwing and breaking the Error Boundary.
-export const supabase = new Proxy({} as SupabaseClientType, {
+// when a session actually needs it.
+let _supabase: SupabaseClient<Database> | undefined;
+
+export const supabase = new Proxy({} as SupabaseClient<Database>, {
   get(_, prop, receiver) {
-    if (!_supabase) _supabase = createSupabaseClient();
-    if (!_supabase) return noopSupabaseClient;
-    return Reflect.get(_supabase, prop, receiver);
+    if (!_supabase) {
+      _supabase = createSupabaseClient();
+    }
+    return Reflect.get(_supabase!, prop, receiver);
   },
-}) as unknown as SupabaseClientType;
+}) as unknown as SupabaseClient<Database>;

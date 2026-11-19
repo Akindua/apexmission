@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
+import { TurnstileWidget, type TurnstileHandle } from "@/components/TurnstileWidget";
 import { supabase } from "@/integrations/supabase/client";
 import { Mail, ArrowRight, Loader2, ShieldAlert, KeyRound } from "lucide-react";
 
@@ -18,15 +18,7 @@ function ForgotPasswordPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successTransmission, setSuccessTransmission] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  const turnstileRef = useRef<TurnstileInstance | null>(null);
-  /** Stable DOM container so Turnstile can always resolve its embedded location. */
-  const turnstileContainerRef = useRef<HTMLDivElement>(null);
-  /** Only mount the Turnstile widget once the container is in the DOM. */
-  const [turnstileMounted, setTurnstileMounted] = useState(false);
-
-  useEffect(() => {
-    setTurnstileMounted(true);
-  }, []);
+  const turnstileWidgetRef = useRef<TurnstileHandle | null>(null);
 
   const handlePasswordRecovery = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,7 +48,7 @@ function ForgotPasswordPage() {
       setBusy(false);
       // Single-use token consumed — re-challenge.
       setTurnstileToken(null);
-      turnstileRef.current?.reset();
+      turnstileWidgetRef.current?.reset();
     }
   };
 
@@ -112,36 +104,17 @@ function ForgotPasswordPage() {
 
             {TURNSTILE_SITE_KEY && (
               <div className="w-full space-y-2">
-                <label
-                  htmlFor="turnstile-widget"
-                  className="block text-center font-mono text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400"
-                >
-                  Security Challenge — Complete to proceed
-                </label>
-                <div
-                  ref={turnstileContainerRef}
-                  id="turnstile-widget"
-                  className="flex justify-center rounded-xl border border-emerald-500/20 bg-[#04100b]/60 p-3"
-                >
-                  {turnstileMounted && (
-                    <Turnstile
-                      ref={turnstileRef}
-                      siteKey={TURNSTILE_SITE_KEY}
-                      onSuccess={setTurnstileToken}
-                      onExpire={() => setTurnstileToken(null)}
-                      onError={() => setTurnstileToken(null)}
-                      options={{ theme: "dark", size: "flexible" }}
-                    />
-                  )}
-                </div>
+                <TurnstileWidget
+                  ref={turnstileWidgetRef}
+                  siteKey={TURNSTILE_SITE_KEY}
+                  onSuccess={setTurnstileToken}
+                  onExpire={() => setTurnstileToken(null)}
+                  onError={() => setTurnstileToken(null)}
+                />
               </div>
             )}
 
-            <button
-              type="submit"
-              disabled={busy || Boolean(TURNSTILE_SITE_KEY && !turnstileToken)}
-              className="btn-glass-primary w-full h-12 mt-2"
-            >
+            <button type="submit" disabled={busy} className="btn-glass-primary w-full h-12 mt-2">
               {busy ? (
                 <Loader2 className="h-4 w-4 animate-spin text-black" />
               ) : (

@@ -1,3 +1,5 @@
+import { UnauthorizedError } from "@/lib/auth-redirect";
+
 export interface MissionPlan {
   mission: string;
   high: string[];
@@ -27,6 +29,10 @@ export async function generateMissionPlan(mission: string): Promise<MissionPlan>
 
   if (!response.ok) {
     const text = await response.text();
+
+    if (response.status === 401) {
+      throw new UnauthorizedError("Session expired — sign in required.");
+    }
 
     console.error(text);
 
