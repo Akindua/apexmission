@@ -2,7 +2,7 @@
 // Server-side Supabase client with service role key - bypasses RLS.
 // Use this for admin operations in server functions and server routes only.
 // For user-authenticated queries (with RLS), use the auth middleware instead.
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 
 function isNewSupabaseApiKey(value: string): boolean {
@@ -32,7 +32,9 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
   };
 }
 
-function createSupabaseAdminClient() {
+type SupabaseAdminClientType = SupabaseClient<Database>;
+
+function createSupabaseAdminClient(): SupabaseAdminClientType | null {
   const SUPABASE_URL = process.env["SUPABASE_URL"];
   const SUPABASE_SERVICE_ROLE_KEY = process.env["SUPABASE_SERVICE_ROLE_KEY"];
 
@@ -41,9 +43,10 @@ function createSupabaseAdminClient() {
       ...(!SUPABASE_URL ? ["SUPABASE_URL"] : []),
       ...(!SUPABASE_SERVICE_ROLE_KEY ? ["SUPABASE_SERVICE_ROLE_KEY"] : []),
     ];
-    const message = `Missing Supabase environment variable(s): ${missing.join(", ")}. Connect Supabase in Lovable Cloud.`;
-    console.error(`[Supabase] ${message}`);
-    throw new Error(message);
+    const message = `Missing Supabase environment variable(s): ${missing.join(", ")}. Admin client is disabled.`;
+    // Warn instead of throwing so a missing env var cannot crash the server.
+    console.warn(`[Supabase Admin] ${message}`);
+    return null;
   }
 
   return createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
@@ -58,15 +61,30 @@ function createSupabaseAdminClient() {
   });
 }
 
-let _supabaseAdmin: ReturnType<typeof createSupabaseAdminClient> | undefined;
+let _supabaseAdmin: SupabaseAdminClientType | null = null;
+
+/** Noop stand-in used when admin env vars are missing: warns instead of crashing. */
+const noopSupabaseAdminClient = new Proxy({} as SupabaseAdminClientType, {
+  get() {
+    console.warn(
+      "[Supabase Admin] Client not configured (missing env vars). Property access is a noop.",
+    );
+    return noopSupabaseAdminClient;
+  },
+  apply() {
+    console.warn("[Supabase Admin] Client not configured (missing env vars). Call is a noop.");
+    return { data: null, error: { message: "Supabase not configured" } as unknown };
+  },
+});
 
 // Server-side Supabase client with service role - bypasses RLS
 // SECURITY: Only use this for trusted server-side operations, never expose to client code
 // Load inside server handlers: const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 // Top-level import is safe only in other .server.ts modules - route files and *.functions.ts ship to the client bundle.
-export const supabaseAdmin = new Proxy({} as ReturnType<typeof createSupabaseAdminClient>, {
+export const supabaseAdmin = new Proxy({} as SupabaseAdminClientType, {
   get(_, prop, receiver) {
     if (!_supabaseAdmin) _supabaseAdmin = createSupabaseAdminClient();
+    if (!_supabaseAdmin) return noopSupabaseAdminClient;
     return Reflect.get(_supabaseAdmin, prop, receiver);
   },
-});
+}) as unknown as SupabaseAdminClientType;

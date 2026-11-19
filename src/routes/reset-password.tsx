@@ -22,6 +22,14 @@ function ResetPasswordPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const turnstileRef = useRef<TurnstileInstance | null>(null);
+  /** Stable DOM container so Turnstile can always resolve its embedded location. */
+  const turnstileContainerRef = useRef<HTMLDivElement>(null);
+  /** Only mount the Turnstile widget once the container is in the DOM. */
+  const [turnstileMounted, setTurnstileMounted] = useState(false);
+
+  useEffect(() => {
+    setTurnstileMounted(true);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -194,15 +202,29 @@ function ResetPasswordPage() {
                 </div>
 
                 {TURNSTILE_SITE_KEY && (
-                  <div className="flex justify-center">
-                    <Turnstile
-                      ref={turnstileRef}
-                      siteKey={TURNSTILE_SITE_KEY}
-                      onSuccess={setTurnstileToken}
-                      onExpire={() => setTurnstileToken(null)}
-                      onError={() => setTurnstileToken(null)}
-                      options={{ theme: "dark", size: "flexible" }}
-                    />
+                  <div className="w-full space-y-2">
+                    <label
+                      htmlFor="turnstile-widget"
+                      className="block text-center font-mono text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400"
+                    >
+                      Security Challenge — Complete to proceed
+                    </label>
+                    <div
+                      ref={turnstileContainerRef}
+                      id="turnstile-widget"
+                      className="flex justify-center rounded-xl border border-emerald-500/20 bg-[#04100b]/60 p-3"
+                    >
+                      {turnstileMounted && (
+                        <Turnstile
+                          ref={turnstileRef}
+                          siteKey={TURNSTILE_SITE_KEY}
+                          onSuccess={setTurnstileToken}
+                          onExpire={() => setTurnstileToken(null)}
+                          onError={() => setTurnstileToken(null)}
+                          options={{ theme: "dark", size: "flexible" }}
+                        />
+                      )}
+                    </div>
                   </div>
                 )}
 

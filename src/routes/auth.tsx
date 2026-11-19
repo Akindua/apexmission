@@ -121,6 +121,11 @@ function AuthConsolePage() {
   const [passkeyBusy, setPasskeyBusy] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const turnstileRef = useRef<TurnstileInstance | null>(null);
+  /** Stable DOM container so Turnstile can always resolve its embedded location. */
+  const turnstileContainerRef = useRef<HTMLDivElement>(null);
+  /** Only mount the Turnstile widget once the container is in the DOM, avoiding
+   *  "Cannot determine Turnstile's embedded location" on hydrate/remount. */
+  const [turnstileMounted, setTurnstileMounted] = useState(false);
 
   /** Turnstile tokens are single-use — clear and re-challenge after each attempt. */
   function resetChallenge() {
@@ -131,6 +136,10 @@ function AuthConsolePage() {
   useEffect(() => {
     setIsSignUp(mode === "signup");
   }, [mode]);
+
+  useEffect(() => {
+    setTurnstileMounted(true);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -502,17 +511,20 @@ function AuthConsolePage() {
                 Security Challenge — Complete to proceed
               </label>
               <div
+                ref={turnstileContainerRef}
                 id="turnstile-widget"
                 className="flex justify-center rounded-xl border border-emerald-500/20 bg-[#04100b]/60 p-3"
               >
-                <Turnstile
-                  ref={turnstileRef}
-                  siteKey={TURNSTILE_SITE_KEY}
-                  onSuccess={setTurnstileToken}
-                  onExpire={() => setTurnstileToken(null)}
-                  onError={() => setTurnstileToken(null)}
-                  options={{ theme: "dark", size: "flexible" }}
-                />
+                {turnstileMounted && (
+                  <Turnstile
+                    ref={turnstileRef}
+                    siteKey={TURNSTILE_SITE_KEY}
+                    onSuccess={setTurnstileToken}
+                    onExpire={() => setTurnstileToken(null)}
+                    onError={() => setTurnstileToken(null)}
+                    options={{ theme: "dark", size: "flexible" }}
+                  />
+                )}
               </div>
             </div>
           ) : null}

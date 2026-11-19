@@ -4,6 +4,7 @@ import { ArrowLeft, Loader2, Sparkles, X, Zap } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useSubscriptionTier } from "@/hooks/useSubscriptionTier";
+import { handleUnauthenticated } from "@/lib/api-auth";
 import { getJarvisSuggestions, getPendingSuggestions } from "@/services/jarvis";
 import type { JarvisSuggestion as JarvisSuggestionType } from "@/services/jarvis";
 import { JarvisBadge } from "@/components/JarvisNudge/JarvisBadge";
@@ -92,10 +93,9 @@ export function JarvisPanel({
       });
 
       if (!response.ok) {
+        if (handleUnauthenticated(response)) return;
         if (response.status === 403) {
           setError("Jarvis requires an active subscription.");
-        } else if (response.status === 401) {
-          setError("Please sign in to use Jarvis.");
         } else {
           setError("Jarvis is temporarily unavailable.");
         }
