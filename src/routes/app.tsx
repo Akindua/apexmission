@@ -396,10 +396,6 @@ function ApexMission() {
 
     const initializeAppSession = async () => {
       try {
-        // A cross-subdomain handoff must be applied before any auth guard reads
-        // the session, because Supabase storage is per-origin.
-        await consumeTenantHandoff();
-
         // getSession reads/refreshes the local session without a network round
         // trip, so a transient getUser failure cannot bounce a valid user.
         const {
@@ -446,6 +442,11 @@ function ApexMission() {
         // mission, chat, theme, or analytics state.
         setStorageScope(user.id);
         setCurrentUserId(user.id);
+
+        // A cross-subdomain handoff must be applied after the auth guard reads
+        // the session, because Supabase storage is per-origin and the consume
+        // endpoint requires an authenticated session.
+        await consumeTenantHandoff();
 
         const localState = loadState();
         const { state: reconciledState, rollover: rolloverSummary } =
