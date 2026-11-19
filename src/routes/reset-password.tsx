@@ -101,7 +101,7 @@ function ResetPasswordPage() {
   return (
     <div className="page-shell flex items-center justify-center px-6 py-12">
       <div className="ambient-emerald-glow-sm" />
-      <div className="grid-pattern-overlay" />
+      <div className="grid-pattern_overlay" />
 
       <div className="relative w-full max-w-md glass-panel p-8 text-center">
         <div className="top-highlight" />

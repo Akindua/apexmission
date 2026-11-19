@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { TurnstileWidget, type TurnstileHandle } from "@/components/TurnstileWidget";
 import { supabase } from "@/integrations/supabase/client";

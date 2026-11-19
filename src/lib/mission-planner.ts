@@ -10,7 +10,7 @@ export interface MissionPlan {
 
 export async function generateMissionPlan(mission: string): Promise<MissionPlan> {
   // Server requires a verified Supabase session on every planner call.
-  const { authHeaders } = await import("@/lib/api-auth");
+  const { authHeaders, handleUnauthenticated } = await import("@/lib/api-auth");
   const response = await fetch("/api/mission-plan", {
     method: "POST",
     headers: {
@@ -21,6 +21,11 @@ export async function generateMissionPlan(mission: string): Promise<MissionPlan>
       mission,
     }),
   });
+
+  if (handleUnauthenticated(response)) {
+    // Redirect already issued by handleUnauthenticated.
+    throw new Error("Authentication required: redirecting to sign in.");
+  }
 
   if (!response.ok) {
     const text = await response.text();

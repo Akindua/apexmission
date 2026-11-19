@@ -9,8 +9,7 @@
  * Copyright (c) 2026 ApexMissions. All rights reserved.
  */
 
-import { authHeaders } from "@/lib/api-auth";
-import { UnauthorizedError } from "@/lib/auth-redirect";
+import { authHeaders, handleUnauthenticated } from "@/lib/api-auth";
 import {
   MAX_TASKS_PER_TIER,
   todayKey,
@@ -159,11 +158,12 @@ export async function requestAiDayPlan(input: DayPlanInput): Promise<DayPlanProp
     body: JSON.stringify({ mission: input.mission, unfinished }),
   });
 
-  if (!response.ok) {
-    if (response.status === 401) {
-      throw new UnauthorizedError("Session expired — sign in required.");
-    }
+  if (handleUnauthenticated(response)) {
+    // Redirect already issued by handleUnauthenticated.
+    throw new Error("Authentication required: redirecting to sign in.");
+  }
 
+  if (!response.ok) {
     throw new Error(`Day planner failed: ${response.status}`);
   }
 
