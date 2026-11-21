@@ -62,7 +62,9 @@ async function initiateHandoff(
   });
 
   if (handleUnauthenticated(response) === "redirect") {
-    throw new Error("Authentication required: redirecting to sign in.");
+    // Handoff requires auth. Throw so the caller can show an error screen
+    // instead of redirecting to /auth.
+    throw new Error("Authentication required to complete handoff.");
   }
 
   if (!response.ok) {
@@ -114,9 +116,9 @@ export async function consumeTenantHandoff(): Promise<string | null> {
     body: JSON.stringify({ code }),
   });
 
-  if (handleUnauthenticated(response)) {
-    // Redirect already issued by handleUnauthenticated.
-    return null;
+  if (handleUnauthenticated(response) === "redirect") {
+    // Handoff consume requires auth. Throw so the caller can show an error screen.
+    throw new Error("Authentication required to complete handoff.");
   }
 
   if (!response.ok) {
