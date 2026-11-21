@@ -10,6 +10,7 @@
  */
 
 import { authHeaders, handleUnauthenticated } from "@/lib/api-auth";
+import { UnauthorizedError } from "@/lib/auth-redirect";
 import {
   MAX_TASKS_PER_TIER,
   todayKey,
@@ -158,9 +159,8 @@ export async function requestAiDayPlan(input: DayPlanInput): Promise<DayPlanProp
     body: JSON.stringify({ mission: input.mission, unfinished }),
   });
 
-  if (handleUnauthenticated(response)) {
-    // Redirect already issued by handleUnauthenticated.
-    throw new Error("Authentication required: redirecting to sign in.");
+  if (handleUnauthenticated(response) === "redirect") {
+    throw new UnauthorizedError("Authentication required: redirecting to sign in.");
   }
 
   if (!response.ok) {

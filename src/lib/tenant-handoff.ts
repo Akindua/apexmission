@@ -61,8 +61,7 @@ async function initiateHandoff(
     body: JSON.stringify({ targetSlug }),
   });
 
-  if (handleUnauthenticated(response)) {
-    // Redirect already issued by handleUnauthenticated.
+  if (handleUnauthenticated(response) === "redirect") {
     throw new Error("Authentication required: redirecting to sign in.");
   }
 
