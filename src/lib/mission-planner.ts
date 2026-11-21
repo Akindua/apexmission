@@ -22,9 +22,8 @@ export async function generateMissionPlan(mission: string): Promise<MissionPlan>
     }),
   });
 
-  if (handleUnauthenticated(response)) {
-    // Redirect already issued by handleUnauthenticated.
-    throw new Error("Authentication required: redirecting to sign in.");
+  if (handleUnauthenticated(response) === "redirect") {
+    throw new UnauthorizedError("Authentication required: redirecting to sign in.");
   }
 
   if (!response.ok) {

@@ -98,6 +98,7 @@ import {
   setScopedItem,
   setStorageScope,
 } from "@/lib/user-storage";
+import { AuthErrorScreen, recordAuthRedirect, resetAuthRedirects } from "@/lib/auth-error-screen";
 
 export const Route = createFileRoute("/app")({
   component: ApexMission,
@@ -171,6 +172,7 @@ function ApexMission() {
   const [profileState, setProfileState] = useState<"loading" | "loaded" | "error">("loading");
   const [profileError, setProfileError] = useState<string | null>(null);
   const [profileRetryCount, setProfileRetryCount] = useState(0);
+  const [authError, setAuthError] = useState<string | null>(null);
   const [activeTenant, setActiveTenant] = useState<SessionTenant | null>(null);
   const [dayPlan, setDayPlan] = useState<DayPlanProposal | null>(null);
   const [rollover, setRollover] = useState<RolloverSummary | null>(null);
@@ -327,12 +329,13 @@ function ApexMission() {
 
       if (focusUntouchedBefore) setDailyDraft(merged.dailyAction);
     } catch (error) {
-      // Session expired — send user to sign-in.
+      // AI is an enhancement, never a dependency. Never redirect on 401 —
+      // show an error screen instead so the loop breaker can engage.
       if (error instanceof UnauthorizedError) {
-        navigate({ to: "/auth", search: { mode: "signin" } });
+        setAuthError("Couldn't verify your access. Retry or sign out.");
+        setScopedItem(attemptedKey, "true");
         return;
       }
-      // AI is an enhancement, never a dependency. Keep the deterministic plan.
       console.warn("[DayPlan] AI refinement unavailable; keeping local plan:", error);
       setScopedItem(attemptedKey, "true");
     } finally {
@@ -410,11 +413,18 @@ function ApexMission() {
             await new Promise((resolve) => setTimeout(resolve, 500));
           }
         }
-        const user = session?.user ?? null;
+        const user = session?.user as { id: string } | null;
         if (cancelled) return;
 
         if (!user) {
-          // Never render another account's cached dashboard data for a guest.
+          // Definitive "no session" — redirect to /auth only once,
+          // guarded by the loop breaker.
+          if (recordAuthRedirect()) {
+            setAuthError("Couldn't verify your access. Retry or sign out.");
+            setHydrated(true);
+            setProfileHydrated(true);
+            return;
+          }
           setStorageScope(null);
           setHydrated(true);
           setProfileHydrated(true);
@@ -424,8 +434,14 @@ function ApexMission() {
 
         // The account scope must be established before pulling any local
         // mission, chat, theme, or analytics state.
-        const userId = session?.user?.id ?? null;
+        const userId = user?.id ?? null;
         if (!userId) {
+          if (recordAuthRedirect()) {
+            setAuthError("Couldn't verify your access. Retry or sign out.");
+            setHydrated(true);
+            setProfileHydrated(true);
+            return;
+          }
           setStorageScope(null);
           setHydrated(true);
           setProfileHydrated(true);
@@ -434,6 +450,9 @@ function ApexMission() {
         }
         setStorageScope(userId);
         setCurrentUserId(userId);
+
+        // Successful session load — reset the loop breaker.
+        resetAuthRedirects();
 
         // A cross-subdomain handoff must be applied after the auth guard reads
         // the session, because Supabase storage is per-origin and the consume
@@ -583,6 +602,12 @@ function ApexMission() {
         }
       } catch (err) {
         console.error("Failed to map dynamic operator telemetry:", err);
+        // Show error screen but do NOT redirect — the session may still be valid.
+        if (!cancelled) {
+          setAuthError("Couldn't verify your access. Retry or sign out.");
+          setHydrated(true);
+          setProfileHydrated(true);
+        }
       } finally {
         if (!cancelled) {
           setHydrated(true);
@@ -1159,9 +1184,10 @@ function ApexMission() {
       setScopedItem("apexmission-mission-plan-generated", "true");
       setHasGeneratedMissionPlan(true);
     } catch (error) {
-      // Session expired — send user to sign-in.
+      // Never redirect on 401 — show error screen instead so the loop breaker can engage.
       if (error instanceof UnauthorizedError) {
-        navigate({ to: "/auth", search: { mode: "signin" } });
+        setAuthError("Couldn't verify your access. Retry or sign out.");
+        setIsGeneratingMissionPlan(false);
         return;
       }
       console.error("Mission plan generation failed:", error);
@@ -1457,6 +1483,25 @@ function ApexMission() {
           </div>
         </div>
       </div>
+    );
+  }
+
+  // Show auth error screen instead of redirecting when the loop breaker trips
+  // or when access verification fails non-fatally.
+  if (authError) {
+    return (
+      <AuthErrorScreen
+        onRetry={() => {
+          setAuthError(null);
+          window.location.reload();
+        }}
+        onSignOut={() => {
+          supabase.auth.signOut({ scope: "local" });
+          setStorageScope(null);
+          navigate({ to: "/auth", replace: true });
+        }}
+        message={authError}
+      />
     );
   }
 

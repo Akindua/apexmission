@@ -4,6 +4,7 @@ import { TurnstileWidget, type TurnstileHandle } from "@/components/TurnstileWid
 import { supabase } from "@/integrations/supabase/client";
 import { setStorageScope } from "@/lib/user-storage";
 import { TACTICAL_BRIEFING_SESSION_KEY } from "@/lib/synthetic-briefing";
+import { recordAuthRedirect } from "@/lib/auth-error-screen";
 import {
   ShieldAlert,
   ShieldCheck,
@@ -140,10 +141,12 @@ function AuthConsolePage() {
       .then(({ data: { user } }) => {
         if (active) {
           setCurrentEmail(user?.email ?? null);
-          // If already signed in, redirect to dashboard instead of showing sign-in form.
-          // This breaks any redirect loop between /auth and /app.
+          // Redirect to /app only once when a session exists, guarded by the
+          // loop breaker. Never redirect on error — just show the sign-in form.
           if (user && typeof window !== "undefined") {
-            navigate({ to: "/app", replace: true });
+            if (!recordAuthRedirect()) {
+              navigate({ to: "/app", replace: true });
+            }
           }
         }
       })
