@@ -1,9 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
-import { VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY } from "@/lib/env";
-
-const supabase = createClient(VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false },
-});
+import { supabase } from "@/integrations/supabase/client";
 
 export async function saveVoiceLogToSupabase(transcript: string): Promise<void> {
   const {
@@ -11,13 +6,14 @@ export async function saveVoiceLogToSupabase(transcript: string): Promise<void> 
     error: authError,
   } = await supabase.auth.getUser();
 
-  if (authError || !user) {
+  const uid = (user as { id: string } | null)?.id;
+  if (authError || !uid) {
     console.error("[VoiceLog] Auth error:", authError);
     throw new Error("Not authenticated");
   }
 
-  const { error } = await supabase.from("voice_logs").insert({
-    user_id: user.id,
+  const { error } = await (supabase as any).from("voice_logs").insert({
+    user_id: uid,
     transcript,
     created_at: new Date().toISOString(),
   });

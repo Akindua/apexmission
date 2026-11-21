@@ -159,9 +159,9 @@ function OnboardingPage() {
       const { error: metaError } = await supabase.auth.updateUser({ data: { company_id: null } });
       if (metaError) throw metaError;
 
-      // A personal operator must not stay on a company subdomain.
-      if (await redirectPersonalToPlatform()) return;
-
+      // A personal operator goes straight to the platform dashboard.
+      // Personal accounts (company_id = null) never need tenant handoff -
+      // they have no company workspace to hand off.
       navigate({ to: "/app" });
     } catch (err) {
       console.error("Personal onboarding failed:", err);

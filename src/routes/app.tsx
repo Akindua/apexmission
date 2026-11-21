@@ -457,7 +457,18 @@ function ApexMission() {
         // A cross-subdomain handoff must be applied after the auth guard reads
         // the session, because Supabase storage is per-origin and the consume
         // endpoint requires an authenticated session.
-        await consumeTenantHandoff();
+        // A handoff failure shows an error screen — it never redirects to /auth.
+        try {
+          await consumeTenantHandoff();
+        } catch (err) {
+          if (!cancelled) {
+            console.error("[Handoff] consume failed:", err);
+            setAuthError("Couldn't verify your access. Retry or sign out.");
+            setHydrated(true);
+            setProfileHydrated(true);
+            return;
+          }
+        }
 
         const localState = loadState();
         const { state: reconciledState, rollover: rolloverSummary } =
