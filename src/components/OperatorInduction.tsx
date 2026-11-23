@@ -374,7 +374,7 @@ export function OperatorInduction({
                   <PrivacyShieldBanner />
                   <div className="rounded-xl border border-emerald-500/15 bg-emerald-950/15 p-3.5">
                     <p className="text-[11px] font-medium leading-relaxed text-zinc-400">
-                      <span className="font-bold text-zinc-300">Privacy Guarantee.</span>{" "}
+                      <span className="font-bold text-zinc-300">Privacy commitment.</span>{" "}
                       ApexMissions only logs manually submitted milestones. We never monitor your
                       device background, screen time, or location parameters.
                     </p>

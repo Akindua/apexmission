@@ -13,6 +13,8 @@ import {
   Mail,
   ArrowRight,
   Fingerprint,
+  LogOut,
+  ArrowLeft,
 } from "lucide-react";
 
 type AuthMode = "signin" | "signup";
@@ -118,6 +120,7 @@ function AuthConsolePage() {
   const [busy, setBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [currentEmail, setCurrentEmail] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(true);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [passkeyBusy, setPasskeyBusy] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
@@ -133,6 +136,8 @@ function AuthConsolePage() {
     setIsSignUp(mode === "signup");
   }, [mode]);
 
+  // Check for existing session on mount — but NEVER auto-redirect.
+  // Instead, show the signed-in card and let the user choose.
   useEffect(() => {
     let active = true;
 
@@ -141,13 +146,6 @@ function AuthConsolePage() {
       .then(({ data: { user } }) => {
         if (active) {
           setCurrentEmail(user?.email ?? null);
-          // Redirect to /app only once when a session exists, guarded by the
-          // loop breaker. Never redirect on error — just show the sign-in form.
-          if (user && typeof window !== "undefined") {
-            if (!recordAuthRedirect()) {
-              navigate({ to: "/app", replace: true });
-            }
-          }
         }
       })
       .catch(() => {
@@ -167,6 +165,26 @@ function AuthConsolePage() {
       search: { mode: nextMode, next },
       replace: true,
     });
+  }
+
+  async function handleSignOutAndShowForm() {
+    try {
+      const { error } = await supabase.auth.signOut({ scope: "local" });
+      if (error) throw error;
+    } catch (err) {
+      console.warn("Local session disconnect skipped:", err);
+    } finally {
+      setStorageScope(null);
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem(TACTICAL_BRIEFING_SESSION_KEY);
+      }
+      setCurrentEmail(null);
+      setShowForm(true);
+    }
+  }
+
+  function handleContinueToDashboard() {
+    navigate({ to: next || "/app" });
   }
 
   const handleAuthentication = async (e: React.FormEvent) => {
@@ -372,6 +390,43 @@ function AuthConsolePage() {
     }
   };
 
+  // When a session exists, show the signed-in card instead of the form
+  const signedInCard = currentEmail && (
+    <div className="mb-6 glass-panel-subtle p-4 text-left animate-fade-in">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-white">
+              You're signed in as <span className="font-mono text-emerald-300">{currentEmail}</span>
+            </p>
+            <p className="text-[11px] text-zinc-500 mt-0.5">
+              Choose how to continue
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={handleContinueToDashboard}
+            className="btn-glass-primary h-10 px-4 text-sm"
+          >
+            <ArrowRight className="h-4 w-4" />
+            <span>Continue to dashboard</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleSignOutAndShowForm}
+            className="btn-glass-ghost h-10 px-4 text-sm flex items-center gap-2"
+          >
+            <LogOut className="h-4 w-4" />
+            <span>Sign in as someone else</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="page-shell flex items-center justify-center px-6 py-12">
       <div className="ambient-emerald-glow" />
@@ -393,228 +448,218 @@ function AuthConsolePage() {
           </h1>
         </div>
 
-        {isSignUp && currentEmail && (
-          <div className="mb-5 rounded-xl border border-amber-500/25 bg-amber-950/20 p-3.5 text-left flex items-start gap-2.5 text-xs text-amber-300 font-semibold animate-fade-in">
-            <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5 text-amber-400" />
-            <div className="space-y-1">
-              <p>
-                Currently signed in as{" "}
-                <span className="font-mono text-amber-200">{currentEmail}</span>.
-              </p>
-              <p className="text-[11px] font-medium text-amber-200/70">
-                Registering a new account will disconnect this session. Your saved mission data
-                stays on this device and is restored when you sign back in.
-              </p>
-            </div>
-          </div>
-        )}
+        {signedInCard}
 
-        {errorMessage && (
-          <div className="mb-5 rounded-xl border border-rose-500/20 bg-rose-950/20 p-3.5 text-left flex items-start gap-2.5 text-xs text-rose-400 font-semibold animate-fade-in">
-            <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
-            <p>{errorMessage}</p>
-          </div>
-        )}
+        {showForm && (
+          <>
+            {errorMessage && (
+              <div className="mb-5 rounded-xl border border-rose-500/20 bg-rose-950/20 p-3.5 text-left flex items-start gap-2.5 text-xs text-rose-400 font-semibold animate-fade-in">
+                <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
+                <p>{errorMessage}</p>
+              </div>
+            )}
 
-        <form onSubmit={handleAuthentication} className="space-y-4">
-          {isSignUp && (
-            <div className="flex flex-col gap-3 text-left border-b border-zinc-900/50 pb-4 mb-2">
+            <form onSubmit={handleAuthentication} className="space-y-4">
+              {isSignUp && (
+                <div className="flex flex-col gap-3 text-left border-b border-zinc-900/50 pb-4 mb-2">
+                  <div className="glass-input-group">
+                    <label htmlFor="fullName" className="glass-input-label">
+                      Operator Moniker
+                    </label>
+                    <div className="glass-input-wrapper">
+                      <input
+                        id="fullName"
+                        type="text"
+                        required={isSignUp}
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="e.g. Marcus Vance"
+                        className="glass-input-field"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Age attestation */}
+                  <div className="flex items-start gap-3 rounded-xl border border-emerald-500/15 bg-[#04100b]/40 p-3 mt-1">
+                    <input
+                      id="ageCheck"
+                      type="checkbox"
+                      required={isSignUp}
+                      className="mt-1 size-4 shrink-0 rounded border-emerald-500/30 bg-[#04100b] text-emerald-500 focus:ring-emerald-500/30 accent-emerald-500"
+                    />
+                    <label
+                      htmlFor="ageCheck"
+                      className="text-[11px] font-medium text-zinc-400 leading-normal"
+                    >
+                      I explicitly attest that I meet the required platform operation age threshold of{" "}
+                      <span className="text-emerald-400 font-bold">10+ years old</span>. I understand
+                      access will be restricted if this is breached.
+                    </label>
+                  </div>
+                </div>
+              )}
+
               <div className="glass-input-group">
-                <label htmlFor="fullName" className="glass-input-label">
-                  Operator Moniker
+                <label htmlFor="email" className="glass-input-label">
+                  Security Email Address
                 </label>
                 <div className="glass-input-wrapper">
+                  <Mail className="h-4 w-4 text-zinc-600 shrink-0" />
                   <input
-                    id="fullName"
-                    type="text"
-                    required={isSignUp}
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="e.g. Marcus Vance"
+                    id="email"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="operator@apexmissions.app"
                     className="glass-input-field"
                   />
                 </div>
               </div>
 
-              {/* Age attestation */}
-              <div className="flex items-start gap-3 rounded-xl border border-emerald-500/15 bg-[#04100b]/40 p-3 mt-1">
-                <input
-                  id="ageCheck"
-                  type="checkbox"
-                  required={isSignUp}
-                  className="mt-1 size-4 shrink-0 rounded border-emerald-500/30 bg-[#04100b] text-emerald-500 focus:ring-emerald-500/30 accent-emerald-500"
-                />
-                <label
-                  htmlFor="ageCheck"
-                  className="text-[11px] font-medium text-zinc-400 leading-normal"
-                >
-                  I explicitly attest that I meet the required platform operation age threshold of{" "}
-                  <span className="text-emerald-400 font-bold">10+ years old</span>. I understand
-                  access will be restricted if this is breached.
+              <div className="glass-input-group">
+                <label htmlFor="password" className="glass-input-label">
+                  Access Key Parameter
                 </label>
+                <div className="glass-input-wrapper">
+                  <KeyRound className="h-4 w-4 text-zinc-600 shrink-0" />
+                  <input
+                    id="password"
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••••••"
+                    className="glass-input-field"
+                  />
+                </div>
               </div>
-            </div>
-          )}
 
-          <div className="glass-input-group">
-            <label htmlFor="email" className="glass-input-label">
-              Security Email Address
-            </label>
-            <div className="glass-input-wrapper">
-              <Mail className="h-4 w-4 text-zinc-600 shrink-0" />
-              <input
-                id="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="operator@apexmissions.app"
-                className="glass-input-field"
-              />
-            </div>
-          </div>
+              {isSignUp && (
+                <div className="flex items-start gap-2.5 rounded-xl border border-emerald-500/15 bg-emerald-950/15 px-3.5 py-3 text-left">
+                  <ShieldCheck className="mt-0.5 size-4 shrink-0 text-emerald-400" />
+                  <p className="text-[11px] leading-relaxed text-zinc-500">
+                    <span className="font-bold text-zinc-300">Privacy commitment.</span> ApexMissions
+                    only logs manually submitted milestones. We never monitor your device background,
+                    screen time, or location parameters.
+                  </p>
+                </div>
+              )}
 
-          <div className="glass-input-group">
-            <label htmlFor="password" className="glass-input-label">
-              Access Key Parameter
-            </label>
-            <div className="glass-input-wrapper">
-              <KeyRound className="h-4 w-4 text-zinc-600 shrink-0" />
-              <input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••••••"
-                className="glass-input-field"
-              />
-            </div>
-          </div>
+              {TURNSTILE_SITE_KEY ? (
+                <div className="w-full space-y-2">
+                  <label
+                    htmlFor="turnstile-widget"
+                    className="block text-center font-mono text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400"
+                  >
+                    Security Challenge — Complete to proceed
+                  </label>
+                  <TurnstileWidget
+                    ref={turnstileWidgetRef}
+                    siteKey={TURNSTILE_SITE_KEY}
+                    onSuccess={setTurnstileToken}
+                    onExpire={() => setTurnstileToken(null)}
+                    onError={() => setTurnstileToken(null)}
+                  />
+                </div>
+              ) : null}
 
-          {isSignUp && (
-            <div className="flex items-start gap-2.5 rounded-xl border border-emerald-500/15 bg-emerald-950/15 px-3.5 py-3 text-left">
-              <ShieldCheck className="mt-0.5 size-4 shrink-0 text-emerald-400" />
-              <p className="text-[11px] leading-relaxed text-zinc-500">
-                <span className="font-bold text-zinc-300">Privacy Guarantee.</span> ApexMissions
-                only logs manually submitted milestones. We never monitor your device background,
-                screen time, or location parameters.
-              </p>
-            </div>
-          )}
-
-          {TURNSTILE_SITE_KEY ? (
-            <div className="w-full space-y-2">
               <label
-                htmlFor="turnstile-widget"
-                className="block text-center font-mono text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400"
+                htmlFor="terms-agree"
+                className="flex cursor-pointer items-start gap-3 rounded-xl border border-emerald-500/20 bg-emerald-950/15 px-4 py-3 text-left transition-colors hover:border-emerald-500/30"
               >
-                Security Challenge — Complete to proceed
+                <input
+                  id="terms-agree"
+                  type="checkbox"
+                  required
+                  checked={agreeTerms}
+                  onChange={(e) => setAgreeTerms(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-emerald-500/40 bg-[#04100b] text-emerald-400 focus:ring-emerald-500/30 accent-emerald-400"
+                />
+                <span className="text-[11px] leading-normal text-zinc-400">
+                  I agree to the{" "}
+                  <a
+                    href="/TERMS_POLICY.md"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-bold text-emerald-400 hover:underline"
+                  >
+                    Terms of Service
+                  </a>{" "}
+                  and{" "}
+                  <a
+                    href="/TERMS_POLICY.md"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-bold text-emerald-400 hover:underline"
+                  >
+                    Privacy Policy
+                  </a>
+                  .
+                </span>
               </label>
-              <TurnstileWidget
-                ref={turnstileWidgetRef}
-                siteKey={TURNSTILE_SITE_KEY}
-                onSuccess={setTurnstileToken}
-                onExpire={() => setTurnstileToken(null)}
-                onError={() => setTurnstileToken(null)}
-              />
-            </div>
-          ) : null}
-
-          <label
-            htmlFor="terms-agree"
-            className="flex cursor-pointer items-start gap-3 rounded-xl border border-emerald-500/20 bg-emerald-950/15 px-4 py-3 text-left transition-colors hover:border-emerald-500/30"
-          >
-            <input
-              id="terms-agree"
-              type="checkbox"
-              required
-              checked={agreeTerms}
-              onChange={(e) => setAgreeTerms(e.target.checked)}
-              className="mt-0.5 h-4 w-4 shrink-0 rounded border-emerald-500/40 bg-[#04100b] text-emerald-400 focus:ring-emerald-500/30 accent-emerald-400"
-            />
-            <span className="text-[11px] leading-normal text-zinc-400">
-              I agree to the{" "}
-              <a
-                href="/TERMS_POLICY.md"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-bold text-emerald-400 hover:underline"
-              >
-                Terms of Service
-              </a>{" "}
-              and{" "}
-              <a
-                href="/TERMS_POLICY.md"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-bold text-emerald-400 hover:underline"
-              >
-                Privacy Policy
-              </a>
-              .
-            </span>
-          </label>
-
-          <button
-            type="submit"
-            disabled={
-              busy || (isSignUp && !agreeTerms) || Boolean(TURNSTILE_SITE_KEY && !turnstileToken)
-            }
-            className="btn-glass-primary w-full h-12 mt-2"
-          >
-            {busy ? (
-              <Loader2 className="h-4 w-4 animate-spin text-black" />
-            ) : (
-              <>
-                <span>{isSignUp ? "Initialize Console Routing" : "Sync Command Session"}</span>
-                <ArrowRight className="h-4 w-4 text-black" />
-              </>
-            )}
-          </button>
-
-          {!isSignUp && (
-            <>
-              <div className="relative my-1 py-1">
-                <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                  <span className="w-full border-t border-zinc-800/80" />
-                </div>
-                <div className="relative flex justify-center">
-                  <span className="bg-transparent px-3 font-mono text-[9px] font-black uppercase tracking-[0.2em] text-zinc-600">
-                    or authenticate with a passkey
-                  </span>
-                </div>
-              </div>
 
               <button
-                type="button"
-                onClick={handlePasskeySignIn}
-                disabled={passkeyBusy || Boolean(TURNSTILE_SITE_KEY && !turnstileToken)}
-                className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-zinc-700/70 bg-zinc-900/40 font-mono text-[11px] font-black uppercase tracking-wider text-zinc-300 transition-all hover:border-emerald-500/40 hover:text-emerald-400 disabled:opacity-60"
+                type="submit"
+                disabled={
+                  busy || (isSignUp && !agreeTerms) || Boolean(TURNSTILE_SITE_KEY && !turnstileToken)
+                }
+                className="btn-glass-primary w-full h-12 mt-2"
               >
-                {passkeyBusy ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                {busy ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-black" />
                 ) : (
-                  <Fingerprint className="h-4 w-4" />
+                  <>
+                    <span>{isSignUp ? "Initialize Console Routing" : "Sync Command Session"}</span>
+                    <ArrowRight className="h-4 w-4 text-black" />
+                  </>
                 )}
-                <span>{passkeyBusy ? "Verifying device…" : "Sign in with passkey"}</span>
               </button>
-            </>
-          )}
-        </form>
 
-        {/* Mode switch */}
-        <div className="mt-6 text-center">
-          <button
-            type="button"
-            onClick={switchMode}
-            className="inline-flex min-h-11 items-center justify-center rounded-lg px-3 py-2 text-xs font-semibold text-zinc-500 transition-colors hover:text-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50"
-          >
-            {isSignUp
-              ? "Already registered? Access command deck"
-              : "Need authorization? Register fresh console coordinates"}
-          </button>
-        </div>
+              {!isSignUp && (
+                <>
+                  <div className="relative my-1 py-1">
+                    <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                      <span className="w-full border-t border-zinc-800/80" />
+                    </div>
+                    <div className="relative flex justify-center">
+                      <span className="bg-transparent px-3 font-mono text-[9px] font-black uppercase tracking-[0.2em] text-zinc-600">
+                        or authenticate with a passkey
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handlePasskeySignIn}
+                    disabled={passkeyBusy || Boolean(TURNSTILE_SITE_KEY && !turnstileToken)}
+                    className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-zinc-700/70 bg-zinc-900/40 font-mono text-[11px] font-black uppercase tracking-wider text-zinc-300 transition-all hover:border-emerald-500/40 hover:text-emerald-400 disabled:opacity-60"
+                  >
+                    {passkeyBusy ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Fingerprint className="h-4 w-4" />
+                    )}
+                    <span>{passkeyBusy ? "Verifying device…" : "Sign in with passkey"}</span>
+                  </button>
+                </>
+              )}
+            </form>
+
+            {/* Mode switch */}
+            <div className="mt-6 text-center">
+              <button
+                type="button"
+                onClick={switchMode}
+                className="inline-flex min-h-11 items-center justify-center rounded-lg px-3 py-2 text-xs font-semibold text-zinc-500 transition-colors hover:text-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50"
+              >
+                {isSignUp
+                  ? "Already registered? Access command deck"
+                  : "Need authorization? Register fresh console coordinates"}
+              </button>
+            </div>
+          </>
+        )}
 
         <p className="mt-4 text-center font-mono text-[9px] font-black uppercase tracking-[0.2em] text-emerald-400">
           © 2026 ApexMissions. All rights reserved.

@@ -19,7 +19,7 @@ export interface JarvisVoiceResult {
  */
 export async function submitJarvisVoice(
   audioBlob: Blob,
-  context: JarvisContext,
+  context: JarvisContext & { enterprise?: boolean },
 ): Promise<JarvisVoiceResult> {
   const formData = new FormData();
   formData.append("audio", audioBlob, "voice.webm");
@@ -32,7 +32,12 @@ export async function submitJarvisVoice(
 
   if (!response.ok) {
     if (response.status === 403) {
-      throw new Error("Jarvis voice requires an active subscription.");
+      // Check if it's an enterprise feature error
+      const text = await response.text().catch(() => "");
+      if (text.includes("enterprise")) {
+        throw new Error(text);
+      }
+      throw new Error("Jarvis voice is temporarily unavailable.");
     }
     if (response.status === 401) {
       throw new Error("Please sign in to use Jarvis voice.");

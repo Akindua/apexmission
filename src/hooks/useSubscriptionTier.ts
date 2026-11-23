@@ -2,16 +2,20 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export type SubscriptionTier = "free" | "premium_active" | "lifetime";
+export type EnterpriseTier = "company_core" | null;
 
 export interface SubscriptionState {
   tier: SubscriptionTier;
+  enterpriseTier: EnterpriseTier;
   premium: boolean;
+  enterprise: boolean;
   loading: boolean;
   signedIn: boolean;
 }
 
 export function useSubscriptionTier(): SubscriptionState {
   const [tier, setTier] = useState<SubscriptionTier>("free");
+  const [enterpriseTier, setEnterpriseTier] = useState<EnterpriseTier>(null);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -28,25 +32,49 @@ export function useSubscriptionTier(): SubscriptionState {
         setUserId(id);
         if (!id) {
           setTier("free");
+          setEnterpriseTier(null);
           setLoading(false);
           return;
         }
-        const { data, error } = await supabase
+        // Fetch profile with company_id for enterprise check
+        const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("id, subscription_tier, onboarding_completed, company_id")
+          .eq("id", id)
           .maybeSingle();
+        
         if (!active) return;
-        if (error) {
-          console.error("[useSubscriptionTier] profile fetch failed:", error);
+        if (profileError) {
+          console.error("[useSubscriptionTier] profile fetch failed:", profileError);
           setTier("free");
+          setEnterpriseTier(null);
         } else {
-          setTier(((data?.subscription_tier as SubscriptionTier) ?? "free") satisfies SubscriptionTier);
+          setTier(((profile?.subscription_tier as SubscriptionTier) ?? "free") satisfies SubscriptionTier);
+          
+          // If user belongs to a company, check for enterprise subscription
+          if (profile?.company_id) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { data: entitlement } = await (supabase as any)
+              .from("entitlements")
+              .select("plan, status, company_id")
+              .eq("company_id", profile.company_id)
+              .maybeSingle();
+            
+            if (entitlement?.plan === "company_core" && entitlement?.status === "active") {
+              setEnterpriseTier("company_core");
+            } else {
+              setEnterpriseTier(null);
+            }
+          } else {
+            setEnterpriseTier(null);
+          }
         }
         setLoading(false);
       } catch (err) {
         if (!active) return;
         console.error("[useSubscriptionTier] unexpected error:", err);
         setTier("free");
+        setEnterpriseTier(null);
         setLoading(false);
       }
     };
@@ -60,6 +88,7 @@ export function useSubscriptionTier(): SubscriptionState {
         void refresh();
       } else {
         setTier("free");
+        setEnterpriseTier(null);
         setLoading(false);
       }
     });
@@ -74,6 +103,7 @@ export function useSubscriptionTier(): SubscriptionState {
   useEffect(() => {
     if (!userId) {
       setTier("free");
+      setEnterpriseTier(null);
       setLoading(false);
       return;
     }
@@ -83,16 +113,36 @@ export function useSubscriptionTier(): SubscriptionState {
     const setup = async () => {
       try {
         // Read the current tier once before subscribing.
-        const { data, error } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("id, subscription_tier, onboarding_completed, company_id")
+          .eq("id", userId)
           .maybeSingle();
         if (!active) return;
-        if (error) {
-          console.error("[useSubscriptionTier] profile fetch failed:", error);
+        if (profileError) {
+          console.error("[useSubscriptionTier] profile fetch failed:", profileError);
           setTier("free");
+          setEnterpriseTier(null);
         } else {
-          setTier(((data?.subscription_tier as SubscriptionTier) ?? "free") satisfies SubscriptionTier);
+          setTier(((profile?.subscription_tier as SubscriptionTier) ?? "free") satisfies SubscriptionTier);
+          
+          // Check enterprise subscription
+          if (profile?.company_id) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { data: entitlement } = await (supabase as any)
+              .from("entitlements")
+              .select("plan, status, company_id")
+              .eq("company_id", profile.company_id)
+              .maybeSingle();
+            
+            if (entitlement?.plan === "company_core" && entitlement?.status === "active") {
+              setEnterpriseTier("company_core");
+            } else {
+              setEnterpriseTier(null);
+            }
+          } else {
+            setEnterpriseTier(null);
+          }
         }
         setLoading(false);
 
@@ -112,6 +162,25 @@ export function useSubscriptionTier(): SubscriptionState {
               const next = (payload.new as { subscription_tier?: SubscriptionTier } | null)
                 ?.subscription_tier;
               if (next) setTier(next);
+            },
+          )
+          // Also listen for entitlement changes for the company
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "entitlements",
+              filter: profile?.company_id ? `company_id=eq.${profile.company_id}` : `user_id=eq.${userId}`,
+            },
+            (payload) => {
+              if (!active) return;
+              const ent = payload.new as { plan?: string; status?: string } | null;
+              if (ent?.plan === "company_core" && ent?.status === "active") {
+                setEnterpriseTier("company_core");
+              } else if (ent?.plan === "company_core" && ent?.status !== "active") {
+                setEnterpriseTier(null);
+              }
             },
           )
           .subscribe();
@@ -134,7 +203,9 @@ export function useSubscriptionTier(): SubscriptionState {
 
   return {
     tier,
+    enterpriseTier,
     premium: tier === "premium_active" || tier === "lifetime",
+    enterprise: enterpriseTier === "company_core",
     loading,
     signedIn: userId !== null,
   };

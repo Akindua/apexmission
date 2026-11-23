@@ -5,6 +5,13 @@
  * TanStack Start server entry. These helpers extract the tenant label from the
  * incoming host and stamp it onto the request as `x-subdomain-slug` so server
  * functions can resolve the active organization without trusting client input.
+ *
+ * Local testing: add entries to /etc/hosts or use lvh.me:
+ *   127.0.0.1       acme.localhost
+ *   127.0.0.1       www.localhost
+ * Then run the dev server on port 3000 (or any port) and visit:
+ *   http://acme.localhost:3000
+ *   http://www.localhost:3000
  */
 
 export const TENANT_ROOT_DOMAIN = "apexmissions.app";
@@ -14,12 +21,6 @@ export const TENANT_ROOT_DOMAIN = "apexmissions.app";
  */
 export const PLATFORM_APP_URL = `https://www.${TENANT_ROOT_DOMAIN}`;
 export const SUBDOMAIN_HEADER = "x-subdomain-slug";
-
-/** Invite token for the seeded Showcase Demo Corp tenant. */
-export const DEMO_INVITE_CODE = "DEMO-PREVIEW-99";
-/** Fixed UUID + display name of the seeded demo tenant. */
-export const DEMO_COMPANY_ID = "11111111-1111-4111-8111-111111111111";
-export const DEMO_COMPANY_NAME = "Showcase Demo Corp";
 
 function normalizePath(path: string): string {
   const trimmed = path.trim();
@@ -69,7 +70,8 @@ export function buildTenantAppUrl(slug: string, path = "/app"): string {
 
   if (typeof window !== "undefined") {
     const host = normalizeHostname(window.location.hostname);
-    if (host === "localhost" || host === "127.0.0.1") {
+    // Local development: acme.localhost:3000
+    if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".localhost")) {
       const port = window.location.port ? `:${window.location.port}` : "";
       return `${window.location.protocol}//${normalized}.localhost${port}${normalizePath(path)}`;
     }
@@ -87,10 +89,11 @@ const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
  */
 const RESERVED_SUBDOMAINS = new Set([
   "www",
-  "api",
   "app",
+  "api",
   "admin",
-  "dashboard",
+  "mail",
+  "support",
   "auth",
   "login",
   "signin",
@@ -102,7 +105,6 @@ const RESERVED_SUBDOMAINS = new Set([
   "pay",
   "payments",
   "checkout",
-  "mail",
   "email",
   "smtp",
   "imap",
@@ -114,7 +116,6 @@ const RESERVED_SUBDOMAINS = new Set([
   "img",
   "images",
   "docs",
-  "support",
   "help",
   "status",
   "health",
@@ -155,6 +156,8 @@ export function normalizeTenantSlug(value: string | null | undefined): string | 
  * Only single-label subdomains are accepted (`acme.apexmissions.app`). Deeper
  * hosts such as `acme.eu.apexmissions.app` are ignored so a wildcard edge rule
  * cannot be used to smuggle an arbitrary path into the tenant lookup.
+ *
+ * Local development: extracts slug from `<slug>.localhost` or `<slug>.localhost:<port>`
  */
 export function extractSubdomainSlug(
   hostname: string,
@@ -168,6 +171,15 @@ export function extractSubdomainSlug(
 
   if (!host || !normalizedRoot) return null;
   if (host === normalizedRoot) return null;
+
+  // Local development: <slug>.localhost
+  if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".localhost")) {
+    if (host === "localhost" || host === "127.0.0.1") return null;
+    const label = host.slice(0, -".localhost".length);
+    if (!label || label.includes(".")) return null;
+    if (RESERVED_SUBDOMAINS.has(label)) return null;
+    return normalizeTenantSlug(label);
+  }
 
   const suffix = `.${normalizedRoot}`;
   if (!host.endsWith(suffix)) return null;
@@ -183,37 +195,6 @@ function getRequestHost(request: Request): string {
   // Cloudflare preserves the public Host header, which also lets local testing
   // use `acme.localhost`. Fall back to the parsed URL when Host is absent.
   return request.headers.get("host") ?? new URL(request.url).host;
-}
-
-/** Subdomain label reserved for the seeded pitch-demo tenant. */
-export const DEMO_TENANT_SLUG = "demo";
-/** The showcase route the demo host rewrites to. */
-export const DEMO_SHOWCASE_PATH = "/demo";
-
-/**
- * When `demo.<root-domain>` receives a root-page request, rewrite it to the
- * showcase route so managers land on the live team grid immediately — no
- * navigation, no login. The slug is derived from the Host header only (never
- * client input), and the showcase itself re-validates the slug against the
- * seeded `companies` row server-side before rendering anything.
- */
-export function withDemoShowcaseRewrite(request: Request): Request {
-  const slug = extractSubdomainSlug(getRequestHost(request));
-  if (slug !== DEMO_TENANT_SLUG) return request;
-  if (request.method !== "GET" && request.method !== "HEAD") return request;
-
-  const url = new URL(request.url);
-  if (url.pathname !== "/" && url.pathname !== DEMO_SHOWCASE_PATH) return request;
-  url.pathname = DEMO_SHOWCASE_PATH;
-
-  const headers = new Headers(request.headers);
-  const init: RequestInit & { duplex?: "half" } = {
-    method: request.method,
-    headers,
-    redirect: request.redirect,
-    signal: request.signal,
-  };
-  return new Request(url, init);
 }
 
 /**
