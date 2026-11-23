@@ -984,8 +984,9 @@ ${CANARY_STRING}`;
         <Conversation className="flex-1 bg-black/5">
           <ConversationContent className="gap-4 p-5">
             {messages.length === 0 && (
-              <div className="rounded-xl border border-zinc-900 bg-zinc-950/30 p-5 text-left text-xs font-medium text-zinc-500 leading-relaxed max-w-sm mx-auto mt-4">
-                👋 Initializing mission briefing... Your coach is analyzing your dashboard matrices.
+              <div className="mx-auto mt-4 max-w-sm rounded-xl border border-zinc-900 bg-zinc-950/30 p-5 text-left text-xs font-medium leading-relaxed text-zinc-500">
+                Mission Coach standing by. This channel is user-initiated. Request a performance
+                review, a blocker analysis, or the next objective.
               </div>
             )}
 
@@ -1012,9 +1013,6 @@ ${CANARY_STRING}`;
                 const telemetryIdx = displayText.indexOf("\n\n[");
                 if (telemetryIdx !== -1) {
                   displayText = displayText.substring(0, telemetryIdx).trim();
-                }
-                if (displayText.includes("[SYSTEM_AUTO_TRIGGER")) {
-                  displayText = "Initialize my operational briefing and review active metrics.";
                 }
               }
               const hasContent = displayText.length > 0 || imageParts.length > 0;

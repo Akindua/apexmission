@@ -167,6 +167,10 @@ export function TacticalBriefing({
               <Gauge className="size-3 text-emerald-400" />
               {subscriptionTier}
             </span>
+            <span className="flex items-center gap-1.5">
+              <Crosshair className="size-3 text-emerald-400" />
+              {activeTab} / {activeTheme.replace("layout-", "")}
+            </span>
           </div>
         </header>
 
@@ -174,7 +178,7 @@ export function TacticalBriefing({
           <div className={`rounded-xl border p-4 text-left ${riskTone.shell}`}>
             <div className="flex items-start gap-3">
               <span
-                className={`mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg border border-current/20 bg-black/30 ${riskTone.icon}`}
+                className={`mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg border border-current bg-black/30 ${riskTone.icon}`}
               >
                 {dossier.riskLevel === "LOW" ? (
                   <CheckCircle2 className="size-4" />
