@@ -17,11 +17,11 @@ import { JarvisNudgeCard } from "@/components/JarvisNudge/JarvisNudgeCard";
  * HabitAuditWidget — Weekly progress audit card.
  *
  * Appears on Sunday evenings (or when a cached audit exists) to show the
- * operator a Jarvis-generated recap of their week: completion rate, streak,
+ * operator an AI Chief of Staff-generated recap of their week: completion rate, streak,
  * best/worst days, and AI-generated recommendations.
  *
  * Human-in-the-loop: suggestions from the audit can be applied or dismissed
- * individually, just like any other Jarvis nudge.
+ * individually, just like any other AI Chief of Staff nudge.
  */
 export interface HabitAuditWidgetProps {
   state: MissionState;
@@ -31,7 +31,7 @@ export interface HabitAuditWidgetProps {
 /**
  * Renders the weekly habit audit card.
  *
- * On first Sunday-evening visit, triggers Jarvis to generate a weekly recap.
+ * On first Sunday-evening visit, triggers AI Chief of Staff to generate a weekly recap.
  * Cached audits are shown on subsequent visits until the next week.
  */
 export function HabitAuditWidget({ state, userName }: HabitAuditWidgetProps) {
@@ -65,7 +65,7 @@ export function HabitAuditWidget({ state, userName }: HabitAuditWidgetProps) {
             Habit Audit — Weekly Recap
           </h3>
           <p className="mt-1 text-[10px] font-medium leading-relaxed text-zinc-500">
-            Jarvis-generated summary of your week
+            AI Chief of Staff-generated summary of your week
           </p>
         </div>
         <span
@@ -96,13 +96,13 @@ export function HabitAuditWidget({ state, userName }: HabitAuditWidgetProps) {
         <StatCard label="Best Day" value={stats.bestDay || "—"} />
       </div>
 
-      {/* Audit text from Jarvis */}
+      {/* Audit text from AI Chief of Staff */}
       {auditText && (
         <div className="mb-4 rounded-xl border border-emerald-500/20 bg-emerald-950/10 p-3">
           <div className="flex items-center gap-2">
             <Sparkles className="size-3 shrink-0 text-emerald-400" />
             <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400/70">
-              Jarvis Weekly Recap
+              AI Chief of Staff Weekly Recap
             </p>
           </div>
           <p className="mt-1 text-[11px] leading-relaxed text-zinc-300 whitespace-pre-wrap">
@@ -120,7 +120,7 @@ export function HabitAuditWidget({ state, userName }: HabitAuditWidgetProps) {
           <p className="text-[11px] leading-relaxed text-zinc-300">
             You completed {stats.completedTasks} of {stats.totalTasks} tasks this week (
             {stats.completionRate}%). Your streak is {stats.streakCount} day$
-            {stats.streakCount === 1 ? "" : "s"}. Jarvis will generate a full weekly recap on Sunday
+            {stats.streakCount === 1 ? "" : "s"}. AI Chief of Staff will generate a full weekly recap on Sunday
             evenings.
           </p>
         </div>
@@ -133,7 +133,7 @@ export function HabitAuditWidget({ state, userName }: HabitAuditWidgetProps) {
             No data yet
           </p>
           <p className="text-[11px] text-zinc-500">
-            Complete some tasks and Jarvis will generate your weekly audit.
+            Complete some tasks and AI Chief of Staff will generate your weekly audit.
           </p>
         </div>
       )}

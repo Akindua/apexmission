@@ -1,30 +1,41 @@
 /**
- * Jarvis local persistence — per-account scoped storage for suggestions.
+ * AI Chief of Staff local persistence — per-account scoped storage for suggestions.
  *
- * Stores Jarvis suggestions in browser localStorage, scoped to the signed-in
+ * Stores Chief of Staff suggestions in browser localStorage, scoped to the signed-in
  * user. All operations are synchronous reads needed by the dashboard.
  */
 
 import { getScopedItem, setScopedItem, removeScopedItem } from "@/lib/user-storage";
-import type { JarvisSuggestion } from "./context-builder";
+import type { ChiefOfStaffSuggestion } from "./context-builder";
 
 // ---------------------------------------------------------------------------
-// Local storage keys for Jarvis suggestions (per-account scoped).
+// Local storage keys for AI Chief of Staff suggestions (per-account scoped).
 // ---------------------------------------------------------------------------
 
-const JARVIS_SUGGESTIONS_KEY = "jarvis-suggestions-v1";
-const JARVIS_LAST_GENERATED_KEY = "jarvis-last-generated-v1";
-const JARVIS_DISCLAIMER_ACK_KEY = "jarvis-disclaimer-ack-v1";
+const CHIEF_OF_STAFF_SUGGESTIONS_KEY = "chief-of-staff-suggestions-v1";
+const CHIEF_OF_STAFF_LAST_GENERATED_KEY = "chief-of-staff-last-generated-v1";
+const CHIEF_OF_STAFF_DISCLAIMER_ACK_KEY = "chief-of-staff-disclaimer-ack-v1";
 
 /**
- * Reads all Jarvis suggestions from per-account local storage.
+ * Reads all AI Chief of Staff suggestions from per-account local storage.
+ * Migrates from legacy "jarvis-*" keys if present.
  */
-export function getJarvisSuggestions(): JarvisSuggestion[] {
+export function getChiefOfStaffSuggestions(): ChiefOfStaffSuggestion[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = getScopedItem(JARVIS_SUGGESTIONS_KEY);
+    // Try new key first
+    let raw = getScopedItem(CHIEF_OF_STAFF_SUGGESTIONS_KEY);
+    // Fallback: migrate from legacy key
+    if (!raw) {
+      const legacy = getScopedItem("jarvis-suggestions-v1");
+      if (legacy) {
+        raw = legacy;
+        setScopedItem(CHIEF_OF_STAFF_SUGGESTIONS_KEY, legacy);
+        removeScopedItem("jarvis-suggestions-v1");
+      }
+    }
     if (!raw) return [];
-    const parsed = JSON.parse(raw) as JarvisSuggestion[];
+    const parsed = JSON.parse(raw) as ChiefOfStaffSuggestion[];
     if (!Array.isArray(parsed)) return [];
     return parsed;
   } catch {
@@ -35,73 +46,93 @@ export function getJarvisSuggestions(): JarvisSuggestion[] {
 /**
  * Persists the full suggestions array to per-account local storage.
  */
-export function setJarvisSuggestions(suggestions: JarvisSuggestion[]): void {
+export function setChiefOfStaffSuggestions(suggestions: ChiefOfStaffSuggestion[]): void {
   if (typeof window === "undefined") return;
-  setScopedItem(JARVIS_SUGGESTIONS_KEY, JSON.stringify(suggestions));
+  setScopedItem(CHIEF_OF_STAFF_SUGGESTIONS_KEY, JSON.stringify(suggestions));
 }
 
 /**
  * Returns only pending (not yet applied or dismissed) suggestions.
  */
-export function getPendingSuggestions(): JarvisSuggestion[] {
-  return getJarvisSuggestions().filter((s) => s.status === "pending");
+export function getPendingSuggestions(): ChiefOfStaffSuggestion[] {
+  return getChiefOfStaffSuggestions().filter((s) => s.status === "pending");
 }
 
 /**
  * Marks a suggestion as applied (user tapped "Apply").
  */
 export function applySuggestion(id: string): void {
-  const suggestions = getJarvisSuggestions().map((s) =>
+  const suggestions = getChiefOfStaffSuggestions().map((s) =>
     s.id === id ? { ...s, status: "applied" as const } : s,
   );
-  setJarvisSuggestions(suggestions);
+  setChiefOfStaffSuggestions(suggestions);
 }
 
 /**
  * Marks a suggestion as dismissed (user tapped "Dismiss").
  */
 export function dismissSuggestion(id: string): void {
-  const suggestions = getJarvisSuggestions().map((s) =>
+  const suggestions = getChiefOfStaffSuggestions().map((s) =>
     s.id === id ? { ...s, status: "dismissed" as const } : s,
   );
-  setJarvisSuggestions(suggestions);
+  setChiefOfStaffSuggestions(suggestions);
 }
 
 /**
  * Clears all suggestions (used on sign-out).
  */
-export function clearJarvisSuggestions(): void {
-  removeScopedItem(JARVIS_SUGGESTIONS_KEY);
-  removeScopedItem(JARVIS_LAST_GENERATED_KEY);
+export function clearChiefOfStaffSuggestions(): void {
+  removeScopedItem(CHIEF_OF_STAFF_SUGGESTIONS_KEY);
+  removeScopedItem(CHIEF_OF_STAFF_LAST_GENERATED_KEY);
 }
 
 /**
- * Returns true if the user has acknowledged the Jarvis legal disclaimer.
+ * Returns true if the user has acknowledged the AI Chief of Staff legal disclaimer.
+ * Checks new key first, then migrates from legacy key.
  */
-export function hasJarvisDisclaimerAck(): boolean {
+export function hasChiefOfStaffDisclaimerAck(): boolean {
   if (typeof window === "undefined") return false;
   try {
-    return getScopedItem(JARVIS_DISCLAIMER_ACK_KEY) === "true";
+    let ack = getScopedItem(CHIEF_OF_STAFF_DISCLAIMER_ACK_KEY);
+    if (!ack) {
+      const legacy = getScopedItem("jarvis-disclaimer-ack-v1");
+      if (legacy) {
+        ack = legacy;
+        setScopedItem(CHIEF_OF_STAFF_DISCLAIMER_ACK_KEY, legacy);
+        removeScopedItem("jarvis-disclaimer-ack-v1");
+      }
+    }
+    return ack === "true";
   } catch {
     return false;
   }
 }
 
 /**
- * Records that the user has acknowledged the Jarvis legal disclaimer.
+ * Records that the user has acknowledged the AI Chief of Staff legal disclaimer.
  */
-export function setJarvisDisclaimerAck(): void {
+export function setChiefOfStaffDisclaimerAck(): void {
   if (typeof window === "undefined") return;
-  setScopedItem(JARVIS_DISCLAIMER_ACK_KEY, "true");
+  setScopedItem(CHIEF_OF_STAFF_DISCLAIMER_ACK_KEY, "true");
 }
 
 /**
  * Returns the ISO timestamp of the last suggestion generation, or null.
+ * Checks new key first, then migrates from legacy key.
  */
-export function getJarvisLastGenerated(): string | null {
+export function getChiefOfStaffLastGenerated(): string | null {
   if (typeof window === "undefined") return null;
   try {
-    return getScopedItem(JARVIS_LAST_GENERATED_KEY);
+    let ts = getScopedItem(CHIEF_OF_STAFF_LAST_GENERATED_KEY);
+    if (!ts) {
+      const legacy = getScopedItem("jarvis-last-generated-v1");
+      if (legacy) {
+        ts = legacy;
+        setScopedItem(CHIEF_OF_STAFF_LAST_GENERATED_KEY, legacy);
+        removeScopedItem("jarvis-last-generated-v1");
+      }
+    }
+    return ts;
   } catch {
     return null;
   }
@@ -110,7 +141,7 @@ export function getJarvisLastGenerated(): string | null {
 /**
  * Records when suggestions were last generated.
  */
-export function setJarvisLastGenerated(): void {
+export function setChiefOfStaffLastGenerated(): void {
   if (typeof window === "undefined") return;
-  setScopedItem(JARVIS_LAST_GENERATED_KEY, new Date().toISOString());
+  setScopedItem(CHIEF_OF_STAFF_LAST_GENERATED_KEY, new Date().toISOString());
 }

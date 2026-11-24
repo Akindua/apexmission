@@ -1,14 +1,14 @@
 /**
- * Habit Audit — Weekly progress audit for Jarvis.
+ * Habit Audit — Weekly progress audit for AI Chief of Staff.
  *
- * Compiles the user's weekly task completion stats and generates a
- * Jarvis AI recap every Sunday evening. All processing is client-side;
- * no data is sent to any server except the Jarvis LLM endpoint which
+ * Compiles the user's weekly task completion stats and generates an
+ * AI Chief of Staff recap every Sunday evening. All processing is client-side;
+ * no data is sent to any server except the AI Chief of Staff LLM endpoint which
  * uses zero-data-retention headers.
  */
 
 import { todayKey, type MissionState } from "@/lib/mission-store";
-import { generateJarvisSuggestions, type JarvisContext } from "@/services/jarvis";
+import { generateChiefOfStaffSuggestions, type ChiefOfStaffContext } from "@/services/jarvis";
 import { getScopedItem, setScopedItem } from "@/lib/user-storage";
 
 const HABIT_AUDIT_KEY = "habit-audit-last-generated";
@@ -110,9 +110,9 @@ export function computeWeeklyStats(state: MissionState): WeeklyStats {
 }
 
 /**
- * Build a Jarvis context from weekly stats for the habit audit prompt.
+ * Build an AI Chief of Staff context from weekly stats for the habit audit prompt.
  */
-export function buildHabitAuditContext(state: MissionState, stats: WeeklyStats): JarvisContext {
+export function buildHabitAuditContext(state: MissionState, stats: WeeklyStats): ChiefOfStaffContext {
   return {
     firstName: (state.userName ?? "Operator").split(" ")[0] ?? "",
     mission: state.mission ?? null,
@@ -160,7 +160,7 @@ export function hasWeeklyAuditThisWeek(): boolean {
 }
 
 /**
- * Generate a weekly habit audit using Jarvis.
+ * Generate a weekly habit audit using AI Chief of Staff.
  * Returns the audit text or null if already generated this week.
  */
 export async function generateWeeklyHabitAudit(state: MissionState): Promise<string | null> {
@@ -170,7 +170,7 @@ export async function generateWeeklyHabitAudit(state: MissionState): Promise<str
   const context = buildHabitAuditContext(state, stats);
 
   try {
-    const suggestions = await generateJarvisSuggestions(context);
+    const suggestions = await generateChiefOfStaffSuggestions(context);
 
     const auditText = buildAuditText(stats, suggestions);
 
@@ -184,7 +184,7 @@ export async function generateWeeklyHabitAudit(state: MissionState): Promise<str
 }
 
 /**
- * Build a human-readable weekly audit text from stats and Jarvis suggestions.
+ * Build a human-readable weekly audit text from stats and AI Chief of Staff suggestions.
  */
 function buildAuditText(stats: WeeklyStats, suggestions: Array<{ body: string }>): string {
   const lines: string[] = [];
@@ -206,7 +206,7 @@ function buildAuditText(stats: WeeklyStats, suggestions: Array<{ body: string }>
 
   if (suggestions.length > 0) {
     lines.push("");
-    lines.push("Jarvis recommends:");
+    lines.push("AI Chief of Staff recommends:");
     suggestions.forEach((s, i) => {
       lines.push(`${i + 1}. ${s.body}`);
     });

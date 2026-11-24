@@ -1,5 +1,5 @@
 /**
- * Jarvis local audio listener — press-to-speak microphone capture using the
+ * AI Chief of Staff local audio listener — press-to-speak microphone capture using the
  * Web Audio API / MediaRecorder API.
  *
  * Captures 16kHz mono PCM audio from the device microphone on explicit user

@@ -6,25 +6,25 @@ import { cn } from "@/lib/utils";
 import {
   applySuggestion,
   dismissSuggestion,
-  type JarvisSuggestion,
-  type JarvisSuggestionType,
-} from "@/lib/jarvis";
-import { JarvisBadge, JarvisShieldBadge } from "@/components/JarvisBadge";
+  type ChiefOfStaffSuggestion,
+  type ChiefOfStaffSuggestionType,
+} from "@/services/jarvis";
+import { JarvisBadge, JarvisShieldBadge } from "@/components/JarvisNudge/JarvisBadge";
 
 /**
- * JarvisSuggestion — A single AI-generated suggestion card.
+ * ChiefOfStaffSuggestion — A single AI-generated suggestion card.
  *
  * Human-in-the-loop: the suggestion is only applied when the user explicitly
  * taps "Apply". Tapping "Dismiss" removes it from the pending queue without
  * making any changes to user data.
  */
-export interface JarvisSuggestionProps {
-  suggestion: JarvisSuggestion;
-  onApply?: (suggestion: JarvisSuggestion) => void;
-  onDismiss?: (suggestion: JarvisSuggestion) => void;
+export interface ChiefOfStaffSuggestionProps {
+  suggestion: ChiefOfStaffSuggestion;
+  onApply?: (suggestion: ChiefOfStaffSuggestion) => void;
+  onDismiss?: (suggestion: ChiefOfStaffSuggestion) => void;
 }
 
-export function JarvisSuggestion({ suggestion, onApply, onDismiss }: JarvisSuggestionProps) {
+export function ChiefOfStaffSuggestion({ suggestion, onApply, onDismiss }: ChiefOfStaffSuggestionProps) {
   const [state, setState] = useState<"idle" | "applying" | "dismissing">("idle");
 
   const handleApply = async () => {
@@ -47,7 +47,7 @@ export function JarvisSuggestion({ suggestion, onApply, onDismiss }: JarvisSugge
     }
   };
 
-  const typeLabels: Record<JarvisSuggestionType, { label: string; icon: React.ReactNode }> = {
+  const typeLabels: Record<ChiefOfStaffSuggestionType, { label: string; icon: React.ReactNode }> = {
     nudge: { label: "Nudge", icon: <ArrowRight className="size-4 shrink-0" /> },
     workflow: {
       label: "Workflow",
@@ -97,7 +97,7 @@ export function JarvisSuggestion({ suggestion, onApply, onDismiss }: JarvisSugge
       {suggestion.rationale && (
         <div className="mt-2 pt-2 border-t border-emerald-500/10">
           <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400/70">
-            Why Jarvis suggests this
+            Why AI Chief of Staff suggests this
           </p>
           <p className="mt-0.5 text-[11px] leading-relaxed text-zinc-500">{suggestion.rationale}</p>
         </div>

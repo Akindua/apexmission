@@ -1,24 +1,24 @@
 /**
- * useJarvis — React hook for managing Jarvis AI assistant state.
+ * useChiefOfStaff — React hook for managing AI Chief of Staff assistant state.
  *
  * Provides access to pending suggestions, apply/dismiss actions, and
- * generation triggers. Jarvis is a suggestive copilot — no suggestion is
+ * generation triggers. AI Chief of Staff is a suggestive copilot — no suggestion is
  * applied without explicit user action.
  */
 
 import { useCallback, useEffect, useState } from "react";
 import {
   applySuggestion,
-  clearJarvisSuggestions,
+  clearChiefOfStaffSuggestions,
   dismissSuggestion,
-  getJarvisSuggestions,
+  getChiefOfStaffSuggestions,
   getPendingSuggestions,
-  setJarvisSuggestions,
-  type JarvisSuggestion,
+  setChiefOfStaffSuggestions,
+  type ChiefOfStaffSuggestion,
 } from "@/services/jarvis";
 
-export function useJarvis() {
-  const [suggestions, setSuggestionsState] = useState<JarvisSuggestion[]>([]);
+export function useChiefOfStaff() {
+  const [suggestions, setSuggestionsState] = useState<ChiefOfStaffSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
 
   const refresh = useCallback(() => {
@@ -46,12 +46,12 @@ export function useJarvis() {
   );
 
   const clear = useCallback(() => {
-    clearJarvisSuggestions();
+    clearChiefOfStaffSuggestions();
     setSuggestionsState([]);
   }, []);
 
-  const setSuggestions = useCallback((next: JarvisSuggestion[]) => {
-    setJarvisSuggestions(next);
+  const setSuggestions = useCallback((next: ChiefOfStaffSuggestion[]) => {
+    setChiefOfStaffSuggestions(next);
     setSuggestionsState(getPendingSuggestions());
   }, []);
 

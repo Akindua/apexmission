@@ -33,19 +33,19 @@ export const nudgeVariants = cva(nudgeBase, {
 /**
  * Badge styles for the transparency indicator.
  */
-export const jarvisBadgeBase = cn(
+export const chiefOfStaffBadgeBase = cn(
   "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider",
   "border-emerald-500/30 bg-emerald-950/20 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.15)]",
 );
 
-export const jarvisBadgeSm = cn(jarvisBadgeBase, "text-[9px] px-1.5 py-0.5");
+export const chiefOfStaffBadgeSm = cn(chiefOfStaffBadgeBase, "text-[9px] px-1.5 py-0.5");
 
-export const jarvisBadgeMd = cn(jarvisBadgeBase, "text-[10px] px-2 py-0.5");
+export const chiefOfStaffBadgeMd = cn(chiefOfStaffBadgeBase, "text-[10px] px-2 py-0.5");
 
 /**
  * Applied/shield badge styles.
  */
-export const jarvisShieldBadgeBase = cn(
+export const chiefOfStaffShieldBadgeBase = cn(
   "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider",
   "border-emerald-500/30 bg-emerald-950/20 text-emerald-400",
 );

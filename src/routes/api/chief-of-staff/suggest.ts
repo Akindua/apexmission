@@ -1,14 +1,14 @@
 /**
- * Jarvis Suggest API — Personal AI Assistant suggestions.
+ * AI Chief of Staff Suggest API — Proactive AI suggestions.
  *
  * Generates proactive nudges, workflow recommendations, and scheduling
- * suggestions for the signed-in user. Jarvis operates strictly as a
+ * suggestions for the signed-in user. The AI operates strictly as a
  * suggestive copilot: every suggestion requires explicit user approval
  * before any change is made to user data or system state.
  *
  * Security & privacy:
  *   - Authenticated only (requireApiAuth)
- *   - Standard features available to ALL authenticated users (personal & enterprise)
+ *   - Standard features available to ALL authenticated users
  *   - Enterprise advanced features gated behind enterprise subscription
  *   - Zero-data-retention / zero-training headers on LLM calls
  *   - Prompts sanitized and fenced; no PII in prompts or responses
@@ -33,7 +33,7 @@ import {
   sanitizePromptText,
 } from "@/lib/security.server";
 
-const SYSTEM_PROMPT = `You are JARVIS, a suggestive personal AI copilot inside ApexMission.
+const SYSTEM_PROMPT = `You are the AI Chief of Staff, a suggestive personal AI copilot inside ApexMission.
 
 CORE PRINCIPLE — HUMAN-IN-THE-LOOP:
 You are strictly a suggestive copilot. You generate proactive nudges, workflow
@@ -73,16 +73,16 @@ Rules:
 
 const MAX_MESSAGES = 20;
 const MAX_CONTEXT_CHARS = 3_000;
-/** Per-user burst + hourly budgets on the Jarvis suggest endpoint. */
-const JARVIS_BURST_LIMIT = 5;
-const JARVIS_BURST_WINDOW_MS = 60_000;
-const JARVIS_HOURLY_LIMIT = 30;
-const JARVIS_HOURLY_WINDOW_MS = 60 * 60_000;
-/** Per-user daily cap for Jarvis suggestions (DB-backed). */
-const JARVIS_DAILY_LIMIT = 20;
-const JARVIS_DAILY_WINDOW_SECONDS = 24 * 60 * 60;
+/** Per-user burst + hourly budgets on the suggest endpoint. */
+const SUGGEST_BURST_LIMIT = 5;
+const SUGGEST_BURST_WINDOW_MS = 60_000;
+const SUGGEST_HOURLY_LIMIT = 30;
+const SUGGEST_HOURLY_WINDOW_MS = 60 * 60_000;
+/** Per-user daily cap for suggestions (DB-backed). */
+const SUGGEST_DAILY_LIMIT = 20;
+const SUGGEST_DAILY_WINDOW_SECONDS = 24 * 60 * 60;
 
-interface JarvisContext {
+interface ChiefOfStaffContext {
   firstName: string;
   mission: string | null;
   highTasks: Array<{ id: string; text: string; done: boolean }>;
@@ -95,7 +95,7 @@ interface JarvisContext {
   enterprise?: boolean;
 }
 
-export const Route = createFileRoute("/api/jarvis/suggest")({
+export const Route = createFileRoute("/api/chief-of-staff/suggest")({
   server: {
     handlers: {
       POST: async ({ request }) => {
@@ -111,22 +111,22 @@ export const Route = createFileRoute("/api/jarvis/suggest")({
         // Rate limits (standard tier).
         const burst = await enforceRateLimit({
           actor,
-          key: "jarvis:burst",
-          limit: JARVIS_BURST_LIMIT,
-          windowMs: JARVIS_BURST_WINDOW_MS,
+          key: "chief-of-staff:burst",
+          limit: SUGGEST_BURST_LIMIT,
+          windowMs: SUGGEST_BURST_WINDOW_MS,
         });
         const hourly = await enforceRateLimit({
           actor,
-          key: "jarvis:hour",
-          limit: JARVIS_HOURLY_LIMIT,
-          windowMs: JARVIS_HOURLY_WINDOW_MS,
+          key: "chief-of-staff:hour",
+          limit: SUGGEST_HOURLY_LIMIT,
+          windowMs: SUGGEST_HOURLY_WINDOW_MS,
         });
-        const ipBurst = rateLimit(`jarvis:ip:${getClientIp(request)}`, 10, JARVIS_BURST_WINDOW_MS);
+        const ipBurst = rateLimit(`chief-of-staff:ip:${getClientIp(request)}`, 10, SUGGEST_BURST_WINDOW_MS);
         const daily = await persistentRateLimit(
           actor,
-          "jarvis:user:daily",
-          JARVIS_DAILY_LIMIT,
-          JARVIS_DAILY_WINDOW_SECONDS,
+          "chief-of-staff:user:daily",
+          SUGGEST_DAILY_LIMIT,
+          SUGGEST_DAILY_WINDOW_SECONDS,
         );
         if (!burst.ok || !hourly.ok || !ipBurst.ok || (daily && !daily.ok)) {
           return rateLimitedResponse(
@@ -156,7 +156,7 @@ export const Route = createFileRoute("/api/jarvis/suggest")({
           const entitlement = await fetchEntitlement({ userId: actor.userId, token: actor.token });
           const isEnterprise = entitlement?.plan === "company_core" && entitlement?.status === "active";
           if (!isEnterprise) {
-            return new Response("Enterprise Jarvis features require an active enterprise subscription.", {
+            return new Response("Enterprise AI Chief of Staff features require an active enterprise subscription.", {
               status: 403,
               headers: { "content-type": "text/plain; charset=utf-8" },
             });
@@ -165,7 +165,7 @@ export const Route = createFileRoute("/api/jarvis/suggest")({
 
         // Build a minimal, privacy-safe prompt from the context.
         // No PII (email, tenant IDs, UUIDs, rank, tier) is included.
-        const ctx = context as Partial<JarvisContext>;
+        const ctx = context as Partial<ChiefOfStaffContext>;
         const safeContext = {
           firstName: sanitizePromptText(ctx.firstName, 50),
           mission: sanitizePromptText(ctx.mission ?? "", 200),
@@ -193,13 +193,13 @@ export const Route = createFileRoute("/api/jarvis/suggest")({
 
         const key = process.env["OPENAI_API_KEY"];
         if (!key) {
-          console.error("[Jarvis] Missing OPENAI_API_KEY environment variable");
+          console.error("[ChiefOfStaff] Missing OPENAI_API_KEY environment variable");
           return new Response("AI service unavailable", { status: 503 });
         }
 
         const openai = createOpenAI({ apiKey: key });
 
-        // Choose model — baseline model only, never Astra for Jarvis.
+        // Choose model — baseline model only, never Astra for Chief of Staff.
         let modelConfig: ModelConfig | null = null;
         try {
           modelConfig = await chooseModel(actor);
@@ -217,7 +217,7 @@ export const Route = createFileRoute("/api/jarvis/suggest")({
             timeoutMs: 30_000,
           };
         }
-        // Jarvis always uses the baseline model — never Astra.
+        // Chief of Staff always uses the baseline model — never Astra.
         modelConfig.model = process.env["AI_BASELINE_MODEL"] ?? modelConfig.model;
 
         const result = await generateText({
@@ -303,7 +303,7 @@ export const Route = createFileRoute("/api/jarvis/suggest")({
         // Log token counts only — never message text or context.
         const usage = result.usage as
           { inputTokens?: number; outputTokens?: number; totalTokens?: number } | undefined;
-        console.log("[Jarvis] Suggestions generated", {
+        console.log("[ChiefOfStaff] Suggestions generated", {
           model: modelConfig.model,
           count: cleanSuggestions.length,
           inputTokens: usage?.inputTokens ?? 0,
