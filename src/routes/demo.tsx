@@ -1,34 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Activity, CheckCircle2, Flame, ShieldCheck, Users, Zap } from "lucide-react";
-
+import { ShieldCheck } from "lucide-react";
 import { getDemoShowcase, type DemoShowcase } from "@/lib/demo.functions";
-
-const DEFAULT_TIER_STYLE = {
-  label: "LOW IMPACT",
-  dot: "bg-sky-500",
-  badge: "text-sky-400 border-sky-500/30 bg-sky-950/30",
-};
-
-const TIER_STYLES: Record<string, { label: string; dot: string; badge: string }> = {
-  high: {
-    label: "HIGH IMPACT",
-    dot: "bg-rose-500",
-    badge: "text-rose-400 border-rose-500/30 bg-rose-950/30",
-  },
-  medium: {
-    label: "MEDIUM IMPACT",
-    dot: "bg-amber-500",
-    badge: "text-amber-400 border-amber-500/30 bg-amber-950/30",
-  },
-  low: {
-    label: "LOW IMPACT",
-    dot: "bg-sky-500",
-    badge: "text-sky-400 border-sky-500/30 bg-sky-950/30",
-  },
-};
 
 export const Route = createFileRoute("/demo")({
   // Server-side load: the grid arrives fully rendered in the HTML payload.
+  // Only runs when VITE_ENABLE_DEMO=true in development.
   loader: () => getDemoShowcase(),
   head: () => ({
     meta: [
@@ -53,12 +29,13 @@ function DemoShowcasePage() {
       <div className="page-shell flex min-h-dvh items-center justify-center px-6">
         <div className="glass-panel max-w-md p-8 text-center">
           <ShieldCheck className="mx-auto mb-4 size-10 text-emerald-400" />
-          <h1 className="text-xl font-black uppercase text-white">Demo Dataset Not Seeded</h1>
+          <h1 className="text-xl font-black uppercase text-white">Demo Not Available</h1>
           <p className="mt-3 text-sm leading-relaxed text-zinc-500">
-            The showcase tenant (slug <span className="font-mono text-emerald-400">demo</span>) was
-            not found in the database. Run the{" "}
-            <span className="font-mono text-emerald-400">20261029150000_showcase_demo_seed</span>{" "}
-            migration, then reload.
+            The showcase demo is only available in development with the explicit
+            <code className="font-mono text-emerald-400 bg-zinc-900 px-1.5 py-0.5 rounded">
+              VITE_ENABLE_DEMO=true
+            </code>
+            flag set.
           </p>
         </div>
       </div>
@@ -262,6 +239,30 @@ function DemoShowcasePage() {
   );
 }
 
+const DEFAULT_TIER_STYLE = {
+  label: "LOW IMPACT",
+  dot: "bg-sky-500",
+  badge: "text-sky-400 border-sky-500/30 bg-sky-950/30",
+};
+
+const TIER_STYLES: Record<string, { label: string; dot: string; badge: string }> = {
+  high: {
+    label: "HIGH IMPACT",
+    dot: "bg-rose-500",
+    badge: "text-rose-400 border-rose-500/30 bg-rose-950/30",
+  },
+  medium: {
+    label: "MEDIUM IMPACT",
+    dot: "bg-amber-500",
+    badge: "text-amber-400 border-amber-500/30 bg-amber-950/30",
+  },
+  low: {
+    label: "LOW IMPACT",
+    dot: "bg-sky-500",
+    badge: "text-sky-400 border-sky-500/30 bg-sky-950/30",
+  },
+};
+
 function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div className="rounded-xl border border-zinc-800/70 bg-black/40 p-4 text-center">
@@ -284,3 +285,6 @@ function SectionTitle({ icon, title }: { icon: React.ReactNode; title: string })
     </h2>
   );
 }
+
+// Import icons used in the component
+import { Activity, CheckCircle2, Flame, Users, Zap } from "lucide-react";

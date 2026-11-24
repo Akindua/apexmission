@@ -3,6 +3,8 @@
  * /api/jarvis/suggest endpoint.
  *
  * All calls carry zero-data-retention / zero-training headers.
+ * Standard features available to all authenticated users.
+ * Enterprise features require active enterprise subscription.
  */
 
 import { type JarvisContext, type JarvisSuggestion } from "./context-builder";
@@ -14,7 +16,7 @@ const SUGGEST_ENDPOINT = "/api/jarvis/suggest";
  * sanitized suggestions.
  */
 export async function generateJarvisSuggestions(
-  context: JarvisContext,
+  context: JarvisContext & { enterprise?: boolean },
 ): Promise<JarvisSuggestion[]> {
   const response = await fetch(SUGGEST_ENDPOINT, {
     method: "POST",
@@ -26,7 +28,12 @@ export async function generateJarvisSuggestions(
 
   if (!response.ok) {
     if (response.status === 403) {
-      throw new Error("Jarvis requires an active subscription.");
+      // Check if it's an enterprise feature error
+      const text = await response.text().catch(() => "");
+      if (text.includes("enterprise")) {
+        throw new Error(text);
+      }
+      throw new Error("Jarvis is temporarily unavailable.");
     }
     if (response.status === 401) {
       throw new Error("Please sign in to use Jarvis.");

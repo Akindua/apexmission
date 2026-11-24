@@ -1,6 +1,8 @@
 /**
  * Public showcase dataset for `demo.apexmissions.app`.
  *
+ * ONLY AVAILABLE WHEN DEV FLAG IS SET. In production, this returns null.
+ *
  * Served by the pitch-demo team grid. Reads ONLY the seeded demo tenant
  * (slug strictly 'demo') through the service-role client, so nothing is ever
  * exposed via anonymous REST — the data leaves the database exclusively as
@@ -38,9 +40,19 @@ export interface DemoShowcase {
   loadedAt: string;
 }
 
+/** Check if demo mode is enabled via environment variable. */
+function isDemoEnabled(): boolean {
+  // Only enable in development with explicit flag
+  return import.meta.env.DEV && import.meta.env["VITE_ENABLE_DEMO"] === "true";
+}
+
 /** Public, read-only, demo-tenant-only projection. Safe for anonymous SSR. */
 export const getDemoShowcase = createServerFn({ method: "GET" }).handler(
   async (): Promise<DemoShowcase | null> => {
+    if (!isDemoEnabled()) {
+      return null;
+    }
+
     let supabaseAdmin;
     try {
       ({ supabaseAdmin } = await import("@/integrations/supabase/client.server"));

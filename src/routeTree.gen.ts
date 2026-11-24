@@ -16,6 +16,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BillingRouteImport } from './routes/billing'
 import { Route as DemoRouteImport } from './routes/demo'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as JoinRouteImport } from './routes/join'
 import { Route as NightReflectionRouteImport } from './routes/night-reflection'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as PlansRouteImport } from './routes/plans'
@@ -85,6 +86,11 @@ const DemoRoute = DemoRouteImport.update({
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   id: '/forgot-password',
   path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JoinRoute = JoinRouteImport.update({
+  id: '/join',
+  path: '/join',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NightReflectionRoute = NightReflectionRouteImport.update({
@@ -279,6 +285,7 @@ export interface FileRoutesByFullPath {
   '/billing': typeof BillingRoute
   '/demo': typeof DemoRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/join': typeof JoinRoute
   '/night-reflection': typeof NightReflectionRoute
   '/onboarding': typeof OnboardingRoute
   '/plans': typeof PlansRoute
@@ -323,6 +330,7 @@ export interface FileRoutesByTo {
   '/billing': typeof BillingRoute
   '/demo': typeof DemoRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/join': typeof JoinRoute
   '/night-reflection': typeof NightReflectionRoute
   '/onboarding': typeof OnboardingRoute
   '/plans': typeof PlansRoute
@@ -368,6 +376,7 @@ export interface FileRoutesById {
   '/billing': typeof BillingRoute
   '/demo': typeof DemoRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/join': typeof JoinRoute
   '/night-reflection': typeof NightReflectionRoute
   '/onboarding': typeof OnboardingRoute
   '/plans': typeof PlansRoute
@@ -414,6 +423,7 @@ export interface FileRouteTypes {
     | '/billing'
     | '/demo'
     | '/forgot-password'
+    | '/join'
     | '/night-reflection'
     | '/onboarding'
     | '/plans'
@@ -458,6 +468,7 @@ export interface FileRouteTypes {
     | '/billing'
     | '/demo'
     | '/forgot-password'
+    | '/join'
     | '/night-reflection'
     | '/onboarding'
     | '/plans'
@@ -502,6 +513,7 @@ export interface FileRouteTypes {
     | '/billing'
     | '/demo'
     | '/forgot-password'
+    | '/join'
     | '/night-reflection'
     | '/onboarding'
     | '/plans'
@@ -547,6 +559,7 @@ export interface RootRouteChildren {
   BillingRoute: typeof BillingRoute
   DemoRoute: typeof DemoRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
+  JoinRoute: typeof JoinRoute
   NightReflectionRoute: typeof NightReflectionRoute
   OnboardingRoute: typeof OnboardingRoute
   PlansRoute: typeof PlansRoute
@@ -633,6 +646,13 @@ declare module '@tanstack/react-router' {
       path: '/forgot-password'
       fullPath: '/forgot-password'
       preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/join': {
+      id: '/join'
+      path: '/join'
+      fullPath: '/join'
+      preLoaderRoute: typeof JoinRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/night-reflection': {
@@ -891,6 +911,7 @@ const rootRouteChildren: RootRouteChildren = {
   BillingRoute: BillingRoute,
   DemoRoute: DemoRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
+  JoinRoute: JoinRoute,
   NightReflectionRoute: NightReflectionRoute,
   OnboardingRoute: OnboardingRoute,
   PlansRoute: PlansRoute,

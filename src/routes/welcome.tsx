@@ -34,13 +34,18 @@ function WelcomePage() {
 
         <div className="w-full flex flex-col gap-3 animate-fade-in-up delay-400">
           {/* Primary Action Button */}
-          <Link to="/onboarding" search={{ invite: undefined }} className="btn-glass-primary h-12">
+          <Link to="/auth" search={{ mode: "signup" }} className="btn-glass-primary h-12">
             Get Started →
           </Link>
 
           {/* Secondary Action Link */}
           <Link to="/auth" search={{ mode: "signin" }} className="btn-glass-ghost h-11">
             Sign In
+          </Link>
+
+          {/* Enterprise invite link */}
+          <Link to="/join" className="text-center text-xs font-medium text-zinc-500 hover:text-emerald-400 transition-colors">
+            Have a company invite? Join your organization
           </Link>
         </div>
       </div>

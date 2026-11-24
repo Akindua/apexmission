@@ -1,6 +1,6 @@
 "use client";
 
-import { Mic, MicOff, Square, Zap, Loader2, X } from "lucide-react";
+import { Mic, MicOff, Square, Zap, Loader2, X, Lock } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { handleUnauthenticated } from "@/lib/api-auth";
@@ -38,8 +38,8 @@ export interface JarvisVoiceListenerProps {
   };
   /** Callback fired when new suggestions are received from the voice turn. */
   onSuggestionsReceived?: (suggestions: JarvisSuggestion[]) => void;
-  /** Whether the user is entitled to use Jarvis (premium/lifetime). */
-  entitled: boolean;
+  /** Whether the user has an active enterprise subscription for advanced features. */
+  enterprise?: boolean;
 }
 
 type ListenerState =
@@ -48,7 +48,7 @@ type ListenerState =
 export function JarvisVoiceListener({
   context,
   onSuggestionsReceived,
-  entitled,
+  enterprise = false,
 }: JarvisVoiceListenerProps) {
   const navigate = useNavigate();
   const [state, setState] = useState<ListenerState>("idle");
@@ -124,10 +124,6 @@ export function JarvisVoiceListener({
   }
 
   const startListening = useCallback(async () => {
-    if (!entitled) {
-      setError("Jarvis voice requires an active subscription.");
-      return;
-    }
     setError(null);
     setState("requesting-permission");
     audioChunksRef.current = [];
@@ -205,7 +201,7 @@ export function JarvisVoiceListener({
           : "Microphone access failed. Please retry.",
       );
     }
-  }, [entitled]);
+  }, [enterprise]);
 
   const stopListening = useCallback(() => {
     if (mediaRecorderRef.current && state === "listening") {
@@ -227,7 +223,7 @@ export function JarvisVoiceListener({
 
       const formData = new FormData();
       formData.append("audio", audioBlob, "voice.webm");
-      formData.append("context", JSON.stringify(context));
+      formData.append("context", JSON.stringify({ ...context, enterprise }));
 
       const response = await fetch("/api/jarvis/voice", {
         method: "POST",
@@ -240,7 +236,9 @@ export function JarvisVoiceListener({
           return;
         }
         if (response.status === 403) {
-          setError("Jarvis voice requires an active subscription.");
+          setError(enterprise
+            ? "Enterprise Jarvis features require an active enterprise subscription."
+            : "Jarvis voice is temporarily unavailable.");
         } else if (response.status === 400) {
           setError("No speech detected. Please try again.");
         } else {
@@ -302,19 +300,15 @@ export function JarvisVoiceListener({
         </button>
       </div>
 
-      {!entitled && (
-        <div className="rounded-lg border border-zinc-700 bg-zinc-900/40 p-3 mb-3">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-1">
-            Subscription Required
-          </p>
-          <p className="text-[10px] text-zinc-400 mb-2">Upgrade to premium to use Jarvis voice.</p>
-          <button
-            type="button"
-            className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-emerald-500 px-3 py-1.5 text-[10px] font-bold text-black hover:bg-emerald-400 transition-colors"
-          >
-            <Zap className="size-3 shrink-0" />
-            Upgrade
-          </button>
+      {enterprise && (
+        <div className="rounded-lg border border-sky-500/30 bg-sky-950/20 p-3 mb-3">
+          <div className="flex items-center gap-2 mb-1">
+            <Lock className="size-3.5 text-sky-400" />
+            <p className="text-[10px] font-bold uppercase tracking-wider text-sky-400">
+              Enterprise Mode
+            </p>
+          </div>
+          <p className="text-[10px] text-zinc-400">Advanced enterprise features enabled.</p>
         </div>
       )}
 
@@ -323,19 +317,12 @@ export function JarvisVoiceListener({
         <button
           type="button"
           onClick={startListening}
-          disabled={!entitled}
           className={cn(
             "flex w-full items-center justify-center gap-2 rounded-xl border bg-zinc-800 px-4 py-3 text-[11px] font-bold transition-all",
-            entitled
-              ? "border-emerald-500/30 bg-emerald-950/20 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)] hover:bg-emerald-500/30 hover:text-white"
-              : "border-zinc-700 text-zinc-500",
+            "border-emerald-500/30 bg-emerald-950/20 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)] hover:bg-emerald-500/30 hover:text-white",
           )}
         >
-          {entitled ? (
-            <Mic className="size-4 shrink-0" />
-          ) : (
-            <MicOff className="size-4 shrink-0 text-zinc-500" />
-          )}
+          <Mic className="size-4 shrink-0" />
           <span>Press to speak to Jarvis</span>
         </button>
       )}

@@ -8,7 +8,8 @@
  *
  * Security & privacy:
  *   - Authenticated only (requireApiAuth)
- *   - Subscription-gated (premium_active or lifetime)
+ *   - Standard features available to ALL authenticated users (personal & enterprise)
+ *   - Enterprise advanced features gated behind enterprise subscription
  *   - Zero-data-retention / zero-training headers on LLM calls
  *   - Prompts sanitized and fenced; no PII in prompts or responses
  *   - Rate limited per user and per IP
@@ -18,7 +19,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { createFileRoute } from "@tanstack/react-router";
 import { convertToModelMessages, generateText, type UIMessage } from "ai";
 
-import { chooseModel, type ModelConfig } from "@/lib/ai-model-router";
+import { chooseModel, type ModelConfig, fetchEntitlement } from "@/lib/ai-model-router";
 import {
   enforceRateLimit,
   fenceUntrustedContent,
@@ -90,6 +91,8 @@ interface JarvisContext {
   dailyAction: string | null;
   dailyDone: boolean;
   streakCount: number;
+  /** If true, request enterprise-grade suggestions (requires enterprise subscription) */
+  enterprise?: boolean;
 }
 
 export const Route = createFileRoute("/api/jarvis/suggest")({
@@ -105,37 +108,7 @@ export const Route = createFileRoute("/api/jarvis/suggest")({
         const actor = await requireApiAuth(request);
         if (actor instanceof Response) return actor;
 
-        // Subscription gate: Jarvis is premium-only.
-        const supabaseUrl = process.env["SUPABASE_URL"];
-        const supabaseKey =
-          process.env["SUPABASE_PUBLISHABLE_KEY"] ?? process.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
-        if (!supabaseUrl || !supabaseKey) {
-          console.error("[Jarvis] Missing Supabase env vars.");
-          return new Response("Service unavailable", { status: 503 });
-        }
-
-        const { createClient } = await import("@supabase/supabase-js");
-        const supabase = createClient(supabaseUrl, supabaseKey, {
-          global: { headers: { Authorization: `Bearer ${actor.token}` } },
-          auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-        });
-
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("subscription_tier")
-          .eq("id", actor.userId)
-          .maybeSingle();
-
-        const tier =
-          (profile?.subscription_tier as "free" | "premium_active" | "lifetime") ?? "free";
-        if (tier !== "premium_active" && tier !== "lifetime") {
-          return new Response("Jarvis requires an active subscription.", {
-            status: 403,
-            headers: { "content-type": "text/plain; charset=utf-8" },
-          });
-        }
-
-        // Rate limits.
+        // Rate limits (standard tier).
         const burst = await enforceRateLimit({
           actor,
           key: "jarvis:burst",
@@ -166,16 +139,28 @@ export const Route = createFileRoute("/api/jarvis/suggest")({
           );
         }
 
-        let payload: { context?: unknown };
+        let payload: { context?: unknown; enterprise?: boolean };
         try {
           payload = await request.json();
         } catch {
           return new Response("Invalid JSON body", { status: 400 });
         }
 
-        const { context } = payload;
+        const { context, enterprise } = payload;
         if (!context || typeof context !== "object") {
           return new Response("Context is required", { status: 400 });
+        }
+
+        // Enterprise features gate: check enterprise subscription
+        if (enterprise) {
+          const entitlement = await fetchEntitlement({ userId: actor.userId, token: actor.token });
+          const isEnterprise = entitlement?.plan === "company_core" && entitlement?.status === "active";
+          if (!isEnterprise) {
+            return new Response("Enterprise Jarvis features require an active enterprise subscription.", {
+              status: 403,
+              headers: { "content-type": "text/plain; charset=utf-8" },
+            });
+          }
         }
 
         // Build a minimal, privacy-safe prompt from the context.

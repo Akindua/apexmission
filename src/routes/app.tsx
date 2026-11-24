@@ -1460,8 +1460,26 @@ function ApexMission() {
     setCoachOpen(true);
   }
 
+  // Determine if we're on a company subdomain
+  const hostSlug = typeof window !== "undefined" ? extractSubdomainSlug(window.location.hostname) : null;
+  const onCompanySubdomain = Boolean(hostSlug);
+
   // A company subdomain must never render the dashboard for a non-member.
-  if (activeTenant && !activeTenant.isMember) {
+  // Cases:
+  // 1. activeTenant exists but isMember=false -> signed in but not a member of this company
+  // 2. activeTenant=null but onCompanySubdomain=true -> unknown subdomain (company doesn't exist)
+  // 3. Personal account (profile.companyId===null) on company subdomain -> never allowed
+  const isPersonalProfile = operatorProfile?.companyId === null;
+  const showTenantRestricted = onCompanySubdomain && (
+    (activeTenant && !activeTenant.isMember) ||
+    (!activeTenant && onCompanySubdomain) || // unknown subdomain
+    (isPersonalProfile && activeTenant) // personal account on valid company subdomain
+  );
+
+  if (showTenantRestricted) {
+    const isUnknownSubdomain = onCompanySubdomain && !activeTenant;
+    const companyName = activeTenant?.companyName ?? hostSlug ?? "this organization";
+
     return (
       <div className="min-h-screen bg-[#07110d] text-zinc-100 flex items-center justify-center px-6 py-12 relative overflow-hidden">
         <div className="ambient-emerald-glow" />
@@ -1471,23 +1489,28 @@ function ApexMission() {
             <Building2 className="size-6" />
           </div>
           <p className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-400">
-            Tenant Access Restricted
+            {isUnknownSubdomain ? "Workspace Not Found" : "Tenant Access Restricted"}
           </p>
           <h1 className="mt-2 text-2xl font-black uppercase tracking-tight text-white font-display">
-            {activeTenant.companyName}
+            {companyName}
           </h1>
           <p className="mt-3 text-xs font-medium leading-relaxed text-zinc-400">
-            This workspace is reserved for members of {activeTenant.companyName}. The current
-            session is not linked to this organization.
+            {isUnknownSubdomain
+              ? `No workspace exists for "${companyName}". Check the subdomain and try again.`
+              : isPersonalProfile
+              ? "Personal accounts cannot access company workspaces. Sign in with a company account or visit your personal dashboard."
+              : `This workspace is reserved for members of ${companyName}. The current session is not linked to this organization.`}
           </p>
           <div className="mt-6 flex flex-col gap-2">
-            <button
-              type="button"
-              onClick={handleSwitchTenantAccount}
-              className="btn-glass-primary h-11"
-            >
-              Sign in with a company account
-            </button>
+            {!isUnknownSubdomain && (
+              <button
+                type="button"
+                onClick={handleSwitchTenantAccount}
+                className="btn-glass-primary h-11"
+              >
+                Sign in with a company account
+              </button>
+            )}
             <a href={`${PLATFORM_APP_URL}/app`} className="btn-glass-ghost h-11">
               Go to www.{TENANT_ROOT_DOMAIN}
             </a>
