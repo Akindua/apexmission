@@ -240,7 +240,8 @@ function AuthConsolePage() {
         }
 
         const onboardingDestination = next && next.startsWith("/onboarding") ? next : "/onboarding";
-        const redirectUrl = new URL("/verify-email", window.location.origin);
+        // Use canonical host for email confirmation links
+        const redirectUrl = new URL("/verify-email", "https://www.apexmissions.app");
         redirectUrl.searchParams.set("email", email.trim());
         redirectUrl.searchParams.set("next", onboardingDestination);
 
@@ -259,30 +260,53 @@ function AuthConsolePage() {
         if (error) {
           // Handle specific Supabase auth errors gracefully
           const errMsg = error.message || "Unknown error";
+          const errCode = error.code || "";
+          console.log("[Auth] Signup error:", { status: error.status, code: errCode });
+
           if (errMsg.toLowerCase().includes("rate limit") || error.status === 429) {
             setErrorMessage(
-              "🔒 NETWORK BROADCAST CAP REACHED: The system is throttling signup traffic. Please wait 60 seconds.",
+              "Too many attempts. Please wait a minute and try again.",
             );
             setBusy(false);
             return;
           }
-          // Handle email confirmation / SMTP errors
+
+          // Email send failure (500 or SMTP error)
           if (
-            errMsg.toLowerCase().includes("email") ||
+            error.status === 500 ||
+            errCode === "email_not_sent" ||
+            errMsg.toLowerCase().includes("email_not_sent") ||
             errMsg.toLowerCase().includes("smtp") ||
             errMsg.toLowerCase().includes("confirmation") ||
-            errMsg.toLowerCase().includes("send") ||
-            error.status === 500
+            errMsg.toLowerCase().includes("send")
           ) {
-            // Email confirmation failed - but account may have been created
-            // Guide user to sign in instead (email confirmation may be disabled or deferred)
             setErrorMessage(
-              "⚠️ Account created but email confirmation could not be sent. Please try signing in, or contact support if the issue persists.",
+              "We created your account but couldn't send the confirmation email. Tap Resend, or contact support@apexmissions.app.",
             );
             setBusy(false);
             return;
           }
-          throw error;
+
+          // Invalid/weak input
+          if (
+            errCode === "invalid_email" ||
+            errCode === "weak_password" ||
+            errMsg.toLowerCase().includes("weak password") ||
+            errMsg.toLowerCase().includes("invalid email")
+          ) {
+            setErrorMessage(
+              "Please check your email and password. Email must be valid and password at least 8 characters.",
+            );
+            setBusy(false);
+            return;
+          }
+
+          // Generic fallback - never reveal raw Supabase messages
+          setErrorMessage(
+            "Something went wrong creating your account. Please try again.",
+          );
+          setBusy(false);
+          return;
         }
 
         if (data.session?.user) {
@@ -293,7 +317,7 @@ function AuthConsolePage() {
         } else {
           navigate({
             to: "/verify-email",
-            search: { email: email.trim(), next: onboardingDestination },
+            search: { email: email.trim(), next: onboardingDestination, code: undefined, access_token: undefined, refresh_token: undefined, type: undefined },
           });
         }
       } else {
@@ -305,7 +329,38 @@ function AuthConsolePage() {
             : {}),
         });
 
-        if (error) throw error;
+        if (error) {
+          const errMsg = error.message || "Unknown error";
+          const errCode = error.code || "";
+          console.log("[Auth] Signin error:", { status: error.status, code: errCode });
+
+          // Email not confirmed - navigate to confirm screen with resend option
+          if (errCode === "email_not_confirmed" || errMsg.toLowerCase().includes("email not confirmed")) {
+            navigate({
+              to: "/confirm-email",
+              search: { email: email.trim(), next, code: undefined, access_token: undefined, refresh_token: undefined, type: undefined },
+              replace: true,
+            });
+            setBusy(false);
+            return;
+          }
+
+          if (errMsg.toLowerCase().includes("rate limit") || error.status === 429) {
+            setErrorMessage("Too many attempts. Please wait a minute and try again.");
+            setBusy(false);
+            return;
+          }
+
+          if (errCode === "invalid_credentials" || errCode === "invalid_email") {
+            setErrorMessage("Invalid email or password.");
+            setBusy(false);
+            return;
+          }
+
+          setErrorMessage("Something went wrong signing in. Please try again.");
+          setBusy(false);
+          return;
+        }
 
         const userId = authData.user?.id;
         if (userId) {
