@@ -257,9 +257,27 @@ function AuthConsolePage() {
         });
 
         if (error) {
-          if (error.message.toLowerCase().includes("rate limit") || error.status === 429) {
+          // Handle specific Supabase auth errors gracefully
+          const errMsg = error.message || "Unknown error";
+          if (errMsg.toLowerCase().includes("rate limit") || error.status === 429) {
             setErrorMessage(
               "🔒 NETWORK BROADCAST CAP REACHED: The system is throttling signup traffic. Please wait 60 seconds.",
+            );
+            setBusy(false);
+            return;
+          }
+          // Handle email confirmation / SMTP errors
+          if (
+            errMsg.toLowerCase().includes("email") ||
+            errMsg.toLowerCase().includes("smtp") ||
+            errMsg.toLowerCase().includes("confirmation") ||
+            errMsg.toLowerCase().includes("send") ||
+            error.status === 500
+          ) {
+            // Email confirmation failed - but account may have been created
+            // Guide user to sign in instead (email confirmation may be disabled or deferred)
+            setErrorMessage(
+              "⚠️ Account created but email confirmation could not be sent. Please try signing in, or contact support if the issue persists.",
             );
             setBusy(false);
             return;

@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils";
 import {
   applySuggestion,
   dismissSuggestion,
-  type JarvisSuggestion,
-  type JarvisSuggestionType,
+  type ChiefOfStaffSuggestion,
+  type ChiefOfStaffSuggestionType,
 } from "@/services/jarvis";
 import { JarvisBadge, JarvisShieldBadge } from "./JarvisBadge";
 
@@ -19,9 +19,9 @@ import { JarvisBadge, JarvisShieldBadge } from "./JarvisBadge";
  * making any changes to user data.
  */
 export interface JarvisSuggestionProps {
-  suggestion: JarvisSuggestion;
-  onApply?: (suggestion: JarvisSuggestion) => void;
-  onDismiss?: (suggestion: JarvisSuggestion) => void;
+  suggestion: ChiefOfStaffSuggestion;
+  onApply?: (suggestion: ChiefOfStaffSuggestion) => void;
+  onDismiss?: (suggestion: ChiefOfStaffSuggestion) => void;
 }
 
 export function JarvisSuggestion({ suggestion, onApply, onDismiss }: JarvisSuggestionProps) {
@@ -47,7 +47,7 @@ export function JarvisSuggestion({ suggestion, onApply, onDismiss }: JarvisSugge
     }
   };
 
-  const typeLabels: Record<JarvisSuggestionType, { label: string; icon: React.ReactNode }> = {
+  const typeLabels: Record<ChiefOfStaffSuggestionType, { label: string; icon: React.ReactNode }> = {
     nudge: { label: "Nudge", icon: <ArrowRight className="size-4 shrink-0" /> },
     workflow: {
       label: "Workflow",
@@ -102,7 +102,7 @@ export function JarvisSuggestion({ suggestion, onApply, onDismiss }: JarvisSugge
       {suggestion.rationale && (
         <div className="mt-2 pt-2 border-t border-emerald-500/10">
           <p className="text-[9px] font-bold uppercase tracking-wider text-emerald-400/70">
-            Why Jarvis suggests this
+            Why AI Chief of Staff suggests this
           </p>
           <p className="mt-0.5 text-[11px] leading-relaxed text-zinc-500">{suggestion.rationale}</p>
         </div>

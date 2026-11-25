@@ -1,14 +1,14 @@
 /**
- * Jarvis Voice API — Press-to-speak Jarvis suggestions.
+ * AI Chief of Staff Voice API — Press-to-speak AI suggestions.
  *
  * Accepts a recorded audio blob (WebM/Opus from MediaRecorder) plus the
  * operator's current mission/task context. Transcribes the audio via the
- * OpenAI Whisper API, then generates Jarvis suggestions from the transcript
+ * OpenAI Whisper API, then generates AI suggestions from the transcript
  * combined with context.
  *
  * Security & privacy:
  *   - Authenticated only (requireApiAuth)
- *   - Standard features available to ALL authenticated users (personal & enterprise)
+ *   - Standard features available to ALL authenticated users
  *   - Enterprise advanced features gated behind enterprise subscription
  *   - Zero-data-retention / zero-training headers on all LLM calls
  *   - Audio is transcribed and immediately discarded — never stored by
@@ -34,7 +34,7 @@ import {
   sanitizePromptText,
 } from "@/lib/security.server";
 
-const SYSTEM_PROMPT = `You are JARVIS, a suggestive personal AI copilot inside ApexMission.
+const SYSTEM_PROMPT = `You are the AI Chief of Staff, a suggestive personal AI copilot inside ApexMission.
 
 CORE PRINCIPLE — HUMAN-IN-THE-LOOP:
 You are strictly a suggestive copilot. You generate proactive nudges, workflow
@@ -75,18 +75,18 @@ Rules:
 
 const MAX_MESSAGES = 20;
 const MAX_CONTEXT_CHARS = 3_000;
-/** Per-user burst + hourly budgets on the Jarvis voice endpoint. */
-const JARVIS_VOICE_BURST_LIMIT = 5;
-const JARVIS_VOICE_BURST_WINDOW_MS = 60_000;
-const JARVIS_VOICE_HOURLY_LIMIT = 30;
-const JARVIS_VOICE_HOURLY_WINDOW_MS = 60 * 60_000;
-/** Per-user daily cap for Jarvis voice requests (DB-backed). */
-const JARVIS_VOICE_DAILY_LIMIT = 20;
-const JARVIS_VOICE_DAILY_WINDOW_SECONDS = 24 * 60 * 60;
+/** Per-user burst + hourly budgets on the voice endpoint. */
+const VOICE_BURST_LIMIT = 5;
+const VOICE_BURST_WINDOW_MS = 60_000;
+const VOICE_HOURLY_LIMIT = 30;
+const VOICE_HOURLY_WINDOW_MS = 60 * 60_000;
+/** Per-user daily cap for voice requests (DB-backed). */
+const VOICE_DAILY_LIMIT = 20;
+const VOICE_DAILY_WINDOW_SECONDS = 24 * 60 * 60;
 /** Max audio file size: 5 MB. */
 const MAX_AUDIO_BYTES = 5 * 1024 * 1024;
 
-interface JarvisContext {
+interface ChiefOfStaffContext {
   firstName: string;
   mission: string | null;
   highTasks: Array<{ id: string; text: string; done: boolean }>;
@@ -99,7 +99,7 @@ interface JarvisContext {
   enterprise?: boolean;
 }
 
-export const Route = createFileRoute("/api/jarvis/voice")({
+export const Route = createFileRoute("/api/chief-of-staff/voice")({
   server: {
     handlers: {
       POST: async ({ request }) => {
@@ -115,26 +115,26 @@ export const Route = createFileRoute("/api/jarvis/voice")({
         // Rate limits (standard tier).
         const burst = await enforceRateLimit({
           actor,
-          key: "jarvis:voice:burst",
-          limit: JARVIS_VOICE_BURST_LIMIT,
-          windowMs: JARVIS_VOICE_BURST_WINDOW_MS,
+          key: "chief-of-staff:voice:burst",
+          limit: VOICE_BURST_LIMIT,
+          windowMs: VOICE_BURST_WINDOW_MS,
         });
         const hourly = await enforceRateLimit({
           actor,
-          key: "jarvis:voice:hour",
-          limit: JARVIS_VOICE_HOURLY_LIMIT,
-          windowMs: JARVIS_VOICE_HOURLY_WINDOW_MS,
+          key: "chief-of-staff:voice:hour",
+          limit: VOICE_HOURLY_LIMIT,
+          windowMs: VOICE_HOURLY_WINDOW_MS,
         });
         const ipBurst = rateLimit(
-          `jarvis:voice:ip:${getClientIp(request)}`,
+          `chief-of-staff:voice:ip:${getClientIp(request)}`,
           10,
-          JARVIS_VOICE_BURST_WINDOW_MS,
+          VOICE_BURST_WINDOW_MS,
         );
         const daily = await persistentRateLimit(
           actor,
-          "jarvis:voice:user:daily",
-          JARVIS_VOICE_DAILY_LIMIT,
-          JARVIS_VOICE_DAILY_WINDOW_SECONDS,
+          "chief-of-staff:voice:user:daily",
+          VOICE_DAILY_LIMIT,
+          VOICE_DAILY_WINDOW_SECONDS,
         );
         if (!burst.ok || !hourly.ok || !ipBurst.ok || (daily && !daily.ok)) {
           return rateLimitedResponse(
@@ -163,7 +163,7 @@ export const Route = createFileRoute("/api/jarvis/voice")({
           });
         }
 
-        let context: Partial<JarvisContext> | null = null;
+        let context: Partial<ChiefOfStaffContext> | null = null;
         let enterprise = false;
         if (contextRaw) {
           try {
@@ -180,7 +180,7 @@ export const Route = createFileRoute("/api/jarvis/voice")({
           const entitlement = await fetchEntitlement({ userId: actor.userId, token: actor.token });
           const isEnterprise = entitlement?.plan === "company_core" && entitlement?.status === "active";
           if (!isEnterprise) {
-            return new Response("Enterprise Jarvis features require an active enterprise subscription.", {
+            return new Response("Enterprise AI Chief of Staff features require an active enterprise subscription.", {
               status: 403,
               headers: { "content-type": "text/plain; charset=utf-8" },
             });
@@ -189,7 +189,7 @@ export const Route = createFileRoute("/api/jarvis/voice")({
 
         const openaiKey = process.env["OPENAI_API_KEY"];
         if (!openaiKey) {
-          console.error("[JarvisVoice] Missing OPENAI_API_KEY environment variable");
+          console.error("[ChiefOfStaffVoice] Missing OPENAI_API_KEY environment variable");
           return new Response("AI service unavailable", { status: 503 });
         }
 
@@ -214,14 +214,14 @@ export const Route = createFileRoute("/api/jarvis/voice")({
 
           if (!whisperResp.ok) {
             const errText = await whisperResp.text().catch(() => "");
-            console.error("[JarvisVoice] Whisper transcription failed:", errText);
+            console.error("[ChiefOfStaffVoice] Whisper transcription failed:", errText);
             return new Response("Transcription failed", { status: 502 });
           }
 
           const whisperData = await whisperResp.json();
           transcript = typeof whisperData.text === "string" ? whisperData.text : "";
         } catch (error) {
-          console.error("[JarvisVoice] Whisper request error:", error);
+          console.error("[ChiefOfStaffVoice] Whisper request error:", error);
           return new Response("Transcription service unavailable", { status: 502 });
         }
 
@@ -257,7 +257,7 @@ export const Route = createFileRoute("/api/jarvis/voice")({
           `Operator said: "${sanitizePromptText(transcript, 500)}"`,
         ].join("\n");
 
-        // Choose model — baseline model only, never Astra for Jarvis voice.
+        // Choose model — baseline model only, never Astra for Chief of Staff voice.
         let modelConfig: ModelConfig | null = null;
         try {
           modelConfig = await chooseModel(actor);
@@ -364,7 +364,7 @@ ${contextText}`;
         // Log token counts only — never message text or context.
         const usage = result.usage as
           { inputTokens?: number; outputTokens?: number; totalTokens?: number } | undefined;
-        console.log("[JarvisVoice] Suggestions generated", {
+        console.log("[ChiefOfStaffVoice] Suggestions generated", {
           model: modelConfig.model,
           transcriptLength: transcript.length,
           count: cleanSuggestions.length,

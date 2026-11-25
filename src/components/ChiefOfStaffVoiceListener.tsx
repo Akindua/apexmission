@@ -6,14 +6,14 @@ import { useNavigate } from "@tanstack/react-router";
 import { handleUnauthenticated } from "@/lib/api-auth";
 import { cn } from "@/lib/utils";
 import { JarvisNudgeCard } from "@/components/JarvisNudge/JarvisNudgeCard";
-import type { JarvisSuggestion } from "@/services/jarvis";
+import type { ChiefOfStaffSuggestion } from "@/services/jarvis";
 
 /**
- * JarvisVoiceListener — Press-to-speak Jarvis listener.
+ * ChiefOfStaffVoiceListener — Press-to-speak AI Chief of Staff listener.
  *
  * Captures audio from the device microphone via the Web Audio API /
  * MediaRecorder API on explicit user click, transcribes it through the
- * /api/jarvis/voice endpoint (Whisper + Jarvis suggestion generation), and
+ * /api/chief-of-staff/voice endpoint (Whisper + AI suggestion generation), and
  * renders the resulting suggestions as JarvisNudgeCards.
  *
  * Privacy:
@@ -24,8 +24,8 @@ import type { JarvisSuggestion } from "@/services/jarvis";
  *   - Transcript and suggestions are shown to the user before anything is
  *     applied; every suggestion requires explicit Apply
  */
-export interface JarvisVoiceListenerProps {
-  /** Context sent to the Jarvis API for suggestion generation. */
+export interface ChiefOfStaffVoiceListenerProps {
+  /** Context sent to the AI API for suggestion generation. */
   context: {
     firstName: string;
     mission: string | null;
@@ -37,7 +37,7 @@ export interface JarvisVoiceListenerProps {
     streakCount: number;
   };
   /** Callback fired when new suggestions are received from the voice turn. */
-  onSuggestionsReceived?: (suggestions: JarvisSuggestion[]) => void;
+  onSuggestionsReceived?: (suggestions: ChiefOfStaffSuggestion[]) => void;
   /** Whether the user has an active enterprise subscription for advanced features. */
   enterprise?: boolean;
 }
@@ -45,15 +45,15 @@ export interface JarvisVoiceListenerProps {
 type ListenerState =
   "idle" | "requesting-permission" | "listening" | "processing" | "ready" | "error";
 
-export function JarvisVoiceListener({
+export function ChiefOfStaffVoiceListener({
   context,
   onSuggestionsReceived,
   enterprise = false,
-}: JarvisVoiceListenerProps) {
+}: ChiefOfStaffVoiceListenerProps) {
   const navigate = useNavigate();
   const [state, setState] = useState<ListenerState>("idle");
   const [transcript, setTranscript] = useState("");
-  [useState<JarvisSuggestion[]>([])]; // suggestions rendered by parent via JarvisNudgeCard
+  [useState<ChiefOfStaffSuggestion[]>([])]; // suggestions rendered by parent via JarvisNudgeCard
   const [error, setError] = useState<string | null>(null);
   const [audioLevel, setAudioLevel] = useState(0);
   const [secondsElapsed, setSecondsElapsed] = useState(0);
@@ -225,7 +225,7 @@ export function JarvisVoiceListener({
       formData.append("audio", audioBlob, "voice.webm");
       formData.append("context", JSON.stringify({ ...context, enterprise }));
 
-      const response = await fetch("/api/jarvis/voice", {
+      const response = await fetch("/api/chief-of-staff/voice", {
         method: "POST",
         body: formData,
       });
@@ -237,12 +237,12 @@ export function JarvisVoiceListener({
         }
         if (response.status === 403) {
           setError(enterprise
-            ? "Enterprise Jarvis features require an active enterprise subscription."
-            : "Jarvis voice is temporarily unavailable.");
+            ? "Enterprise AI Chief of Staff features require an active enterprise subscription."
+            : "AI Chief of Staff voice is temporarily unavailable.");
         } else if (response.status === 400) {
           setError("No speech detected. Please try again.");
         } else {
-          setError("Jarvis voice is temporarily unavailable.");
+          setError("AI Chief of Staff voice is temporarily unavailable.");
         }
         setState("idle");
         return;
@@ -251,7 +251,7 @@ export function JarvisVoiceListener({
       const data = await response.json();
       setTranscript(data.transcript || "");
 
-      const suggestions: JarvisSuggestion[] = (data.suggestions ?? []).map((s: any) => ({
+      const suggestions: ChiefOfStaffSuggestion[] = (data.suggestions ?? []).map((s: any) => ({
         ...s,
         status: "pending" as const,
         createdAt: s.createdAt || new Date().toISOString(),
@@ -261,7 +261,7 @@ export function JarvisVoiceListener({
       setState("ready");
     } catch {
       setState("error");
-      setError("Jarvis voice is temporarily unavailable.");
+      setError("AI Chief of Staff voice is temporarily unavailable.");
     }
   }, [context, onSuggestionsReceived]);
 
@@ -284,7 +284,7 @@ export function JarvisVoiceListener({
             <Zap className="size-4" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-white">Jarvis Voice</h3>
+            <h3 className="text-sm font-bold text-white">AI Chief of Staff Voice</h3>
             <p className="text-[9px] font-bold uppercase tracking-wider text-zinc-500">
               Press-to-speak copilot
             </p>
@@ -323,7 +323,7 @@ export function JarvisVoiceListener({
           )}
         >
           <Mic className="size-4 shrink-0" />
-          <span>Press to speak to Jarvis</span>
+          <span>Press to speak to AI Chief of Staff</span>
         </button>
       )}
 

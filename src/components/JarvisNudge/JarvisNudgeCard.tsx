@@ -3,7 +3,7 @@
 import { ArrowRight, Sparkles, X, Zap } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { applySuggestion, dismissSuggestion, type JarvisSuggestion } from "@/services/jarvis";
+import { applySuggestion, dismissSuggestion, type ChiefOfStaffSuggestion } from "@/services/jarvis";
 import { JarvisBadge } from "./JarvisBadge";
 import { JarvisShieldBadge } from "./JarvisBadge";
 import { nudgeVariants } from "./styles";
@@ -11,7 +11,7 @@ import { nudgeVariants } from "./styles";
 /**
  * JarvisNudgeCard — Proactive AI insight card.
  *
- * Displays a Jarvis AI suggestion with a distinct transparency badge,
+ * Displays an AI Chief of Staff suggestion with a distinct transparency badge,
  * contextual body text, and two explicit touch targets: Dismiss and Apply
  * Changes. Every suggestion is AI-generated and clearly badged.
  *
@@ -92,7 +92,7 @@ export function JarvisNudgeCard({
               "border-emerald-500/30 bg-emerald-950/20 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.15)]",
             )}
           >
-            <Zap className="size-3 shrink-0" />✨ Jarvis AI Suggestion
+            <Zap className="size-3 shrink-0" />✨ AI Chief of Staff Suggestion
           </span>
         </div>
 
@@ -116,7 +116,7 @@ export function JarvisNudgeCard({
       {rationale && (
         <div className="mt-3 pt-3 border-t border-zinc-800/50">
           <p className="text-[9px] font-bold uppercase tracking-wider text-zinc-500/70">
-            Why Jarvis suggests this
+            Why AI Chief of Staff suggests this
           </p>
           <p className="mt-0.5 text-[10px] leading-relaxed text-zinc-500">{rationale}</p>
         </div>

@@ -5,23 +5,23 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useSubscriptionTier } from "@/hooks/useSubscriptionTier";
 import { handleUnauthenticated } from "@/lib/api-auth";
-import { getJarvisSuggestions, getPendingSuggestions } from "@/services/jarvis";
-import type { JarvisSuggestion as JarvisSuggestionType } from "@/services/jarvis";
+import { getChiefOfStaffSuggestions, getPendingSuggestions } from "@/services/jarvis";
+import type { ChiefOfStaffSuggestion as ChiefOfStaffSuggestionType } from "@/services/jarvis";
 import { JarvisBadge } from "@/components/JarvisNudge/JarvisBadge";
 import { JarvisSuggestion } from "@/components/JarvisNudge/JarvisSuggestion";
 import { type ImpactTier, type Task } from "@/lib/mission-store";
 
 /**
- * JarvisPanel — The personal AI assistant side panel.
+ * ChiefOfStaffPanel — The AI Chief of Staff side panel.
  *
- * Displays pending Jarvis suggestions (nudges, workflow, schedule) with
+ * Displays pending AI suggestions (nudges, workflow, schedule) with
  * Apply/Dismiss controls. Every suggestion is AI-generated and clearly
- * badged. Standard Jarvis features are available to all authenticated users.
+ * badged. Standard features are available to all authenticated users.
  * Enterprise advanced features require an active enterprise subscription.
  *
  * Human-in-the-loop: no suggestion is applied without an explicit user tap.
  */
-export interface JarvisPanelProps {
+export interface ChiefOfStaffPanelProps {
   open: boolean;
   onClose: () => void;
   userName: string;
@@ -31,7 +31,7 @@ export interface JarvisPanelProps {
   streak: { count: number };
 }
 
-export function JarvisPanel({
+export function ChiefOfStaffPanel({
   open,
   onClose,
   userName,
@@ -39,10 +39,10 @@ export function JarvisPanel({
   tasks,
   daily,
   streak,
-}: JarvisPanelProps) {
+}: ChiefOfStaffPanelProps) {
   const { tier, enterprise, loading: subscriptionLoading } = useSubscriptionTier();
   const navigate = useNavigate();
-  const [suggestions, setSuggestionsState] = useState<JarvisSuggestionType[]>([]);
+  const [suggestions, setSuggestionsState] = useState<ChiefOfStaffSuggestionType[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [showEnterpriseGate, setShowEnterpriseGate] = useState(false);
@@ -94,7 +94,7 @@ export function JarvisPanel({
         enterprise: requestEnterprise,
       };
 
-      const response = await fetch("/api/jarvis/suggest", {
+      const response = await fetch("/api/chief-of-staff/suggest", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -108,16 +108,16 @@ export function JarvisPanel({
           if (requestEnterprise) {
             setShowEnterpriseGate(true);
           } else {
-            setError("Jarvis is temporarily unavailable.");
+            setError("AI Chief of Staff is temporarily unavailable.");
           }
         } else {
-          setError("Jarvis is temporarily unavailable.");
+          setError("AI Chief of Staff is temporarily unavailable.");
         }
         return;
       }
 
       const data = await response.json();
-      const newSuggestions: JarvisSuggestionType[] = (data.suggestions ?? []).map((s: any) => ({
+      const newSuggestions: ChiefOfStaffSuggestionType[] = (data.suggestions ?? []).map((s: any) => ({
         ...s,
         status: "pending" as const,
         createdAt: s.createdAt || new Date().toISOString(),
@@ -132,7 +132,7 @@ export function JarvisPanel({
       setSuggestionsState(combined);
       setGenerating(false);
     } catch {
-      setError("Jarvis is temporarily unavailable.");
+      setError("AI Chief of Staff is temporarily unavailable.");
       setGenerating(false);
     }
   }, [generating, isEntitled, userName, mission, tasks, daily, streak]);
@@ -144,13 +144,13 @@ export function JarvisPanel({
     }
   }, [open, suggestions.length, isEntitled, generateSuggestions]);
 
-  const handleApply = useCallback((suggestion: JarvisSuggestionType) => {
+  const handleApply = useCallback((suggestion: ChiefOfStaffSuggestionType) => {
     setSuggestionsState((prev) =>
       prev.map((s) => (s.id === suggestion.id ? { ...s, status: "applied" } : s)),
     );
   }, []);
 
-  const handleDismiss = useCallback((suggestion: JarvisSuggestionType) => {
+  const handleDismiss = useCallback((suggestion: ChiefOfStaffSuggestionType) => {
     setSuggestionsState((prev) =>
       prev.map((s) => (s.id === suggestion.id ? { ...s, status: "dismissed" } : s)),
     );
@@ -172,14 +172,14 @@ export function JarvisPanel({
             <div className="flex size-10 items-center justify-center rounded-xl border border-sky-500/30 bg-sky-950/40 text-sky-400 shadow-[0_0_20px_rgba(56,189,248,0.2)]">
               <Lock className="size-5" />
             </div>
-            <h2 className="text-xl font-black text-white tracking-tight">Enterprise Jarvis Features</h2>
+            <h2 className="text-xl font-black text-white tracking-tight">Enterprise AI Chief of Staff Features</h2>
           </div>
 
           <JarvisBadge size="md" className="mb-4" />
 
           <p className="text-[11px] leading-relaxed text-zinc-400 mb-6">
             Advanced enterprise features require an active enterprise subscription ($50/month).
-            Standard Jarvis features remain available to all users.
+            Standard features remain available to all users.
           </p>
 
           <div className="space-y-2">
@@ -217,7 +217,7 @@ export function JarvisPanel({
         type="button"
         onClick={onClose}
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        aria-label="Close Jarvis panel"
+        aria-label="Close AI Chief of Staff panel"
       />
 
       {/* Panel content */}
@@ -229,7 +229,7 @@ export function JarvisPanel({
               <Sparkles className="size-5" />
             </div>
             <div>
-              <h2 className="font-black text-white tracking-tight">Jarvis AI</h2>
+              <h2 className="font-black text-white tracking-tight">AI Chief of Staff</h2>
               <p className="text-[9px] font-bold uppercase tracking-wider text-emerald-400/70">
                 Personal Copilot
               </p>
@@ -254,7 +254,7 @@ export function JarvisPanel({
             <button
               type="button"
               onClick={onClose}
-              aria-label="Close Jarvis"
+              aria-label="Close AI Chief of Staff"
               className="flex size-9 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white"
             >
               <X className="size-4" />
@@ -271,7 +271,7 @@ export function JarvisPanel({
               </div>
               <h3 className="text-sm font-bold text-white">No suggestions yet</h3>
               <p className="mt-1 text-[10px] text-zinc-500 max-w-xs">
-                Jarvis will analyze your mission, tasks, and streak to generate proactive nudges and
+                AI Chief of Staff will analyze your mission, tasks, and streak to generate proactive nudges and
                 workflow recommendations.
               </p>
               <button
@@ -326,7 +326,7 @@ export function JarvisPanel({
         {/* Footer */}
         <div className="border-t border-zinc-800 p-4">
           <p className="text-[9px] font-medium text-zinc-500">
-            Jarvis suggestions require your explicit approval before any change is made to your
+            AI Chief of Staff suggestions require your explicit approval before any change is made to your
             mission or tasks.
           </p>
         </div>

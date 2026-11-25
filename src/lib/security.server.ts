@@ -33,6 +33,8 @@ export const BASE_SECURITY_HEADERS: Record<string, string> = {
   "X-Permitted-Cross-Domain-Policies": "none",
   "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
   "X-Robots-Tag": "noai, noimageindex, noarchive",
+  "Content-Security-Policy":
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.cloudflare.com https://challenges.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' data: https://*.supabase.co wss://*.supabase.co https://*.cloudflare.com https://challenges.cloudflare.com; frame-src 'self' https://*.cloudflare.com https://challenges.cloudflare.com; worker-src 'self' blob:; media-src 'self' data:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
 };
 
 /** Clone a response with the security headers merged in (never overwrites existing values). */

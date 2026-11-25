@@ -40,7 +40,7 @@ export function handleUnauthorizedResponse(
  * the sign-in page and returns null; otherwise returns the Response.
  *
  * Use this instead of raw `fetch()` for authenticated endpoints such as
- * `/api/jarvis/suggest`, `/api/handoff/issue`, `/api/day-plan`, etc.
+ * `/api/chief-of-staff/suggest`, `/api/handoff/issue`, `/api/day-plan`, etc.
  */
 export async function fetchAuth(
   input: RequestInfo | URL,

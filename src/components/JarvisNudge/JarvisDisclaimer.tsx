@@ -3,9 +3,9 @@
 import { ShieldAlert } from "lucide-react";
 
 /**
- * JarvisDisclaimer — Legal disclaimer for Jarvis AI outputs.
+ * JarvisDisclaimer — Legal disclaimer for AI Chief of Staff outputs.
  *
- * Displayed in the settings/help menu. States that Jarvis provides
+ * Displayed in the settings/help menu. States that AI Chief of Staff provides
  * informational self-improvement guidance and does not constitute
  * professional, medical, or legal advice.
  */
@@ -15,9 +15,9 @@ export function JarvisDisclaimer() {
       <div className="flex items-start gap-3">
         <ShieldAlert className="size-5 shrink-0 text-zinc-600 mt-0.5" />
         <div>
-          <h3 className="text-sm font-bold text-white">About Jarvis AI</h3>
+          <h3 className="text-sm font-bold text-white">About AI Chief of Staff</h3>
           <p className="mt-1 text-[10px] leading-relaxed text-zinc-500">
-            Jarvis is an AI-powered suggestive copilot that generates proactive nudges, workflow
+            AI Chief of Staff is an AI-powered suggestive copilot that generates proactive nudges, workflow
             recommendations, and scheduling suggestions based on your mission, tasks, and execution
             data.
           </p>
@@ -29,9 +29,9 @@ export function JarvisDisclaimer() {
           Important Disclaimer
         </h4>
         <p className="text-[9px] leading-relaxed text-zinc-500">
-          Jarvis provides informational self-improvement guidance only. It does not constitute
+          AI Chief of Staff provides informational self-improvement guidance only. It does not constitute
           professional, medical, legal, or financial advice. All AI-generated suggestions require
-          your explicit approval before any change is made to your data — Jarvis never acts
+          your explicit approval before any change is made to your data — AI Chief of Staff never acts
           autonomously. Use your own judgment when evaluating suggestions.
         </p>
       </div>
@@ -41,8 +41,8 @@ export function JarvisDisclaimer() {
           Privacy
         </h4>
         <p className="text-[9px] leading-relaxed text-zinc-500">
-          Jarvis suggestions are stored locally on your device. When AI generation is used, prompts
-          are sanitized and sent with zero-data- retention / zero-training headers. No personally
+          AI Chief of Staff suggestions are stored locally on your device. When AI generation is used, prompts
+          are sanitized and sent with zero-data-retention / zero-training headers. No personally
           identifiable information (email, tenant IDs, or account IDs) is included in LLM prompts.
         </p>
       </div>

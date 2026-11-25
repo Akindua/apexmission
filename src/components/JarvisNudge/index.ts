@@ -13,4 +13,4 @@ export { JarvisNudgeCard, type JarvisNudgeCardProps } from "./JarvisNudgeCard";
 export { JarvisBadge, type JarvisBadgeProps } from "./JarvisBadge";
 export { JarvisSuggestion, type JarvisSuggestionProps } from "./JarvisSuggestion";
 export { JarvisDisclaimer } from "./JarvisDisclaimer";
-export { nudgeVariants } from "./styles";
+export { nudgeVariants, chiefOfStaffBadgeBase, chiefOfStaffBadgeSm, chiefOfStaffBadgeMd, chiefOfStaffShieldBadgeBase } from "./styles";

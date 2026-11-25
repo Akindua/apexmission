@@ -2,12 +2,12 @@
 
 import { Sparkles, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { jarvisBadgeBase, jarvisBadgeSm, jarvisBadgeMd, jarvisShieldBadgeBase } from "./styles";
+import { chiefOfStaffBadgeBase, chiefOfStaffBadgeSm, chiefOfStaffBadgeMd, chiefOfStaffShieldBadgeBase } from "./styles";
 
 /**
  * JarvisBadge — Visual transparency indicator for all AI-generated outputs.
  *
- * Every Jarvis suggestion, nudge, insight, or recommendation must display
+ * Every AI Chief of Staff suggestion, nudge, insight, or recommendation must display
  * this badge so users can immediately distinguish AI-generated content from
  * manually entered data.
  */
@@ -17,12 +17,12 @@ export interface JarvisBadgeProps {
 }
 
 export function JarvisBadge({ size = "sm", className }: JarvisBadgeProps = {}) {
-  const base = cn(jarvisBadgeBase, size === "sm" ? jarvisBadgeSm : jarvisBadgeMd, className);
+  const base = cn(chiefOfStaffBadgeBase, size === "sm" ? chiefOfStaffBadgeSm : chiefOfStaffBadgeMd, className);
 
   return (
-    <span className={base} aria-label="Jarvis AI suggestion">
+    <span className={base} aria-label="AI Chief of Staff suggestion">
       <Sparkles className="size-3.5 shrink-0" />
-      <span>Jarvis AI Suggestion</span>
+      <span>AI Chief of Staff Suggestion</span>
     </span>
   );
 }
@@ -34,8 +34,8 @@ export function JarvisBadge({ size = "sm", className }: JarvisBadgeProps = {}) {
 export function JarvisShieldBadge({ className }: { className?: string } = {}) {
   return (
     <span
-      className={cn(jarvisShieldBadgeBase, className)}
-      aria-label="Jarvis applied — human confirmed"
+      className={cn(chiefOfStaffShieldBadgeBase, className)}
+      aria-label="AI Chief of Staff applied — human confirmed"
     >
       <ShieldCheck className="size-3.5 shrink-0" />
       <span>Applied</span>

@@ -33,6 +33,8 @@ import { Route as ApiMissionPlanRouteImport } from './routes/api/mission-plan'
 import { Route as ApiPdfPlanRouteImport } from './routes/api/pdf-plan'
 import { Route as ApiAdminEnterpriseExportWorkerRouteImport } from './routes/api/admin/enterprise-export-worker'
 import { Route as ApiAdminExportWorkerRouteImport } from './routes/api/admin/export-worker'
+import { Route as ApiChiefOfStaffSuggestRouteImport } from './routes/api/chief-of-staff/suggest'
+import { Route as ApiChiefOfStaffVoiceRouteImport } from './routes/api/chief-of-staff/voice'
 import { Route as ApiClientPortalDeliverablesRouteImport } from './routes/api/client-portal/deliverables'
 import { Route as ApiClientPortalDocumentsRouteImport } from './routes/api/client-portal/documents'
 import { Route as ApiCronSend4pmPushRouteImport } from './routes/api/cron/send-4pm-push'
@@ -44,8 +46,6 @@ import { Route as ApiEnterpriseTimeEntriesRouteImport } from './routes/api/enter
 import { Route as ApiEnterpriseTranscribeRouteImport } from './routes/api/enterprise/transcribe'
 import { Route as ApiHandoffConsumeRouteImport } from './routes/api/handoff/consume'
 import { Route as ApiHandoffIssueRouteImport } from './routes/api/handoff/issue'
-import { Route as ApiJarvisSuggestRouteImport } from './routes/api/jarvis/suggest'
-import { Route as ApiJarvisVoiceRouteImport } from './routes/api/jarvis/voice'
 import { Route as ApiPersonalDailyPlanRouteImport } from './routes/api/personal/daily-plan'
 import { Route as ApiPersonalFocusSessionsRouteImport } from './routes/api/personal/focus-sessions'
 import { Route as ApiPushSubscribeRouteImport } from './routes/api/push/subscribe'
@@ -174,6 +174,16 @@ const ApiAdminExportWorkerRoute = ApiAdminExportWorkerRouteImport.update({
   path: '/api/admin/export-worker',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiChiefOfStaffSuggestRoute = ApiChiefOfStaffSuggestRouteImport.update({
+  id: '/api/chief-of-staff/suggest',
+  path: '/api/chief-of-staff/suggest',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiChiefOfStaffVoiceRoute = ApiChiefOfStaffVoiceRouteImport.update({
+  id: '/api/chief-of-staff/voice',
+  path: '/api/chief-of-staff/voice',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiClientPortalDeliverablesRoute =
   ApiClientPortalDeliverablesRouteImport.update({
     id: '/api/client-portal/deliverables',
@@ -235,16 +245,6 @@ const ApiHandoffIssueRoute = ApiHandoffIssueRouteImport.update({
   path: '/api/handoff/issue',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiJarvisSuggestRoute = ApiJarvisSuggestRouteImport.update({
-  id: '/api/jarvis/suggest',
-  path: '/api/jarvis/suggest',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiJarvisVoiceRoute = ApiJarvisVoiceRouteImport.update({
-  id: '/api/jarvis/voice',
-  path: '/api/jarvis/voice',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiPersonalDailyPlanRoute = ApiPersonalDailyPlanRouteImport.update({
   id: '/api/personal/daily-plan',
   path: '/api/personal/daily-plan',
@@ -302,6 +302,8 @@ export interface FileRoutesByFullPath {
   '/api/pdf-plan': typeof ApiPdfPlanRoute
   '/api/admin/enterprise-export-worker': typeof ApiAdminEnterpriseExportWorkerRoute
   '/api/admin/export-worker': typeof ApiAdminExportWorkerRoute
+  '/api/chief-of-staff/suggest': typeof ApiChiefOfStaffSuggestRoute
+  '/api/chief-of-staff/voice': typeof ApiChiefOfStaffVoiceRoute
   '/api/client-portal/deliverables': typeof ApiClientPortalDeliverablesRoute
   '/api/client-portal/documents': typeof ApiClientPortalDocumentsRoute
   '/api/cron/send-4pm-push': typeof ApiCronSend4pmPushRoute
@@ -313,8 +315,6 @@ export interface FileRoutesByFullPath {
   '/api/enterprise/transcribe': typeof ApiEnterpriseTranscribeRoute
   '/api/handoff/consume': typeof ApiHandoffConsumeRoute
   '/api/handoff/issue': typeof ApiHandoffIssueRoute
-  '/api/jarvis/suggest': typeof ApiJarvisSuggestRoute
-  '/api/jarvis/voice': typeof ApiJarvisVoiceRoute
   '/api/personal/daily-plan': typeof ApiPersonalDailyPlanRoute
   '/api/personal/focus-sessions': typeof ApiPersonalFocusSessionsRoute
   '/api/push/subscribe': typeof ApiPushSubscribeRoute
@@ -347,6 +347,8 @@ export interface FileRoutesByTo {
   '/api/pdf-plan': typeof ApiPdfPlanRoute
   '/api/admin/enterprise-export-worker': typeof ApiAdminEnterpriseExportWorkerRoute
   '/api/admin/export-worker': typeof ApiAdminExportWorkerRoute
+  '/api/chief-of-staff/suggest': typeof ApiChiefOfStaffSuggestRoute
+  '/api/chief-of-staff/voice': typeof ApiChiefOfStaffVoiceRoute
   '/api/client-portal/deliverables': typeof ApiClientPortalDeliverablesRoute
   '/api/client-portal/documents': typeof ApiClientPortalDocumentsRoute
   '/api/cron/send-4pm-push': typeof ApiCronSend4pmPushRoute
@@ -358,8 +360,6 @@ export interface FileRoutesByTo {
   '/api/enterprise/transcribe': typeof ApiEnterpriseTranscribeRoute
   '/api/handoff/consume': typeof ApiHandoffConsumeRoute
   '/api/handoff/issue': typeof ApiHandoffIssueRoute
-  '/api/jarvis/suggest': typeof ApiJarvisSuggestRoute
-  '/api/jarvis/voice': typeof ApiJarvisVoiceRoute
   '/api/personal/daily-plan': typeof ApiPersonalDailyPlanRoute
   '/api/personal/focus-sessions': typeof ApiPersonalFocusSessionsRoute
   '/api/push/subscribe': typeof ApiPushSubscribeRoute
@@ -393,6 +393,8 @@ export interface FileRoutesById {
   '/api/pdf-plan': typeof ApiPdfPlanRoute
   '/api/admin/enterprise-export-worker': typeof ApiAdminEnterpriseExportWorkerRoute
   '/api/admin/export-worker': typeof ApiAdminExportWorkerRoute
+  '/api/chief-of-staff/suggest': typeof ApiChiefOfStaffSuggestRoute
+  '/api/chief-of-staff/voice': typeof ApiChiefOfStaffVoiceRoute
   '/api/client-portal/deliverables': typeof ApiClientPortalDeliverablesRoute
   '/api/client-portal/documents': typeof ApiClientPortalDocumentsRoute
   '/api/cron/send-4pm-push': typeof ApiCronSend4pmPushRoute
@@ -404,8 +406,6 @@ export interface FileRoutesById {
   '/api/enterprise/transcribe': typeof ApiEnterpriseTranscribeRoute
   '/api/handoff/consume': typeof ApiHandoffConsumeRoute
   '/api/handoff/issue': typeof ApiHandoffIssueRoute
-  '/api/jarvis/suggest': typeof ApiJarvisSuggestRoute
-  '/api/jarvis/voice': typeof ApiJarvisVoiceRoute
   '/api/personal/daily-plan': typeof ApiPersonalDailyPlanRoute
   '/api/personal/focus-sessions': typeof ApiPersonalFocusSessionsRoute
   '/api/push/subscribe': typeof ApiPushSubscribeRoute
@@ -440,6 +440,8 @@ export interface FileRouteTypes {
     | '/api/pdf-plan'
     | '/api/admin/enterprise-export-worker'
     | '/api/admin/export-worker'
+    | '/api/chief-of-staff/suggest'
+    | '/api/chief-of-staff/voice'
     | '/api/client-portal/deliverables'
     | '/api/client-portal/documents'
     | '/api/cron/send-4pm-push'
@@ -451,8 +453,6 @@ export interface FileRouteTypes {
     | '/api/enterprise/transcribe'
     | '/api/handoff/consume'
     | '/api/handoff/issue'
-    | '/api/jarvis/suggest'
-    | '/api/jarvis/voice'
     | '/api/personal/daily-plan'
     | '/api/personal/focus-sessions'
     | '/api/push/subscribe'
@@ -485,6 +485,8 @@ export interface FileRouteTypes {
     | '/api/pdf-plan'
     | '/api/admin/enterprise-export-worker'
     | '/api/admin/export-worker'
+    | '/api/chief-of-staff/suggest'
+    | '/api/chief-of-staff/voice'
     | '/api/client-portal/deliverables'
     | '/api/client-portal/documents'
     | '/api/cron/send-4pm-push'
@@ -496,8 +498,6 @@ export interface FileRouteTypes {
     | '/api/enterprise/transcribe'
     | '/api/handoff/consume'
     | '/api/handoff/issue'
-    | '/api/jarvis/suggest'
-    | '/api/jarvis/voice'
     | '/api/personal/daily-plan'
     | '/api/personal/focus-sessions'
     | '/api/push/subscribe'
@@ -530,6 +530,8 @@ export interface FileRouteTypes {
     | '/api/pdf-plan'
     | '/api/admin/enterprise-export-worker'
     | '/api/admin/export-worker'
+    | '/api/chief-of-staff/suggest'
+    | '/api/chief-of-staff/voice'
     | '/api/client-portal/deliverables'
     | '/api/client-portal/documents'
     | '/api/cron/send-4pm-push'
@@ -541,8 +543,6 @@ export interface FileRouteTypes {
     | '/api/enterprise/transcribe'
     | '/api/handoff/consume'
     | '/api/handoff/issue'
-    | '/api/jarvis/suggest'
-    | '/api/jarvis/voice'
     | '/api/personal/daily-plan'
     | '/api/personal/focus-sessions'
     | '/api/push/subscribe'
@@ -576,6 +576,8 @@ export interface RootRouteChildren {
   ApiPdfPlanRoute: typeof ApiPdfPlanRoute
   ApiAdminEnterpriseExportWorkerRoute: typeof ApiAdminEnterpriseExportWorkerRoute
   ApiAdminExportWorkerRoute: typeof ApiAdminExportWorkerRoute
+  ApiChiefOfStaffSuggestRoute: typeof ApiChiefOfStaffSuggestRoute
+  ApiChiefOfStaffVoiceRoute: typeof ApiChiefOfStaffVoiceRoute
   ApiClientPortalDeliverablesRoute: typeof ApiClientPortalDeliverablesRoute
   ApiClientPortalDocumentsRoute: typeof ApiClientPortalDocumentsRoute
   ApiCronSend4pmPushRoute: typeof ApiCronSend4pmPushRoute
@@ -587,8 +589,6 @@ export interface RootRouteChildren {
   ApiEnterpriseTranscribeRoute: typeof ApiEnterpriseTranscribeRoute
   ApiHandoffConsumeRoute: typeof ApiHandoffConsumeRoute
   ApiHandoffIssueRoute: typeof ApiHandoffIssueRoute
-  ApiJarvisSuggestRoute: typeof ApiJarvisSuggestRoute
-  ApiJarvisVoiceRoute: typeof ApiJarvisVoiceRoute
   ApiPersonalDailyPlanRoute: typeof ApiPersonalDailyPlanRoute
   ApiPersonalFocusSessionsRoute: typeof ApiPersonalFocusSessionsRoute
   ApiPushSubscribeRoute: typeof ApiPushSubscribeRoute
@@ -767,6 +767,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminExportWorkerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/chief-of-staff/suggest': {
+      id: '/api/chief-of-staff/suggest'
+      path: '/api/chief-of-staff/suggest'
+      fullPath: '/api/chief-of-staff/suggest'
+      preLoaderRoute: typeof ApiChiefOfStaffSuggestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/chief-of-staff/voice': {
+      id: '/api/chief-of-staff/voice'
+      path: '/api/chief-of-staff/voice'
+      fullPath: '/api/chief-of-staff/voice'
+      preLoaderRoute: typeof ApiChiefOfStaffVoiceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/client-portal/deliverables': {
       id: '/api/client-portal/deliverables'
       path: '/api/client-portal/deliverables'
@@ -844,20 +858,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiHandoffIssueRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/jarvis/suggest': {
-      id: '/api/jarvis/suggest'
-      path: '/api/jarvis/suggest'
-      fullPath: '/api/jarvis/suggest'
-      preLoaderRoute: typeof ApiJarvisSuggestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/jarvis/voice': {
-      id: '/api/jarvis/voice'
-      path: '/api/jarvis/voice'
-      fullPath: '/api/jarvis/voice'
-      preLoaderRoute: typeof ApiJarvisVoiceRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/personal/daily-plan': {
       id: '/api/personal/daily-plan'
       path: '/api/personal/daily-plan'
@@ -928,6 +928,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPdfPlanRoute: ApiPdfPlanRoute,
   ApiAdminEnterpriseExportWorkerRoute: ApiAdminEnterpriseExportWorkerRoute,
   ApiAdminExportWorkerRoute: ApiAdminExportWorkerRoute,
+  ApiChiefOfStaffSuggestRoute: ApiChiefOfStaffSuggestRoute,
+  ApiChiefOfStaffVoiceRoute: ApiChiefOfStaffVoiceRoute,
   ApiClientPortalDeliverablesRoute: ApiClientPortalDeliverablesRoute,
   ApiClientPortalDocumentsRoute: ApiClientPortalDocumentsRoute,
   ApiCronSend4pmPushRoute: ApiCronSend4pmPushRoute,
@@ -941,8 +943,6 @@ const rootRouteChildren: RootRouteChildren = {
   ApiEnterpriseTranscribeRoute: ApiEnterpriseTranscribeRoute,
   ApiHandoffConsumeRoute: ApiHandoffConsumeRoute,
   ApiHandoffIssueRoute: ApiHandoffIssueRoute,
-  ApiJarvisSuggestRoute: ApiJarvisSuggestRoute,
-  ApiJarvisVoiceRoute: ApiJarvisVoiceRoute,
   ApiPersonalDailyPlanRoute: ApiPersonalDailyPlanRoute,
   ApiPersonalFocusSessionsRoute: ApiPersonalFocusSessionsRoute,
   ApiPushSubscribeRoute: ApiPushSubscribeRoute,

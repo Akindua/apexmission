@@ -1,10 +1,10 @@
 /**
- * Jarvis — Personal AI Assistant (Suggestive Copilot)
+ * AI Chief of Staff — Personal AI Assistant (Suggestive Copilot)
  *
- * Jarvis operates strictly as a suggestive copilot: it generates proactive
+ * The AI Chief of Staff operates strictly as a suggestive copilot: it generates proactive
  * nudges, workflow recommendations, and scheduling suggestions. Every
  * suggestion requires explicit user approval (tap/click to apply) before any
- * change is made to user data or system state. Jarvis never makes autonomous,
+ * change is made to user data or system state. The AI never makes autonomous,
  * irreversible modifications.
  *
  * Privacy design:
@@ -47,7 +47,8 @@ export interface JarvisContext {
 }
 
 /**
- * Local storage keys for Jarvis suggestions (per-account scoped).
+ * Local storage keys for AI Chief of Staff suggestions (per-account scoped).
+ * These keys are deprecated; use the new keys from services/jarvis/local-persistence.ts
  */
 const JARVIS_SUGGESTIONS_KEY = "jarvis-suggestions-v1";
 const JARVIS_LAST_GENERATED_KEY = "jarvis-last-generated-v1";
@@ -55,6 +56,7 @@ const JARVIS_DISCLAIMER_ACK_KEY = "jarvis-disclaimer-ack-v1";
 
 /**
  * Generates a stable, collision-resistant id for a new suggestion.
+ * @deprecated Use generateSuggestionId from services/jarvis/context-builder.ts
  */
 function generateSuggestionId(): string {
   const ts = Date.now().toString(36);
@@ -63,12 +65,24 @@ function generateSuggestionId(): string {
 }
 
 /**
- * Reads all Jarvis suggestions from per-account local storage.
+ * Reads all AI Chief of Staff suggestions from per-account local storage.
+ * Migrates from legacy "jarvis-*" keys if present.
+ * @deprecated Use getChiefOfStaffSuggestions from services/jarvis/local-persistence.ts
  */
 export function getJarvisSuggestions(): JarvisSuggestion[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = getScopedItem(JARVIS_SUGGESTIONS_KEY);
+    // Try new key first
+    let raw = getScopedItem("chief-of-staff-suggestions-v1");
+    // Fallback: migrate from legacy key
+    if (!raw) {
+      const legacy = getScopedItem("jarvis-suggestions-v1");
+      if (legacy) {
+        raw = legacy;
+        setScopedItem("chief-of-staff-suggestions-v1", legacy);
+        removeScopedItem("jarvis-suggestions-v1");
+      }
+    }
     if (!raw) return [];
     const parsed = JSON.parse(raw) as JarvisSuggestion[];
     if (!Array.isArray(parsed)) return [];
@@ -80,14 +94,16 @@ export function getJarvisSuggestions(): JarvisSuggestion[] {
 
 /**
  * Persists the full suggestions array to per-account local storage.
+ * @deprecated Use setChiefOfStaffSuggestions from services/jarvis/local-persistence.ts
  */
 export function setJarvisSuggestions(suggestions: JarvisSuggestion[]): void {
   if (typeof window === "undefined") return;
-  setScopedItem(JARVIS_SUGGESTIONS_KEY, JSON.stringify(suggestions));
+  setScopedItem("chief-of-staff-suggestions-v1", JSON.stringify(suggestions));
 }
 
 /**
  * Returns only pending (not yet applied or dismissed) suggestions.
+ * @deprecated Use getPendingSuggestions from services/jarvis/local-persistence.ts
  */
 export function getPendingSuggestions(): JarvisSuggestion[] {
   return getJarvisSuggestions().filter((s) => s.status === "pending");
@@ -95,6 +111,7 @@ export function getPendingSuggestions(): JarvisSuggestion[] {
 
 /**
  * Marks a suggestion as applied (user tapped "Apply").
+ * @deprecated Use applySuggestion from services/jarvis/local-persistence.ts
  */
 export function applySuggestion(id: string): void {
   const suggestions = getJarvisSuggestions().map((s) =>
@@ -105,6 +122,7 @@ export function applySuggestion(id: string): void {
 
 /**
  * Marks a suggestion as dismissed (user tapped "Dismiss").
+ * @deprecated Use dismissSuggestion from services/jarvis/local-persistence.ts
  */
 export function dismissSuggestion(id: string): void {
   const suggestions = getJarvisSuggestions().map((s) =>
@@ -115,39 +133,65 @@ export function dismissSuggestion(id: string): void {
 
 /**
  * Clears all suggestions (used on sign-out).
+ * @deprecated Use clearChiefOfStaffSuggestions from services/jarvis/local-persistence.ts
  */
 export function clearJarvisSuggestions(): void {
-  removeScopedItem(JARVIS_SUGGESTIONS_KEY);
-  removeScopedItem(JARVIS_LAST_GENERATED_KEY);
+  removeScopedItem("jarvis-suggestions-v1");
+  removeScopedItem("jarvis-last-generated-v1");
+  removeScopedItem("chief-of-staff-suggestions-v1");
+  removeScopedItem("chief-of-staff-last-generated-v1");
 }
 
 /**
- * Returns true if the user has acknowledged the Jarvis legal disclaimer.
+ * Returns true if the user has acknowledged the AI Chief of Staff legal disclaimer.
+ * Checks new key first, then migrates from legacy key.
+ * @deprecated Use hasChiefOfStaffDisclaimerAck from services/jarvis/local-persistence.ts
  */
 export function hasJarvisDisclaimerAck(): boolean {
   if (typeof window === "undefined") return false;
   try {
-    return getScopedItem(JARVIS_DISCLAIMER_ACK_KEY) === "true";
+    let ack = getScopedItem("chief-of-staff-disclaimer-ack-v1");
+    if (!ack) {
+      const legacy = getScopedItem("jarvis-disclaimer-ack-v1");
+      if (legacy) {
+        ack = legacy;
+        setScopedItem("chief-of-staff-disclaimer-ack-v1", legacy);
+        removeScopedItem("jarvis-disclaimer-ack-v1");
+      }
+    }
+    return ack === "true";
   } catch {
     return false;
   }
 }
 
 /**
- * Records that the user has acknowledged the Jarvis legal disclaimer.
+ * Records that the user has acknowledged the AI Chief of Staff legal disclaimer.
+ * @deprecated Use setChiefOfStaffDisclaimerAck from services/jarvis/local-persistence.ts
  */
 export function setJarvisDisclaimerAck(): void {
   if (typeof window === "undefined") return;
-  setScopedItem(JARVIS_DISCLAIMER_ACK_KEY, "true");
+  setScopedItem("chief-of-staff-disclaimer-ack-v1", "true");
 }
 
 /**
  * Returns the ISO timestamp of the last suggestion generation, or null.
+ * Checks new key first, then migrates from legacy key.
+ * @deprecated Use getChiefOfStaffLastGenerated from services/jarvis/local-persistence.ts
  */
 export function getJarvisLastGenerated(): string | null {
   if (typeof window === "undefined") return null;
   try {
-    return getScopedItem(JARVIS_LAST_GENERATED_KEY);
+    let ts = getScopedItem("chief-of-staff-last-generated-v1");
+    if (!ts) {
+      const legacy = getScopedItem("jarvis-last-generated-v1");
+      if (legacy) {
+        ts = legacy;
+        setScopedItem("chief-of-staff-last-generated-v1", legacy);
+        removeScopedItem("jarvis-last-generated-v1");
+      }
+    }
+    return ts;
   } catch {
     return null;
   }
@@ -155,15 +199,17 @@ export function getJarvisLastGenerated(): string | null {
 
 /**
  * Records when suggestions were last generated.
+ * @deprecated Use setChiefOfStaffLastGenerated from services/jarvis/local-persistence.ts
  */
 export function setJarvisLastGenerated(): void {
   if (typeof window === "undefined") return;
-  setScopedItem(JARVIS_LAST_GENERATED_KEY, new Date().toISOString());
+  setScopedItem("chief-of-staff-last-generated-v1", new Date().toISOString());
 }
 
 /**
- * Builds a minimal, privacy-safe context object for the Jarvis LLM prompt.
+ * Builds a minimal, privacy-safe context object for the AI Chief of Staff LLM prompt.
  * No PII (email, tenant ids, UUIDs, rank, tier) is included.
+ * @deprecated Use buildChiefOfStaffContext from services/jarvis/context-builder.ts
  */
 export function buildJarvisContext(state: {
   mission: string | null;

@@ -337,7 +337,7 @@ function SettingsPage() {
         </a>
       </div>
 
-      {/* Jarvis AI disclaimer */}
+      {/* AI Chief of Staff disclaimer */}
       <JarvisDisclaimer />
 
       {/* Data Export & Deletion */}

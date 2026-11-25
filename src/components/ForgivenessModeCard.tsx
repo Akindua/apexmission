@@ -10,8 +10,8 @@ import {
   type MissionState,
 } from "@/lib/streak-monitor";
 import { JarvisNudgeCard } from "@/components/JarvisNudge/JarvisNudgeCard";
-import { generateJarvisSuggestions, type JarvisContext } from "@/services/jarvis";
-import { buildJarvisContext } from "@/services/jarvis/context-builder";
+import { generateChiefOfStaffSuggestions, type ChiefOfStaffContext } from "@/services/jarvis";
+import { buildChiefOfStaffContext } from "@/services/jarvis/context-builder";
 
 /**
  * ForgivenessModeCard — Compassionate nudge for users who've missed
@@ -44,11 +44,11 @@ export function ForgivenessModeCard({ state, userName, onGoalAdjusted }: Forgive
   const consecutiveMissed = getConsecutiveMissedDays(state);
   const shouldShow = shouldShowForgivenessMode(state) && !dismissed && !applied;
 
-  // Generate Jarvis suggestions for the forgiveness context
+  // Generate AI Chief of Staff suggestions for the forgiveness context
   useEffect(() => {
     if (!shouldShow || loading || suggestions.length > 0) return;
 
-    const context: JarvisContext = buildJarvisContext({
+    const context: ChiefOfStaffContext = buildChiefOfStaffContext({
       mission: state.mission ?? null,
       tasks: {
         high: (state.tasks?.high ?? []).map((t) => ({
@@ -73,7 +73,7 @@ export function ForgivenessModeCard({ state, userName, onGoalAdjusted }: Forgive
     });
 
     setLoading(true);
-    generateJarvisSuggestions(context).then((result) => {
+    generateChiefOfStaffSuggestions(context).then((result) => {
       setSuggestions(result);
       setLoading(false);
       markForgivenessOffered();
@@ -107,7 +107,7 @@ export function ForgivenessModeCard({ state, userName, onGoalAdjusted }: Forgive
           ? "You missed yesterday. No sweat — everyone has off days."
           : `You've missed ${missedDays} days in a row. Be kind to yourself. Progress isn't linear, and coming back is what matters.`
       }
-      rationale={`Your streak is currently at ${state.streak?.count ?? 0}. Jarvis noticed you haven't completed your daily action for ${missedDays} consecutive day${missedDays === 1 ? "" : "s"}.`}
+      rationale={`Your streak is currently at ${state.streak?.count ?? 0}. AI Chief of Staff noticed you haven't completed your daily action for ${missedDays} consecutive day${missedDays === 1 ? "" : "s"}.`}
       suggestedAction="Scale back your weekly goal so you can ease back in without pressure."
       confidence={85}
       onApply={handleApply}

@@ -1,45 +1,45 @@
 /**
- * Jarvis services module — AI context builder, LLM client, local audio
+ * AI Chief of Staff services module — AI context builder, LLM client, local audio
  * listener, and local persistence.
  *
  * Exports:
- *   - Context builder: buildJarvisContext, JarvisContext, JarvisSuggestion,
- *     JarvisSuggestionType, generateSuggestionId
- *   - Local persistence: getJarvisSuggestions, setJarvisSuggestions,
+ *   - Context builder: buildChiefOfStaffContext, ChiefOfStaffContext, ChiefOfStaffSuggestion,
+ *     ChiefOfStaffSuggestionType, generateSuggestionId
+ *   - Local persistence: getChiefOfStaffSuggestions, setChiefOfStaffSuggestions,
  *     getPendingSuggestions, applySuggestion, dismissSuggestion,
- *     clearJarvisSuggestions, hasJarvisDisclaimerAck,
- *     setJarvisDisclaimerAck, getJarvisLastGenerated, setJarvisLastGenerated
- *   - LLM client: generateJarvisSuggestions
- *   - Voice client: submitJarvisVoice, JarvisVoiceResult
+ *     clearChiefOfStaffSuggestions, hasChiefOfStaffDisclaimerAck,
+ *     setChiefOfStaffDisclaimerAck, getChiefOfStaffLastGenerated, setChiefOfStaffLastGenerated
+ *   - LLM client: generateChiefOfStaffSuggestions
+ *   - Voice client: submitChiefOfStaffVoice, ChiefOfStaffVoiceResult
  *   - Audio listener: LocalAudioListener, AudioListenerState,
  *     AudioListenerConfig, AudioListenerEvents
  */
 
 export {
-  buildJarvisContext,
+  buildChiefOfStaffContext,
   generateSuggestionId,
-  type JarvisContext,
-  type JarvisSuggestion,
-  type JarvisSuggestionType,
+  type ChiefOfStaffContext,
+  type ChiefOfStaffSuggestion,
+  type ChiefOfStaffSuggestionType,
   type Task,
   type ImpactTier,
 } from "./context-builder";
 
 export {
-  getJarvisSuggestions,
-  setJarvisSuggestions,
+  getChiefOfStaffSuggestions,
+  setChiefOfStaffSuggestions,
   getPendingSuggestions,
   applySuggestion,
   dismissSuggestion,
-  clearJarvisSuggestions,
-  hasJarvisDisclaimerAck,
-  setJarvisDisclaimerAck,
-  getJarvisLastGenerated,
-  setJarvisLastGenerated,
+  clearChiefOfStaffSuggestions,
+  hasChiefOfStaffDisclaimerAck,
+  setChiefOfStaffDisclaimerAck,
+  getChiefOfStaffLastGenerated,
+  setChiefOfStaffLastGenerated,
 } from "./local-persistence";
 
-export { generateJarvisSuggestions } from "./llm-client";
-export { submitJarvisVoice, type JarvisVoiceResult } from "./voice-client";
+export { generateChiefOfStaffSuggestions } from "./llm-client";
+export { submitChiefOfStaffVoice, type ChiefOfStaffVoiceResult } from "./voice-client";
 export {
   LocalAudioListener,
   type AudioListenerState,

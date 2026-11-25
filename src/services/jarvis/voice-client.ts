@@ -1,26 +1,26 @@
 /**
- * Jarvis voice client — submits recorded audio to /api/jarvis/voice for
+ * AI Chief of Staff voice client — submits recorded audio to /api/chief-of-staff/voice for
  * Whisper transcription + suggestion generation.
  */
 
-import type { JarvisContext } from "./context-builder";
-import type { JarvisSuggestion } from "./context-builder";
+import type { ChiefOfStaffContext } from "./context-builder";
+import type { ChiefOfStaffSuggestion } from "./context-builder";
 
-const VOICE_ENDPOINT = "/api/jarvis/voice";
+const VOICE_ENDPOINT = "/api/chief-of-staff/voice";
 
-export interface JarvisVoiceResult {
+export interface ChiefOfStaffVoiceResult {
   transcript: string;
-  suggestions: JarvisSuggestion[];
+  suggestions: ChiefOfStaffSuggestion[];
 }
 
 /**
- * Submits an audio blob plus operator context to the Jarvis voice API.
+ * Submits an audio blob plus operator context to the AI Chief of Staff voice API.
  * Returns the transcript and generated suggestions.
  */
-export async function submitJarvisVoice(
+export async function submitChiefOfStaffVoice(
   audioBlob: Blob,
-  context: JarvisContext & { enterprise?: boolean },
-): Promise<JarvisVoiceResult> {
+  context: ChiefOfStaffContext & { enterprise?: boolean },
+): Promise<ChiefOfStaffVoiceResult> {
   const formData = new FormData();
   formData.append("audio", audioBlob, "voice.webm");
   formData.append("context", JSON.stringify(context));
@@ -37,15 +37,15 @@ export async function submitJarvisVoice(
       if (text.includes("enterprise")) {
         throw new Error(text);
       }
-      throw new Error("Jarvis voice is temporarily unavailable.");
+      throw new Error("AI Chief of Staff voice is temporarily unavailable.");
     }
     if (response.status === 401) {
-      throw new Error("Please sign in to use Jarvis voice.");
+      throw new Error("Please sign in to use AI Chief of Staff voice.");
     }
     if (response.status === 400) {
       throw new Error("No speech detected. Please try again.");
     }
-    throw new Error("Jarvis voice is temporarily unavailable.");
+    throw new Error("AI Chief of Staff voice is temporarily unavailable.");
   }
 
   const data = await response.json();
@@ -55,6 +55,6 @@ export async function submitJarvisVoice(
       ...(s as object),
       status: "pending" as const,
       createdAt: (s as { createdAt?: string }).createdAt || new Date().toISOString(),
-    })) as JarvisSuggestion[],
+    })) as ChiefOfStaffSuggestion[],
   };
 }
