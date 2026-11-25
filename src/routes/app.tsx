@@ -2635,6 +2635,7 @@ function ApexMission() {
           tasks={state.tasks}
           daily={state.daily}
           streak={state.streak}
+          isEnterprise={isCorporate}
         />
       )}
 
