@@ -261,6 +261,7 @@ function AuthConsolePage() {
           // Handle specific Supabase auth errors gracefully
           const errMsg = error.message || "Unknown error";
           const errCode = error.code || "";
+          // Log only status and code, never email or full message
           console.log("[Auth] Signup error:", { status: error.status, code: errCode });
 
           if (errMsg.toLowerCase().includes("rate limit") || error.status === 429) {
@@ -407,7 +408,7 @@ function AuthConsolePage() {
         errStatus === 500
       ) {
         setErrorMessage(
-          "⚠️ Account created but email confirmation could not be sent. Please try signing in, or contact support if the issue persists.",
+          "We created your account but couldn't send the confirmation email. Tap Resend, or contact support@apexmissions.app.",
         );
       } else if (err instanceof Error && (err.message.includes("504") || errStatus === 504)) {
         setErrorMessage(
@@ -578,7 +579,7 @@ function AuthConsolePage() {
                       className="text-[11px] font-medium text-zinc-400 leading-normal"
                     >
                       I explicitly attest that I meet the required platform operation age threshold of{" "}
-                      <span className="text-emerald-400 font-bold">10+ years old</span>. I understand
+                      <span className="text-emerald-400 font-bold">16+ years old</span>. I understand
                       access will be restricted if this is breached.
                     </label>
                   </div>
