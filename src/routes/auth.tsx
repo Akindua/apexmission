@@ -124,12 +124,17 @@ function AuthConsolePage() {
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [passkeyBusy, setPasskeyBusy] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
+  const [isEmailSendError, setIsEmailSendError] = useState(false);
   const turnstileWidgetRef = useRef<TurnstileHandle | null>(null);
 
   /** Turnstile tokens are single-use — clear and re-challenge after each attempt. */
   function resetChallenge() {
     setTurnstileToken(null);
     turnstileWidgetRef.current?.reset();
+  }
+
+  function resetEmailErrorFlag() {
+    setIsEmailSendError(false);
   }
 
   useEffect(() => {
@@ -160,6 +165,7 @@ function AuthConsolePage() {
   function switchMode() {
     const nextMode: AuthMode = isSignUp ? "signin" : "signup";
     setErrorMessage(null);
+    resetEmailErrorFlag();
     navigate({
       to: "/auth",
       search: { mode: nextMode, next },
@@ -180,12 +186,46 @@ function AuthConsolePage() {
       }
       setCurrentEmail(null);
       setShowForm(true);
+      resetEmailErrorFlag();
     }
   }
 
   function handleContinueToDashboard() {
     navigate({ to: next || "/app" });
   }
+
+  const handleResendEmail = async () => {
+    if (!email || busy) return;
+    setBusy(true);
+    setErrorMessage(null);
+
+    try {
+      const redirectUrl = new URL("/verify-email", "https://www.apexmissions.app");
+      redirectUrl.searchParams.set("email", email.trim());
+      const onboardingDestination = next && next.startsWith("/onboarding") ? next : "/onboarding";
+      redirectUrl.searchParams.set("next", onboardingDestination);
+
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: email.trim(),
+        options: {
+          emailRedirectTo: redirectUrl.toString(),
+          ...(TURNSTILE_SITE_KEY && turnstileToken ? { captchaToken: turnstileToken } : {}),
+        },
+      });
+
+      if (error) throw error;
+
+      setErrorMessage("If this email can be confirmed, a new message is on its way.");
+      // Don't set isEmailSendError here since the resend worked
+    } catch (err) {
+      console.error("Resend error:", err);
+      // Never reveal whether email exists
+      setErrorMessage("If this email can be confirmed, a new message is on its way.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const handleAuthentication = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -284,6 +324,7 @@ function AuthConsolePage() {
             setErrorMessage(
               "We created your account but couldn't send the confirmation email. Tap Resend, or contact support@apexmissions.app.",
             );
+            setIsEmailSendError(true);
             setBusy(false);
             return;
           }
@@ -545,6 +586,19 @@ function AuthConsolePage() {
                 <p>{errorMessage}</p>
               </div>
             )}
+            {isEmailSendError && isSignUp && (
+              <div className="mb-5 flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleResendEmail}
+                  disabled={busy}
+                  className="btn-glass-primary h-11 px-4 flex items-center gap-2"
+                >
+                  <Mail className="h-4 w-4" />
+                  Resend Confirmation Email
+                </button>
+              </div>
+            )}
 
             <form onSubmit={handleAuthentication} className="space-y-4">
               {isSignUp && (
@@ -597,7 +651,7 @@ function AuthConsolePage() {
                     type="email"
                     required
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => { setEmail(e.target.value); resetEmailErrorFlag(); }}
                     placeholder="operator@apexmissions.app"
                     className="glass-input-field"
                   />
