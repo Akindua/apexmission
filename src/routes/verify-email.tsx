@@ -115,9 +115,24 @@ function VerifyEmailPage(): React.ReactElement {
       }
     } catch (err) {
       console.error("Verification engine lookup exception:", err);
-      setErrorMessage(
-        "Could not verify your link. Ensure you clicked the confirmation link inside your email inbox.",
-      );
+      const errMsg = err instanceof Error ? err.message : "Unknown error";
+      const errCode = err instanceof Error && "code" in err ? (err as { code?: string }).code : "";
+      // Handle expired or used confirmation links
+      if (
+        errMsg.toLowerCase().includes("expired") ||
+        errMsg.toLowerCase().includes("already used") ||
+        errMsg.toLowerCase().includes("invalid") ||
+        errCode === "confirmation_token_expired" ||
+        errCode === "confirmation_token_already_used"
+      ) {
+        setErrorMessage(
+          "This link has expired or has already been used. Tap Resend to get a new confirmation email.",
+        );
+      } else {
+        setErrorMessage(
+          "Could not verify your link. Ensure you clicked the confirmation link inside your email inbox.",
+        );
+      }
     } finally {
       setChecking(false);
     }
