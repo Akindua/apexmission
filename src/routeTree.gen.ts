@@ -34,6 +34,7 @@ import { Route as ApiMissionPlanRouteImport } from './routes/api/mission-plan'
 import { Route as ApiPdfPlanRouteImport } from './routes/api/pdf-plan'
 import { Route as ApiAdminEnterpriseExportWorkerRouteImport } from './routes/api/admin/enterprise-export-worker'
 import { Route as ApiAdminExportWorkerRouteImport } from './routes/api/admin/export-worker'
+import { Route as ApiChiefOfStaffConversationRouteImport } from './routes/api/chief-of-staff/conversation'
 import { Route as ApiChiefOfStaffCreateApprovalRouteImport } from './routes/api/chief-of-staff/create-approval'
 import { Route as ApiChiefOfStaffExecuteCommandRouteImport } from './routes/api/chief-of-staff/execute-command'
 import { Route as ApiChiefOfStaffRealtimeTokenRouteImport } from './routes/api/chief-of-staff/realtime-token'
@@ -183,6 +184,12 @@ const ApiAdminExportWorkerRoute = ApiAdminExportWorkerRouteImport.update({
   path: '/api/admin/export-worker',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiChiefOfStaffConversationRoute =
+  ApiChiefOfStaffConversationRouteImport.update({
+    id: '/api/chief-of-staff/conversation',
+    path: '/api/chief-of-staff/conversation',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiChiefOfStaffCreateApprovalRoute =
   ApiChiefOfStaffCreateApprovalRouteImport.update({
     id: '/api/chief-of-staff/create-approval',
@@ -330,6 +337,7 @@ export interface FileRoutesByFullPath {
   '/api/pdf-plan': typeof ApiPdfPlanRoute
   '/api/admin/enterprise-export-worker': typeof ApiAdminEnterpriseExportWorkerRoute
   '/api/admin/export-worker': typeof ApiAdminExportWorkerRoute
+  '/api/chief-of-staff/conversation': typeof ApiChiefOfStaffConversationRoute
   '/api/chief-of-staff/create-approval': typeof ApiChiefOfStaffCreateApprovalRoute
   '/api/chief-of-staff/execute-command': typeof ApiChiefOfStaffExecuteCommandRoute
   '/api/chief-of-staff/realtime-token': typeof ApiChiefOfStaffRealtimeTokenRoute
@@ -379,6 +387,7 @@ export interface FileRoutesByTo {
   '/api/pdf-plan': typeof ApiPdfPlanRoute
   '/api/admin/enterprise-export-worker': typeof ApiAdminEnterpriseExportWorkerRoute
   '/api/admin/export-worker': typeof ApiAdminExportWorkerRoute
+  '/api/chief-of-staff/conversation': typeof ApiChiefOfStaffConversationRoute
   '/api/chief-of-staff/create-approval': typeof ApiChiefOfStaffCreateApprovalRoute
   '/api/chief-of-staff/execute-command': typeof ApiChiefOfStaffExecuteCommandRoute
   '/api/chief-of-staff/realtime-token': typeof ApiChiefOfStaffRealtimeTokenRoute
@@ -429,6 +438,7 @@ export interface FileRoutesById {
   '/api/pdf-plan': typeof ApiPdfPlanRoute
   '/api/admin/enterprise-export-worker': typeof ApiAdminEnterpriseExportWorkerRoute
   '/api/admin/export-worker': typeof ApiAdminExportWorkerRoute
+  '/api/chief-of-staff/conversation': typeof ApiChiefOfStaffConversationRoute
   '/api/chief-of-staff/create-approval': typeof ApiChiefOfStaffCreateApprovalRoute
   '/api/chief-of-staff/execute-command': typeof ApiChiefOfStaffExecuteCommandRoute
   '/api/chief-of-staff/realtime-token': typeof ApiChiefOfStaffRealtimeTokenRoute
@@ -480,6 +490,7 @@ export interface FileRouteTypes {
     | '/api/pdf-plan'
     | '/api/admin/enterprise-export-worker'
     | '/api/admin/export-worker'
+    | '/api/chief-of-staff/conversation'
     | '/api/chief-of-staff/create-approval'
     | '/api/chief-of-staff/execute-command'
     | '/api/chief-of-staff/realtime-token'
@@ -529,6 +540,7 @@ export interface FileRouteTypes {
     | '/api/pdf-plan'
     | '/api/admin/enterprise-export-worker'
     | '/api/admin/export-worker'
+    | '/api/chief-of-staff/conversation'
     | '/api/chief-of-staff/create-approval'
     | '/api/chief-of-staff/execute-command'
     | '/api/chief-of-staff/realtime-token'
@@ -578,6 +590,7 @@ export interface FileRouteTypes {
     | '/api/pdf-plan'
     | '/api/admin/enterprise-export-worker'
     | '/api/admin/export-worker'
+    | '/api/chief-of-staff/conversation'
     | '/api/chief-of-staff/create-approval'
     | '/api/chief-of-staff/execute-command'
     | '/api/chief-of-staff/realtime-token'
@@ -628,6 +641,7 @@ export interface RootRouteChildren {
   ApiPdfPlanRoute: typeof ApiPdfPlanRoute
   ApiAdminEnterpriseExportWorkerRoute: typeof ApiAdminEnterpriseExportWorkerRoute
   ApiAdminExportWorkerRoute: typeof ApiAdminExportWorkerRoute
+  ApiChiefOfStaffConversationRoute: typeof ApiChiefOfStaffConversationRoute
   ApiChiefOfStaffCreateApprovalRoute: typeof ApiChiefOfStaffCreateApprovalRoute
   ApiChiefOfStaffExecuteCommandRoute: typeof ApiChiefOfStaffExecuteCommandRoute
   ApiChiefOfStaffRealtimeTokenRoute: typeof ApiChiefOfStaffRealtimeTokenRoute
@@ -829,6 +843,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminExportWorkerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/chief-of-staff/conversation': {
+      id: '/api/chief-of-staff/conversation'
+      path: '/api/chief-of-staff/conversation'
+      fullPath: '/api/chief-of-staff/conversation'
+      preLoaderRoute: typeof ApiChiefOfStaffConversationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/chief-of-staff/create-approval': {
       id: '/api/chief-of-staff/create-approval'
       path: '/api/chief-of-staff/create-approval'
@@ -1012,6 +1033,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPdfPlanRoute: ApiPdfPlanRoute,
   ApiAdminEnterpriseExportWorkerRoute: ApiAdminEnterpriseExportWorkerRoute,
   ApiAdminExportWorkerRoute: ApiAdminExportWorkerRoute,
+  ApiChiefOfStaffConversationRoute: ApiChiefOfStaffConversationRoute,
   ApiChiefOfStaffCreateApprovalRoute: ApiChiefOfStaffCreateApprovalRoute,
   ApiChiefOfStaffExecuteCommandRoute: ApiChiefOfStaffExecuteCommandRoute,
   ApiChiefOfStaffRealtimeTokenRoute: ApiChiefOfStaffRealtimeTokenRoute,

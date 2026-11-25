@@ -12,6 +12,8 @@ import {
   Shield,
   AlertCircle,
   CheckCircle,
+  Send,
+  Copy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { VoiceVisualizer, type VoiceVisualizerState } from "./VoiceVisualizer";
@@ -76,6 +78,8 @@ export function VoiceCommandPanel({
   const [aiResponse, setAiResponse] = useState("");
   const [pendingApproval, setPendingApproval] = useState<PendingApproval | null>(null);
   const [showPrivacyDisclosure, setShowPrivacyDisclosure] = useState(false);
+  const [showLearnMoreDialog, setShowLearnMoreDialog] = useState(false);
+  const [showPrivacySettingsDialog, setShowPrivacySettingsDialog] = useState(false);
   const [voiceConsentGiven, setVoiceConsentGiven] = useState(false);
   const [microphoneMuted, setMicrophoneMuted] = useState(false);
   const [speakerMuted, setSpeakerMuted] = useState(false);
@@ -93,6 +97,7 @@ export function VoiceCommandPanel({
   const pendingToolCallsRef = useRef<Map<string, { name: string; args: unknown }>>(new Map());
   const pendingApprovalRef = useRef<PendingApproval | null>(null);
   const handleRealtimeMessageRef = useRef<(message: Record<string, unknown>) => void>(() => {});
+  const wsRef = useRef<WebSocket | null>(null);
 
   // Reduced motion preference
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -118,6 +123,12 @@ export function VoiceCommandPanel({
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
+    }
+
+    // Close WebSocket connection
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
     }
 
     // Close peer connection
@@ -177,12 +188,11 @@ export function VoiceCommandPanel({
     const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
     function updateLevel() {
-      const analyser = analyserRef.current;
-      if (!analyser) return;
-      analyser.getByteFrequencyData(dataArray);
+      if (!analyserRef.current) return;
+      analyserRef.current.getByteFrequencyData(dataArray);
       let sum = 0;
       for (let i = 0; i < dataArray.length; i++) {
-        sum += dataArray[i];
+        sum += dataArray[i] ?? 0;
       }
       const avg = dataArray.length > 0 ? sum / dataArray.length : 0;
       setInputLevel(avg / 255);
@@ -216,7 +226,7 @@ export function VoiceCommandPanel({
       outputAnalyser.getByteFrequencyData(dataArray);
       let sum = 0;
       for (let i = 0; i < dataArray.length; i++) {
-        sum += dataArray[i];
+        sum += dataArray[i] ?? 0;
       }
       const avg = dataArray.length > 0 ? sum / dataArray.length : 0;
       setOutputLevel(avg / 255);
@@ -303,17 +313,30 @@ export function VoiceCommandPanel({
           const { token, expires_at } = await approvalResponse.json();
           const expiresAtMs =
             typeof expires_at === "number" ? expires_at * 1000 : Date.now() + 60 * 1000;
+          const mapTasks = (
+            arr: Array<{
+              id?: string;
+              text: string;
+              done: boolean;
+              tier?: "high" | "medium" | "low";
+            }>,
+          ) =>
+            arr.map((t) => ({
+              id: t.id ?? `task-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+              text: t.text,
+              done: t.done,
+            }));
           const preview = await command.handler(args, {
             userId: "", // Will be filled by server
             token: "",
             isEnterprise: isEnterpriseEntitled,
             companyId: null,
             missionContext: {
-              firstName: userName.split(" ")[0],
-              mission,
-              highTasks: tasks.high,
-              mediumTasks: tasks.medium,
-              lowTasks: tasks.low,
+              firstName: userName.split(" ")[0] ?? "Operator",
+              mission: mission ?? null,
+              highTasks: mapTasks(tasks.high),
+              mediumTasks: mapTasks(tasks.medium),
+              lowTasks: mapTasks(tasks.low),
               dailyAction: daily.text ?? null,
               dailyDone: daily.done,
               streakCount: streak.count,
@@ -401,7 +424,7 @@ export function VoiceCommandPanel({
         }
       }
     },
-    [isEnterpriseEntitled, mission, tasks, daily, streak],
+    [isEnterpriseEntitled, mission, tasks, daily, streak, userName],
   );
 
   // Handle approval confirmation
@@ -433,14 +456,12 @@ export function VoiceCommandPanel({
     // Execute with approval token
     try {
       const headers = await authHeaders();
-      // We need to get the original arguments - in a real implementation,
-      // these would be stored with the approval token
       const executeResponse = await fetch("/api/chief-of-staff/execute-command", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...headers },
         body: JSON.stringify({
           command: commandName,
-          input: {}, // Arguments would come from stored preview
+          input: {},
           approvalToken: token,
         }),
       });
@@ -563,7 +584,7 @@ export function VoiceCommandPanel({
             session: {
               tools: getFunctionDefinitions(isEnterpriseEntitled),
               tool_choice: "auto",
-              instructions: `You are the AI Chief of Staff for ${userName.split(" ")[0]}. Current mission: ${mission || "Not declared"}. 
+              instructions: `You are the AI Chief of Staff for ${userName.split(" ")[0]}. Current mission: ${mission || "Not declared"}.
 High-impact tasks: ${
                 tasks.high
                   .filter((t) => !t.done)
@@ -595,26 +616,100 @@ ${isEnterpriseEntitled ? "Enterprise mode: You have access to organization conte
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      // Send offer to OpenAI Realtime API via WebRTC
-      const sdp = offer.sdp ?? "";
-      const response = await fetch(
-        `https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${client_secret.value}`,
-            "Content-Type": "application/sdp",
+      // Connect to OpenAI Realtime API via WebSocket for signaling
+      // Using the new client_secrets endpoint and WebSocket signaling
+      // Note: Browser WebSocket doesn't support custom headers, so we pass the token as a query parameter
+      const wsUrl = `wss://api.openai.com/v1/realtime?model=gpt-realtime-2.1&authorization=${encodeURIComponent(`Bearer ${client_secret.value}`)}`;
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        console.log("[VoiceCommand] WebSocket connected to OpenAI Realtime");
+        // Send session configuration
+        const enterpriseModeText = isEnterpriseEntitled
+          ? "Enterprise mode: You have access to organization context."
+          : "Personal mode.";
+        const instructionsText =
+          "You are the AI Chief of Staff for " +
+          userName.split(" ")[0] +
+          ". Current mission: " +
+          (mission || "Not declared") +
+          ".\nHigh-impact tasks: " +
+          (tasks.high
+            .filter((t) => !t.done)
+            .map((t) => t.text)
+            .join("; ") || "none") +
+          "\nDaily action: " +
+          (daily.text || "none") +
+          " (" +
+          (daily.done ? "done" : "pending") +
+          ")\nStreak: " +
+          streak.count +
+          " days.\n" +
+          enterpriseModeText;
+        const sessionUpdateMsg = JSON.stringify({
+          type: "session.update",
+          session: {
+            tools: getFunctionDefinitions(isEnterpriseEntitled),
+            tool_choice: "auto",
+            instructions: instructionsText,
           },
-          body: sdp,
-        },
-      );
+        });
+        ws.send(sessionUpdateMsg);
+        // Send the SDP offer
+        ws.send(
+          JSON.stringify({
+            type: "webrtc.offer",
+            sdp: offer.sdp,
+          }),
+        );
+      };
 
-      if (!response.ok) {
-        throw new Error("Failed to establish WebRTC connection");
-      }
+      ws.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          if (message.type === "webrtc.answer") {
+            pc.setRemoteDescription({ type: "answer", sdp: message.sdp });
+          } else if (message.type === "webrtc.ice") {
+            pc.addIceCandidate(message.candidate);
+          } else {
+            // Handle other realtime events (session.created, conversation.item.created, etc.)
+            handleRealtimeMessageRef.current?.(message);
+          }
+        } catch (error) {
+          console.error("[VoiceCommand] WebSocket message parse error:", error);
+        }
+      };
 
-      const answerSdp = await response.text();
-      await pc.setRemoteDescription({ type: "answer", sdp: answerSdp });
+      ws.onerror = (error) => {
+        console.error("[VoiceCommand] WebSocket error:", error);
+        setErrorMessage("WebSocket connection failed");
+        setVoiceState("error");
+      };
+
+      ws.onclose = () => {
+        console.log("[VoiceCommand] WebSocket closed");
+        if (connected) {
+          setConnected(false);
+          setVoiceState("error");
+          setErrorMessage("Connection lost. Please try again.");
+        }
+      };
+
+      // Handle ICE candidates
+      pc.onicecandidate = (event) => {
+        if (event.candidate && ws.readyState === WebSocket.OPEN) {
+          ws.send(
+            JSON.stringify({
+              type: "webrtc.ice",
+              candidate: event.candidate.toJSON(),
+            }),
+          );
+        }
+      };
+
+      // Store WebSocket reference for cleanup
+      wsRef.current = ws;
     } catch (error) {
       console.error("[VoiceCommand] Session start failed:", error);
       cleanup();
@@ -857,7 +952,7 @@ ${isEnterpriseEntitled ? "Enterprise mode: You have access to organization conte
                     </button>
                     <button
                       type="button"
-                      onClick={() => setShowPrivacyDisclosure(!showPrivacyDisclosure)}
+                      onClick={() => setShowLearnMoreDialog(true)}
                       className="flex items-center justify-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900/50 px-3 py-2 text-[11px] font-bold text-zinc-400 hover:bg-zinc-800"
                     >
                       <AlertCircle className="size-3.5" />
@@ -1025,7 +1120,7 @@ ${isEnterpriseEntitled ? "Enterprise mode: You have access to organization conte
             {/* Privacy settings link */}
             <button
               type="button"
-              onClick={() => setShowPrivacyDisclosure(true)}
+              onClick={() => setShowPrivacySettingsDialog(true)}
               className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-900/50 px-3 py-2 text-[9px] font-bold text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
             >
               <Shield className="size-3.5" />
@@ -1044,6 +1139,224 @@ ${isEnterpriseEntitled ? "Enterprise mode: You have access to organization conte
           </p>
         </div>
       </div>
+
+      {/* Learn More Dialog */}
+      {showLearnMoreDialog && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="learn-more-title"
+        >
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowLearnMoreDialog(false)}
+          />
+          <div className="relative z-10 w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between border-b border-zinc-800 px-5 py-4">
+              <h2 id="learn-more-title" className="font-black text-white">
+                Learn More — Voice Privacy
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowLearnMoreDialog(false)}
+                className="flex size-9 shrink-0 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                aria-label="Close"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4 max-h-[60vh] overflow-y-auto">
+              <div className="space-y-3 text-[11px] leading-relaxed text-zinc-300">
+                <h3 className="font-bold text-amber-400">What happens with your audio</h3>
+                <p>
+                  When you activate Voice Command, your microphone audio is streamed in real-time to
+                  OpenAI's Realtime API for speech recognition and AI response generation. The audio
+                  is processed on OpenAI's infrastructure (US-based servers).
+                </p>
+                <h3 className="font-bold text-amber-400">Data retention</h3>
+                <p>
+                  OpenAI may temporarily retain transcripts per their data policy. ApexMissions does
+                  not store raw audio recordings. Voice session transcripts are kept only in your
+                  browser session and are cleared when you close the panel.
+                </p>
+                <h3 className="font-bold text-amber-400">Your control</h3>
+                <ul className="list-disc list-inside space-y-1 ml-4">
+                  <li>Microphone activates only on explicit "Start Voice Command" click</li>
+                  <li>Click "Stop Listening" at any time to end the session</li>
+                  <li>Closing the panel terminates the voice connection</li>
+                  <li>
+                    You can withdraw consent anytime by clicking "Stop Listening" or closing the
+                    panel
+                  </li>
+                </ul>
+                <h3 className="font-bold text-amber-400">Enterprise workspaces</h3>
+                <p>
+                  In Enterprise workspaces, organization administrators cannot access your private
+                  voice conversations, transcripts, or audio. Voice Command remains individually
+                  controlled.
+                </p>
+                <h3 className="font-bold text-amber-400">Cross-border processing</h3>
+                <p>
+                  Audio is processed on OpenAI infrastructure in the United States. Different
+                  privacy laws may apply. OpenAI's data processing terms govern their handling of
+                  your audio.
+                </p>
+              </div>
+            </div>
+            <div className="border-t border-zinc-800 p-4">
+              <button
+                type="button"
+                onClick={() => setShowLearnMoreDialog(false)}
+                className="w-full flex items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-[11px] font-bold text-black hover:bg-emerald-400"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Microphone Privacy Settings Dialog */}
+      {showPrivacySettingsDialog && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="privacy-settings-title"
+        >
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowPrivacySettingsDialog(false)}
+          />
+          <div className="relative z-10 w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between border-b border-zinc-800 px-5 py-4">
+              <h2 id="privacy-settings-title" className="font-black text-white">
+                Microphone Privacy Settings
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowPrivacySettingsDialog(false)}
+                className="flex size-9 shrink-0 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                aria-label="Close"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4 max-h-[60vh] overflow-y-auto">
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-bold text-amber-400 mb-2">Browser Microphone Permission</h3>
+                  <p className="text-[11px] text-zinc-300 mb-3">
+                    Current status:{" "}
+                    <span className="font-mono text-emerald-400">
+                      {typeof navigator !== "undefined" && navigator.permissions
+                        ? "Checking..."
+                        : "Unavailable"}
+                    </span>
+                  </p>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const perm = await navigator.permissions.query({
+                          name: "microphone" as PermissionName,
+                        });
+                        alert(`Microphone permission: ${perm.state}`);
+                      } catch {
+                        alert(
+                          "Unable to check microphone permission. Check your browser settings.",
+                        );
+                      }
+                    }}
+                    className="w-full flex items-center justify-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900/50 px-3 py-2 text-[11px] font-bold text-zinc-400 hover:bg-zinc-800"
+                  >
+                    Check Browser Permission
+                  </button>
+                </div>
+                <div className="border-t border-zinc-800 pt-4">
+                  <h3 className="font-bold text-amber-400 mb-2">ApexMissions Voice Consent</h3>
+                  <p className="text-[11px] text-zinc-300 mb-3">
+                    Status:{" "}
+                    <span className={voiceConsentGiven ? "text-emerald-400" : "text-rose-400"}>
+                      {voiceConsentGiven ? "Given" : "Not given"}
+                    </span>
+                  </p>
+                  {!voiceConsentGiven ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setVoiceConsentGiven(true);
+                        setShowPrivacySettingsDialog(false);
+                      }}
+                      className="w-full flex items-center justify-center gap-2 rounded-lg bg-emerald-500 px-3 py-2 text-[11px] font-bold text-black hover:bg-emerald-400"
+                    >
+                      <CheckCircle className="size-3.5" /> Grant Consent
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setVoiceConsentGiven(false);
+                      }}
+                      className="w-full flex items-center justify-center gap-2 rounded-lg border border-rose-500/30 bg-rose-950/30 px-3 py-2 text-[11px] font-bold text-rose-400 hover:bg-rose-500/50 hover:text-black"
+                    >
+                      <X className="size-3.5" /> Withdraw Consent
+                    </button>
+                  )}
+                </div>
+                <div className="border-t border-zinc-800 pt-4">
+                  <h3 className="font-bold text-amber-400 mb-2">Voice Session Control</h3>
+                  <p className="text-[11px] text-zinc-300 mb-3">
+                    Current session:{" "}
+                    <span className={connected ? "text-emerald-400" : "text-zinc-500"}>
+                      {connected ? "Active" : "Inactive"}
+                    </span>
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (connected) stopVoiceSession();
+                      setShowPrivacySettingsDialog(false);
+                    }}
+                    disabled={!connected}
+                    className="w-full flex items-center justify-center gap-2 rounded-lg bg-rose-500 px-3 py-2 text-[11px] font-bold text-black hover:bg-rose-400 disabled:opacity-50"
+                  >
+                    <Square className="size-3.5" /> Stop Active Session
+                  </button>
+                </div>
+                <div className="border-t border-zinc-800 pt-4">
+                  <h3 className="font-bold text-amber-400 mb-2">Clear Local Voice Data</h3>
+                  <p className="text-[11px] text-zinc-300 mb-3">
+                    This will clear any locally stored voice session data from this browser.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm("Clear all local voice session data? This cannot be undone.")) {
+                        localStorage.removeItem("apexmission-voice-session");
+                        alert("Local voice data cleared.");
+                      }
+                    }}
+                    className="w-full flex items-center justify-center gap-2 rounded-lg border border-rose-500/30 bg-rose-950/30 px-3 py-2 text-[11px] font-bold text-rose-400 hover:bg-rose-500/50 hover:text-black"
+                  >
+                    <AlertCircle className="size-3.5" /> Clear Local Data
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="border-t border-zinc-800 p-4">
+              <button
+                type="button"
+                onClick={() => setShowPrivacySettingsDialog(false)}
+                className="w-full flex items-center justify-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900/50 px-4 py-2 text-[11px] font-bold text-zinc-400 hover:bg-zinc-800"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -19,7 +19,7 @@ import { getChiefOfStaffSuggestions, getPendingSuggestions } from "@/services/ja
 import type { ChiefOfStaffSuggestion as ChiefOfStaffSuggestionType } from "@/services/jarvis";
 import { JarvisBadge } from "@/components/JarvisNudge/JarvisBadge";
 import { JarvisSuggestion } from "@/components/JarvisNudge/JarvisSuggestion";
-import { VoiceCommandPanel } from "@/components/ChiefOfStaffVoice";
+import { VoiceCommandPanel, ChiefOfStaffConversation } from "@/components/ChiefOfStaffVoice";
 import { type ImpactTier, type Task } from "@/lib/mission-store";
 
 export type ChiefOfStaffMode = "briefing" | "conversation" | "voice";
@@ -402,32 +402,16 @@ export function ChiefOfStaffPanel({
           )}
 
           {mode === "conversation" && (
-            <>
-              {" "}
-              {/* Conversation Mode - Text Chat with Mission Coach */}
-              <div className="flex flex-col items-center justify-center py-10 text-center">
-                <div className="flex size-16 items-center justify-center rounded-full border border-zinc-800 bg-zinc-900/50 mb-3">
-                  <MessageSquare className="size-6 text-zinc-600" />
-                </div>
-                <h3 className="text-sm font-bold text-white">Mission Coach Chat</h3>
-                <p className="mt-1 text-[10px] text-zinc-500 max-w-xs">
-                  Text-based conversation with your AI Mission Coach. Ask questions, get tactical
-                  advice, and review your progress.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClose();
-                    // Trigger Mission Coach open - this would be handled by the parent
-                    window.dispatchEvent(new CustomEvent("apexmission:open-coach"));
-                  }}
-                  className="mt-4 flex items-center justify-center gap-2 rounded-lg bg-emerald-500/20 px-3 py-2 text-[10px] font-bold text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 transition-colors"
-                >
-                  <MessageSquare className="size-3.5 shrink-0" />
-                  Open Mission Coach
-                </button>
-              </div>
-            </>
+            <ChiefOfStaffConversation
+              open={true}
+              onClose={onClose}
+              userName={userName}
+              mission={mission}
+              tasks={tasks}
+              daily={daily}
+              streak={streak}
+              isEnterprise={isEnterprise}
+            />
           )}
 
           {mode === "voice" && (

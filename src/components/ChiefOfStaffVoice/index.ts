@@ -5,3 +5,8 @@ export {
 } from "./VoiceVisualizer";
 
 export { VoiceCommandPanel, type VoiceCommandPanelProps } from "./VoiceCommandPanel";
+
+export {
+  ChiefOfStaffConversation,
+  type ChiefOfStaffConversationProps,
+} from "./ChiefOfStaffConversation";

@@ -31,6 +31,9 @@ const REALTIME_DAILY_LIMIT = 20;
 const REALTIME_DAILY_WINDOW_SECONDS = 24 * 60 * 60;
 const TOKEN_TTL_SECONDS = 60; // Short-lived token for session initiation
 
+// Current supported Realtime model (as of 2026)
+const REALTIME_MODEL = "gpt-realtime-2.1";
+
 export const Route = createFileRoute("/api/chief-of-staff/realtime-token")({
   server: {
     handlers: {
@@ -79,31 +82,25 @@ export const Route = createFileRoute("/api/chief-of-staff/realtime-token")({
           );
         }
 
-        let payload: {
-          enterprise?: boolean;
-          voice?: "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer";
-        } = {};
+        let payload: { enterprise?: boolean; voice?: "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer" } = {};
         try {
           payload = await request.json();
         } catch {
           return new Response("Invalid JSON body", { status: 400 });
         }
 
-        const { enterprise = false, voice = "alloy" } = payload;
+        const { enterprise, voice = "alloy" } = payload;
+        const isEnterpriseMode = Boolean(enterprise);
 
         // Enterprise features gate: check enterprise subscription
-        if (enterprise) {
+        if (isEnterpriseMode) {
           const entitlement = await fetchEntitlement({ userId: actor.userId, token: actor.token });
-          const isEnterprise =
-            entitlement?.plan === "company_core" && entitlement?.status === "active";
+          const isEnterprise = entitlement?.plan === "company_core" && entitlement?.status === "active";
           if (!isEnterprise) {
-            return new Response(
-              "Enterprise AI Chief of Staff features require an active enterprise subscription.",
-              {
-                status: 403,
-                headers: { "content-type": "text/plain; charset=utf-8" },
-              },
-            );
+            return new Response("Enterprise AI Chief of Staff features require an active enterprise subscription.", {
+              status: 403,
+              headers: { "content-type": "text/plain; charset=utf-8" },
+            });
           }
         }
 
@@ -113,57 +110,62 @@ export const Route = createFileRoute("/api/chief-of-staff/realtime-token")({
           return new Response("AI service unavailable", { status: 503 });
         }
 
-        // Generate ephemeral token for OpenAI Realtime API
-        // Using the /v1/realtime/sessions endpoint for WebRTC
+        // Generate ephemeral client secret for OpenAI Realtime API
+        // Using the /v1/realtime/client_secrets endpoint (current API)
         try {
-          const response = await fetch("https://api.openai.com/v1/realtime/sessions", {
+          const response = await fetch("https://api.openai.com/v1/realtime/client_secrets", {
             method: "POST",
             headers: {
               Authorization: `Bearer ${openaiKey}`,
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              model: "gpt-4o-realtime-preview-2024-12-17",
-              voice,
-              modalities: ["audio", "text"],
-              instructions: getRealtimeSystemPrompt(enterprise),
-              turn_detection: {
-                type: "server_vad",
-                threshold: 0.5,
-                prefix_padding_ms: 300,
-                silence_duration_ms: 500,
+              session: {
+                model: REALTIME_MODEL,
+                voice,
+                modalities: ["audio", "text"],
+                instructions: getRealtimeSystemPrompt(isEnterpriseMode),
+                turn_detection: {
+                  type: "server_vad",
+                  threshold: 0.5,
+                  prefix_padding_ms: 300,
+                  silence_duration_ms: 500,
+                },
+                input_audio_format: "pcm16",
+                output_audio_format: "pcm16",
+                input_audio_transcription: {
+                  model: "whisper-1",
+                },
+                tool_choice: "auto",
+                temperature: 0.7,
+                max_response_output_tokens: 4096,
               },
-              input_audio_format: "pcm16",
-              output_audio_format: "pcm16",
-              input_audio_transcription: {
-                model: "whisper-1",
-              },
-              tool_choice: "auto",
-              temperature: 0.7,
-              max_response_output_tokens: 4096,
             }),
           });
 
           if (!response.ok) {
             const errText = await response.text().catch(() => "");
-            console.error("[ChiefOfStaffRealtime] Session creation failed:", errText);
+            console.error("[ChiefOfStaffRealtime] Client secret creation failed:", {
+              status: response.status,
+              error: errText,
+            });
             return new Response("Failed to create realtime session", { status: 502 });
           }
 
-          const sessionData = await response.json();
+          const secretData = await response.json();
 
           // Log token creation (metadata only)
-          console.log("[ChiefOfStaffRealtime] Session created", {
-            model: "gpt-4o-realtime-preview-2024-12-17",
+          console.log("[ChiefOfStaffRealtime] Client secret created", {
+            model: REALTIME_MODEL,
             enterprise: Boolean(enterprise),
             voice,
-            expiresAt: sessionData.client_secret?.expires_at,
+            expiresAt: secretData.expires_at,
           });
 
           return new Response(
             JSON.stringify({
-              client_secret: sessionData.client_secret,
-              expires_at: sessionData.client_secret?.expires_at,
+              client_secret: secretData,
+              expires_at: secretData.expires_at,
             }),
             {
               status: 200,
@@ -173,7 +175,7 @@ export const Route = createFileRoute("/api/chief-of-staff/realtime-token")({
             },
           );
         } catch (error) {
-          console.error("[ChiefOfStaffRealtime] Session request error:", error);
+          console.error("[ChiefOfStaffRealtime] Client secret request error:", error);
           return new Response("Realtime service unavailable", { status: 502 });
         }
       },

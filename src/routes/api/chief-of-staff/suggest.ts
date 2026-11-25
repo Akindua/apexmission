@@ -220,32 +220,51 @@ export const Route = createFileRoute("/api/chief-of-staff/suggest")({
         // Chief of Staff always uses the baseline model — never Astra.
         modelConfig.model = process.env["AI_BASELINE_MODEL"] ?? modelConfig.model;
 
-        const result = await generateText({
-          model: openai(modelConfig.model),
-          maxOutputTokens: modelConfig.maxOutputTokens,
-          ...(modelConfig.reasoningEffort && {
-            providerOptions: {
-              openai: {
-                reasoningEffort: modelConfig.reasoningEffort,
-                headers: getAIPrivacyHeaders(),
+        let result: { text: string; usage?: Record<string, unknown> };
+        try {
+          const generatePromise = generateText({
+            model: openai(modelConfig.model),
+            maxOutputTokens: modelConfig.maxOutputTokens,
+            ...(modelConfig.reasoningEffort && {
+              providerOptions: {
+                openai: {
+                  reasoningEffort: modelConfig.reasoningEffort,
+                  headers: getAIPrivacyHeaders(),
+                },
               },
-            },
-          }),
-          ...(!modelConfig.reasoningEffort && {
-            providerOptions: {
-              openai: {
-                headers: getAIPrivacyHeaders(),
+            }),
+            ...(!modelConfig.reasoningEffort && {
+              providerOptions: {
+                openai: {
+                  headers: getAIPrivacyHeaders(),
+                },
               },
-            },
-          }),
-          system: SYSTEM_PROMPT,
-          messages: await convertToModelMessages([
+            }),
+            system: SYSTEM_PROMPT,
+            messages: await convertToModelMessages([
+              {
+                role: "user",
+                content: `Operator context:\n${contextText}`,
+              } as unknown as UIMessage,
+            ]),
+          });
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error("timeout")), modelConfig.timeoutMs);
+          });
+          result = await Promise.race([generatePromise, timeoutPromise]);
+        } catch {
+          console.error("[ChiefOfStaff] AI generation failed");
+          return new Response(
+            JSON.stringify({ suggestions: [] }),
             {
-              role: "user",
-              content: `Operator context:\n${contextText}`,
-            } as unknown as UIMessage,
-          ]),
-        });
+              status: 200,
+              headers: {
+                "content-type": "application/json; charset=utf-8",
+                ...getAIPrivacyHeaders(),
+              },
+            },
+          );
+        }
 
         const replyText = typeof result.text === "string" ? result.text : String(result.text ?? "");
 

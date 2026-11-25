@@ -119,7 +119,7 @@ export function HabitAuditWidget({ state, userName }: HabitAuditWidgetProps) {
           </p>
           <p className="text-[11px] leading-relaxed text-zinc-300">
             You completed {stats.completedTasks} of {stats.totalTasks} tasks this week (
-            {stats.completionRate}%). Your streak is {stats.streakCount} day$
+            {stats.completionRate}%). Your streak is {stats.streakCount} day
             {stats.streakCount === 1 ? "" : "s"}. AI Chief of Staff will generate a full weekly recap on Sunday
             evenings.
           </p>

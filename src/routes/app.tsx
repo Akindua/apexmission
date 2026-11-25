@@ -258,6 +258,17 @@ function ApexMission() {
   const refineDayPlan = useCallback(async (force = false) => {
     if (typeof window === "undefined" || isRefiningRef.current) return;
 
+    // Skip AI refinement for personal accounts — day planner AI is company-only
+    if (!isCorporate) {
+      const attemptedKey = `apexmission-day-plan-ai-${todayKey()}`;
+      if (!force && getScopedItem(attemptedKey) === "true") return;
+      const snapshot = stateRef.current;
+      const local = buildLocalDayPlan({ mission: snapshot.mission, tasks: snapshot.tasks });
+      setDayPlan(local);
+      setScopedItem(attemptedKey, "true");
+      return;
+    }
+
     const attemptedKey = `apexmission-day-plan-ai-${todayKey()}`;
     if (!force && getScopedItem(attemptedKey) === "true") return;
 
@@ -2635,7 +2646,7 @@ function ApexMission() {
           tasks={state.tasks}
           daily={state.daily}
           streak={state.streak}
-          isEnterprise={isCorporate}
+          isEnterprise={Boolean(activeTenant?.isMember)}
         />
       )}
 
