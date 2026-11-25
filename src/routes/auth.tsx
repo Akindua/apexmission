@@ -313,16 +313,18 @@ function AuthConsolePage() {
           }
 
           // Email send failure (500 or SMTP error)
-          if (
+          // Only classify as email failure when we have specific evidence
+          const isEmailFailure =
             error.status === 500 ||
             errCode === "email_not_sent" ||
             errMsg.toLowerCase().includes("email_not_sent") ||
             errMsg.toLowerCase().includes("smtp") ||
             errMsg.toLowerCase().includes("confirmation") ||
-            errMsg.toLowerCase().includes("send")
-          ) {
+            errMsg.toLowerCase().includes("send");
+
+          if (isEmailFailure) {
             setErrorMessage(
-              "We created your account but couldn't send the confirmation email. Tap Resend, or contact support@apexmissions.app.",
+              "We couldn't send the confirmation email. Tap Resend, or contact support@apexmissions.app.",
             );
             setIsEmailSendError(true);
             setBusy(false);
@@ -441,16 +443,21 @@ function AuthConsolePage() {
       const errMsg = err instanceof Error ? err.message : "Unknown error";
 
       // Handle email confirmation / SMTP errors that may be thrown as exceptions
-      if (
-        errMsg.toLowerCase().includes("email") ||
+      // Only classify as email failure when we have specific evidence
+      const isEmailFailure =
+        errStatus === 500 ||
+        errMsg.toLowerCase().includes("email_not_sent") ||
+        errMsg.toLowerCase().includes("smtp") ||
+        errMsg.toLowerCase().includes("email_not_sent") ||
         errMsg.toLowerCase().includes("smtp") ||
         errMsg.toLowerCase().includes("confirmation") ||
-        errMsg.toLowerCase().includes("send") ||
-        errStatus === 500
-      ) {
+        errMsg.toLowerCase().includes("send");
+
+      if (isEmailFailure) {
         setErrorMessage(
-          "We created your account but couldn't send the confirmation email. Tap Resend, or contact support@apexmissions.app.",
+          "We couldn't send the confirmation email. Tap Resend, or contact support@apexmissions.app.",
         );
+        setIsEmailSendError(true);
       } else if (err instanceof Error && (err.message.includes("504") || errStatus === 504)) {
         setErrorMessage(
           "⚠️ CLOUD HANDSHAKE BUFFER DELAY: Account record may have been created successfully. Please toggle to 'Secure Node Access' and try logging in.",
