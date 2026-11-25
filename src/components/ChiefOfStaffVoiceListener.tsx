@@ -3,7 +3,7 @@
 import { Mic, MicOff, Square, Zap, Loader2, X, Lock } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { handleUnauthenticated } from "@/lib/api-auth";
+import { handleUnauthenticated, authHeaders } from "@/lib/api-auth";
 import { cn } from "@/lib/utils";
 import { JarvisNudgeCard } from "@/components/JarvisNudge/JarvisNudgeCard";
 import type { ChiefOfStaffSuggestion } from "@/services/jarvis";
@@ -225,8 +225,10 @@ export function ChiefOfStaffVoiceListener({
       formData.append("audio", audioBlob, "voice.webm");
       formData.append("context", JSON.stringify({ ...context, enterprise }));
 
+      const headers = await authHeaders();
       const response = await fetch("/api/chief-of-staff/voice", {
         method: "POST",
+        headers,
         body: formData,
       });
 

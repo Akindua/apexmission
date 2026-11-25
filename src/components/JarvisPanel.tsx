@@ -4,7 +4,7 @@ import { ArrowLeft, Loader2, Sparkles, X, Zap, Lock } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useSubscriptionTier } from "@/hooks/useSubscriptionTier";
-import { handleUnauthenticated } from "@/lib/api-auth";
+import { handleUnauthenticated, authHeaders } from "@/lib/api-auth";
 import { getChiefOfStaffSuggestions, getPendingSuggestions } from "@/services/jarvis";
 import type { ChiefOfStaffSuggestion as ChiefOfStaffSuggestionType } from "@/services/jarvis";
 import { JarvisBadge } from "@/components/JarvisNudge/JarvisBadge";
@@ -94,10 +94,12 @@ export function ChiefOfStaffPanel({
         enterprise: requestEnterprise,
       };
 
+      const headers = await authHeaders();
       const response = await fetch("/api/chief-of-staff/suggest", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...headers,
         },
         body: JSON.stringify({ context }),
       });

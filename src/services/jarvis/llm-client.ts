@@ -7,6 +7,7 @@
  * Enterprise features require active enterprise subscription.
  */
 
+import { authHeaders } from "@/lib/api-auth";
 import { type ChiefOfStaffContext, type ChiefOfStaffSuggestion } from "./context-builder";
 
 const SUGGEST_ENDPOINT = "/api/chief-of-staff/suggest";
@@ -18,10 +19,12 @@ const SUGGEST_ENDPOINT = "/api/chief-of-staff/suggest";
 export async function generateChiefOfStaffSuggestions(
   context: ChiefOfStaffContext & { enterprise?: boolean },
 ): Promise<ChiefOfStaffSuggestion[]> {
+  const headers = await authHeaders();
   const response = await fetch(SUGGEST_ENDPOINT, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...headers,
     },
     body: JSON.stringify({ context }),
   });

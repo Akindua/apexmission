@@ -3,6 +3,7 @@
  * Whisper transcription + suggestion generation.
  */
 
+import { authHeaders } from "@/lib/api-auth";
 import type { ChiefOfStaffContext } from "./context-builder";
 import type { ChiefOfStaffSuggestion } from "./context-builder";
 
@@ -21,12 +22,14 @@ export async function submitChiefOfStaffVoice(
   audioBlob: Blob,
   context: ChiefOfStaffContext & { enterprise?: boolean },
 ): Promise<ChiefOfStaffVoiceResult> {
+  const headers = await authHeaders();
   const formData = new FormData();
   formData.append("audio", audioBlob, "voice.webm");
   formData.append("context", JSON.stringify(context));
 
   const response = await fetch(VOICE_ENDPOINT, {
     method: "POST",
+    headers,
     body: formData,
   });
 
