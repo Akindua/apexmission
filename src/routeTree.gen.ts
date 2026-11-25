@@ -14,6 +14,7 @@ import { Route as MorningCheckInRouteImport } from './routes/MorningCheckIn'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BillingRouteImport } from './routes/billing'
+import { Route as ConfirmEmailRouteImport } from './routes/confirm-email'
 import { Route as DemoRouteImport } from './routes/demo'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as JoinRouteImport } from './routes/join'
@@ -76,6 +77,11 @@ const AuthRoute = AuthRouteImport.update({
 const BillingRoute = BillingRouteImport.update({
   id: '/billing',
   path: '/billing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConfirmEmailRoute = ConfirmEmailRouteImport.update({
+  id: '/confirm-email',
+  path: '/confirm-email',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemoRoute = DemoRouteImport.update({
@@ -283,6 +289,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppRoute
   '/auth': typeof AuthRoute
   '/billing': typeof BillingRoute
+  '/confirm-email': typeof ConfirmEmailRoute
   '/demo': typeof DemoRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/join': typeof JoinRoute
@@ -328,6 +335,7 @@ export interface FileRoutesByTo {
   '/app': typeof AppRoute
   '/auth': typeof AuthRoute
   '/billing': typeof BillingRoute
+  '/confirm-email': typeof ConfirmEmailRoute
   '/demo': typeof DemoRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/join': typeof JoinRoute
@@ -374,6 +382,7 @@ export interface FileRoutesById {
   '/app': typeof AppRoute
   '/auth': typeof AuthRoute
   '/billing': typeof BillingRoute
+  '/confirm-email': typeof ConfirmEmailRoute
   '/demo': typeof DemoRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/join': typeof JoinRoute
@@ -421,6 +430,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/auth'
     | '/billing'
+    | '/confirm-email'
     | '/demo'
     | '/forgot-password'
     | '/join'
@@ -466,6 +476,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/auth'
     | '/billing'
+    | '/confirm-email'
     | '/demo'
     | '/forgot-password'
     | '/join'
@@ -511,6 +522,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/auth'
     | '/billing'
+    | '/confirm-email'
     | '/demo'
     | '/forgot-password'
     | '/join'
@@ -557,6 +569,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRoute
   AuthRoute: typeof AuthRoute
   BillingRoute: typeof BillingRoute
+  ConfirmEmailRoute: typeof ConfirmEmailRoute
   DemoRoute: typeof DemoRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   JoinRoute: typeof JoinRoute
@@ -632,6 +645,13 @@ declare module '@tanstack/react-router' {
       path: '/billing'
       fullPath: '/billing'
       preLoaderRoute: typeof BillingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirm-email': {
+      id: '/confirm-email'
+      path: '/confirm-email'
+      fullPath: '/confirm-email'
+      preLoaderRoute: typeof ConfirmEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demo': {
@@ -909,6 +929,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRoute,
   AuthRoute: AuthRoute,
   BillingRoute: BillingRoute,
+  ConfirmEmailRoute: ConfirmEmailRoute,
   DemoRoute: DemoRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   JoinRoute: JoinRoute,

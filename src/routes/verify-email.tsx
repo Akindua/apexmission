@@ -1,7 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { ShieldAlert, Loader2, Mail, CheckCircle } from "lucide-react";
+import { ShieldAlert, Loader2, Mail, CheckCircle, ShieldCheck } from "lucide-react";
+import { TurnstileWidget, type TurnstileHandle } from "@/components/TurnstileWidget";
+
+/** Renders only when configured — pairs with Supabase Auth bot protection. */
+const TURNSTILE_SITE_KEY = import.meta.env["VITE_TURNSTILE_SITE_KEY"] as string | undefined;
+
+const COOLDOWN_SECONDS = 60;
 
 export const Route = createFileRoute("/verify-email")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -12,27 +18,67 @@ export const Route = createFileRoute("/verify-email")({
       !search["next"].startsWith("//")
         ? search["next"]
         : undefined,
+    // PKCE code from Supabase email link
+    code: typeof search["code"] === "string" ? search["code"] : undefined,
+    // Token-hash style (legacy)
+    access_token: typeof search["access_token"] === "string" ? search["access_token"] : undefined,
+    refresh_token: typeof search["refresh_token"] === "string" ? search["refresh_token"] : undefined,
+    type: typeof search["type"] === "string" ? search["type"] : undefined,
   }),
   component: VerifyEmailPage,
 });
 
-function VerifyEmailPage() {
+function VerifyEmailPage(): React.ReactElement {
   const navigate = useNavigate();
-  const { email, next } = Route.useSearch();
+  const { email, next, code, access_token, refresh_token, type } = Route.useSearch();
   const destination = next || "/onboarding";
 
   const [busy, setBusy] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
   const [checking, setChecking] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstileWidgetRef = useRef<TurnstileHandle | null>(null);
+
+  // Cooldown timer
+  useEffect(() => {
+    if (cooldown > 0) {
+      const timer = setInterval(() => {
+        setCooldown((c) => (c <= 1 ? 0 : c - 1));
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+    return;
+  }, [cooldown]);
+
+  const resetTurnstile = () => {
+    setTurnstileToken(null);
+    turnstileWidgetRef.current?.reset();
+  };
+
+  // Handle PKCE code or token-hash from URL
+  useEffect(() => {
+    if (code || (access_token && refresh_token && type === "signup")) {
+      checkEmailVerificationStatus(true);
+    }
+    return;
+  }, [code, access_token, refresh_token, type]);
 
   const checkEmailVerificationStatus = async (isManualClick = false) => {
-    if (!isManualClick) return;
+    if (!isManualClick && !code && !(access_token && refresh_token)) return;
 
     setChecking(true);
     setErrorMessage(null);
 
     try {
+      // If we have a PKCE code, exchange it for a session
+      if (code) {
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        if (exchangeError) throw exchangeError;
+      }
+
       const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
       if (refreshError) throw refreshError;
 
@@ -70,24 +116,22 @@ function VerifyEmailPage() {
     } catch (err) {
       console.error("Verification engine lookup exception:", err);
       setErrorMessage(
-        "Could not re-route token status queries. Ensure you have clicked the confirmation link inside your email inbox.",
+        "Could not verify your link. Ensure you clicked the confirmation link inside your email inbox.",
       );
     } finally {
       setChecking(false);
     }
   };
 
-  useEffect(() => {
-    console.log("🔒 Identity verification lock initialized. Manual confirmation required.");
-  }, []);
-
   const handleResendEmail = async () => {
-    if (!email || busy) return;
+    if (!email || busy || cooldown > 0) return;
     setBusy(true);
     setErrorMessage(null);
+    setSuccessMessage(null);
 
     try {
-      const redirectUrl = new URL("/verify-email", window.location.origin);
+      // Use canonical host for email redirect
+      const redirectUrl = new URL("/verify-email", "https://www.apexmissions.app");
       if (email) redirectUrl.searchParams.set("email", email);
       if (next) redirectUrl.searchParams.set("next", next);
 
@@ -96,18 +140,62 @@ function VerifyEmailPage() {
         email: email,
         options: {
           emailRedirectTo: redirectUrl.toString(),
+          ...(TURNSTILE_SITE_KEY && turnstileToken ? { captchaToken: turnstileToken } : {}),
         },
       });
+
       if (error) throw error;
-      alert("🚀 Fresh verification link broadcasted to your inbox grid parameters safely.");
+
+      setSuccessMessage("If this email can be confirmed, a new message is on its way.");
+      setCooldown(COOLDOWN_SECONDS);
+      resetTurnstile();
     } catch (err) {
-      setErrorMessage(
-        err instanceof Error ? err.message : "Could not re-transmit email parameters.",
-      );
+      console.error("Resend error:", err);
+      // Never reveal whether email exists
+      setSuccessMessage("If this email can be confirmed, a new message is on its way.");
+      setCooldown(COOLDOWN_SECONDS);
+      resetTurnstile();
     } finally {
       setBusy(false);
     }
   };
+
+  useEffect(() => {
+    console.log("🔒 Identity verification lock initialized. Manual confirmation required.");
+    return;
+  }, []);
+
+  // Cooldown timer
+  useEffect(() => {
+    if (cooldown > 0) {
+      const timer = setInterval(() => {
+        setCooldown((c) => (c <= 1 ? 0 : c - 1));
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+    return;
+  }, [cooldown]);
+
+  if (!email) {
+    return (
+      <div className="page-shell flex items-center justify-center px-6 py-12">
+        <div className="glass-panel max-w-md p-8 text-center">
+          <ShieldAlert className="mx-auto mb-4 size-10 text-rose-400" />
+          <h1 className="text-xl font-black uppercase text-white">Missing Email</h1>
+          <p className="mt-3 text-sm leading-relaxed text-zinc-500">
+            No email provided. Please return to sign in and try again.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate({ to: "/auth", replace: true })}
+            className="btn-glass-primary w-full h-12 mt-6"
+          >
+            Back to Sign In
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page-shell flex items-center justify-center px-6 py-12">
@@ -149,34 +237,89 @@ function VerifyEmailPage() {
 
         {errorMessage && (
           <div className="mb-6 rounded-xl border border-rose-500/20 bg-rose-950/20 p-3.5 text-left flex items-start gap-2.5 text-xs text-rose-400 font-semibold animate-fade-in">
-            <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
+            <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-rose-400" />
             <p>{errorMessage}</p>
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="mb-6 rounded-xl border border-emerald-500/20 bg-emerald-950/10 p-3.5 text-left flex items-start gap-2.5 text-xs text-emerald-400 font-semibold animate-fade-in">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+            <p>{successMessage}</p>
           </div>
         )}
 
         <div className="flex flex-col gap-3">
           <button
             type="button"
-            disabled={checking || isSuccess}
             onClick={() => checkEmailVerificationStatus(true)}
+            disabled={checking || isSuccess}
             className="btn-glass-primary h-12"
           >
             {checking ? (
               <Loader2 className="h-4 w-4 animate-spin text-black" />
             ) : (
-              "I've Verified My Email →"
+              <>
+                <ShieldCheck className="h-4 w-4" />
+                I've Verified My Email →
+              </>
             )}
           </button>
 
           <button
             type="button"
-            disabled={busy || isSuccess}
             onClick={handleResendEmail}
+            disabled={busy || cooldown > 0}
             className="btn-glass-ghost h-11"
           >
-            {busy ? "Re-transmitting Packet..." : "Resend Verification Email"}
+            {cooldown > 0 ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Resend in {cooldown}s
+              </>
+            ) : busy ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Sending...
+              </>
+            ) : (
+              <>
+                <Mail className="h-4 w-4" />
+                Resend Verification Email
+              </>
+            )}
           </button>
         </div>
+
+        {TURNSTILE_SITE_KEY && (
+          <div className="mt-6 w-full">
+            <label
+              htmlFor="turnstile-widget"
+              className="block text-center font-mono text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400"
+            >
+              Security Challenge — Complete to proceed
+            </label>
+            <TurnstileWidget
+              ref={turnstileWidgetRef}
+              siteKey={TURNSTILE_SITE_KEY}
+              onSuccess={setTurnstileToken}
+              onExpire={() => setTurnstileToken(null)}
+              onError={() => setTurnstileToken(null)}
+            />
+          </div>
+        )}
+
+        <p className="mt-6 text-center text-[11px] text-zinc-500">
+          Didn't get the email?{" "}
+          <button
+            type="button"
+            onClick={handleResendEmail}
+            disabled={busy || cooldown > 0}
+            className="font-bold text-emerald-400 hover:underline disabled:opacity-50"
+          >
+            {cooldown > 0 ? `Resend in ${cooldown}s` : "Resend confirmation email"}
+          </button>
+        </p>
       </div>
     </div>
   );

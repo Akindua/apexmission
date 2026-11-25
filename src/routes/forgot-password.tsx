@@ -33,8 +33,9 @@ function ForgotPasswordPage() {
     }
 
     try {
+      const redirectUrl = new URL("/reset-password", "https://www.apexmissions.app");
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: redirectUrl.toString(),
         ...(TURNSTILE_SITE_KEY && turnstileToken ? { captchaToken: turnstileToken } : {}),
       });
       if (error) throw error;
