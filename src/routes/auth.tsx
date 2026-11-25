@@ -341,7 +341,20 @@ function AuthConsolePage() {
 
       const errStatus =
         err instanceof Error && "status" in err ? (err as { status?: number }).status : undefined;
-      if (err instanceof Error && (err.message.includes("504") || errStatus === 504)) {
+      const errMsg = err instanceof Error ? err.message : "Unknown error";
+
+      // Handle email confirmation / SMTP errors that may be thrown as exceptions
+      if (
+        errMsg.toLowerCase().includes("email") ||
+        errMsg.toLowerCase().includes("smtp") ||
+        errMsg.toLowerCase().includes("confirmation") ||
+        errMsg.toLowerCase().includes("send") ||
+        errStatus === 500
+      ) {
+        setErrorMessage(
+          "⚠️ Account created but email confirmation could not be sent. Please try signing in, or contact support if the issue persists.",
+        );
+      } else if (err instanceof Error && (err.message.includes("504") || errStatus === 504)) {
         setErrorMessage(
           "⚠️ CLOUD HANDSHAKE BUFFER DELAY: Account record may have been created successfully. Please toggle to 'Secure Node Access' and try logging in.",
         );
