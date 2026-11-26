@@ -484,7 +484,7 @@ function CoachPanel({
           controller.appendData({ type: "finish" });
         },
       }) as any,
-    [],
+    [state, companyId, operatorProfile, leaderboard, behaviorAnalytics],
   );
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -525,6 +525,11 @@ function CoachPanel({
     const currentName = userNameRef.current || userName || "User";
     const currentRank = userRankRef.current || userRank || "Global Operator Node";
 
+    // Fallback to localStorage if prop state is empty (hydration timing issue)
+    const effectiveState = (state?.mission || state?.tasks?.high?.length || state?.tasks?.medium?.length || state?.tasks?.low?.length)
+      ? state
+      : loadState();
+
     const textLower = trimmed.toLowerCase();
     const slackingSignals = [
       "i procrastinated",
@@ -536,7 +541,7 @@ function CoachPanel({
       "i wasted",
     ];
     const indicatesSlacking = slackingSignals.some((signal) => textLower.includes(signal));
-    const fallbackPoints = state?.points || 1000;
+    const fallbackPoints = effectiveState?.points || 1000;
 
     if (indicatesSlacking) {
       const aiPenalty = 100;
@@ -639,20 +644,20 @@ function CoachPanel({
           : "Evening Review";
 
     const allTasks = [
-      ...(state?.tasks?.high || []),
-      ...(state?.tasks?.medium || []),
-      ...(state?.tasks?.low || []),
+      ...(effectiveState?.tasks?.high || []),
+      ...(effectiveState?.tasks?.medium || []),
+      ...(effectiveState?.tasks?.low || []),
     ];
     const completedTasks = allTasks.filter((task: Task) => task?.done).length;
-    const pendingHighImpact = (state?.tasks?.high || []).filter((task: Task) => !task?.done).length;
+    const pendingHighImpact = (effectiveState?.tasks?.high || []).filter((task: Task) => !task?.done).length;
 
-    const streak = Number(state?.streak?.count ?? 0);
+    const streak = Number(effectiveState?.streak?.count ?? 0);
     const maxStreak = Math.max(streak, Number(operatorProfile?.maxStreak ?? 0));
-    const credits = Number(operatorProfile?.credits ?? state?.points ?? 0);
+    const credits = Number(operatorProfile?.credits ?? effectiveState?.points ?? 0);
     const failures = Number(operatorProfile?.failureCount ?? 0);
-    const dailyDone = Boolean(state?.daily?.done);
-    const dailyText = String(state?.daily?.text || "").trim();
-    const missionText = String(state?.mission || "").trim();
+    const dailyDone = Boolean(effectiveState?.daily?.done);
+    const dailyText = String(effectiveState?.daily?.text || "").trim();
+    const missionText = String(effectiveState?.mission || "").trim();
 
     const streakHealth = (() => {
       if (streak === 0) return "INACTIVE — immediate attention required";
@@ -666,13 +671,13 @@ function CoachPanel({
 
     // Minimal coach context — hidden input only, never returned to the browser.
     const firstName = String(currentName || "Operator").split(" ")[0];
-    const highTitles = (state?.tasks?.high || [])
+    const highTitles = (effectiveState?.tasks?.high || [])
       .map((t: Task) => `[${t.done ? "done" : "open"}] ${t.text}`)
       .join("; ");
-    const mediumTitles = (state?.tasks?.medium || [])
+    const mediumTitles = (effectiveState?.tasks?.medium || [])
       .map((t: Task) => `[${t.done ? "done" : "open"}] ${t.text}`)
       .join("; ");
-    const lowTitles = (state?.tasks?.low || [])
+    const lowTitles = (effectiveState?.tasks?.low || [])
       .map((t: Task) => `[${t.done ? "done" : "open"}] ${t.text}`)
       .join("; ");
 
